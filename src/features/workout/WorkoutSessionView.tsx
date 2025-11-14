@@ -12,6 +12,8 @@ import { calculateAngles } from '../pose/detector/angleCalculator';
 import type { DerivedAngle } from '../pose/poseTypes';
 import { loadPoseModel, estimatePose } from '../pose/detector/poseDetector';
 import { calculateAngles } from '../pose/detector/angleCalculator';
+import { appendHistoryEntry } from '../history/historyStorage';
+import type { WorkoutHistoryEntry } from '../history/types';
 
 interface WorkoutSessionViewProps {
   programDay: ProgramDay;
@@ -160,8 +162,25 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({ programDay, onE
       };
     });
 
-    // Log the session for now (later this would save to backend)
-    console.log('Workout session completed:', session);
+    // Build history entry from current session
+    const historyEntry: WorkoutHistoryEntry = {
+      id: `${programDay.id}-${Date.now()}`,
+      completedAt: new Date().toISOString(),
+      programDayId: programDay.id,
+      dayOfWeek: programDay.dayOfWeek,
+      focus: programDay.focus,
+      exercises: programDay.exercises.map((exercise) => {
+        const exerciseSets = session.sets.filter((s) => s.exerciseId === exercise.id);
+        return {
+          exerciseId: exercise.id,
+          name: exercise.name,
+          sets: exerciseSets,
+        };
+      }),
+    };
+
+    // Save to localStorage
+    appendHistoryEntry(historyEntry);
     
     // Return to week view after a brief delay
     setTimeout(() => {

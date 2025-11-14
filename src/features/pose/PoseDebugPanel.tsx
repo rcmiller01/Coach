@@ -1,6 +1,7 @@
 import React from 'react';
 import type { DerivedAngle } from './poseTypes';
 import { evaluateRomForExercise } from '../rom/romEvaluator';
+import { getPoseCoachingCue } from '../workout/poseCoaching';
 
 interface PoseDebugPanelProps {
   exerciseId: string;
@@ -11,6 +12,9 @@ interface PoseDebugPanelProps {
 const PoseDebugPanel: React.FC<PoseDebugPanelProps> = ({ exerciseId, exerciseName, angles }) => {
   // Evaluate ROM for this exercise using the provided angles
   const romResult = evaluateRomForExercise(exerciseId, angles);
+  
+  // Get pose-based coaching cues
+  const coachingCue = getPoseCoachingCue(exerciseId, romResult, angles);
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -72,6 +76,32 @@ const PoseDebugPanel: React.FC<PoseDebugPanelProps> = ({ exerciseId, exerciseNam
                   ))}
               </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* Coaching Cues Section */}
+      <div className="pt-3 border-t border-gray-200 mt-3">
+        <h4 className="text-sm font-semibold text-gray-900 mb-2">Coaching Cues</h4>
+        {coachingCue.primary === null ? (
+          <p className="text-xs text-gray-500">
+            No specific cues yet. Focus on moving with control and comfort.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded p-2">
+              <span className="text-blue-600">💡</span>
+              <div className="flex-1">
+                <p className="text-xs text-blue-900 font-medium">
+                  {coachingCue.primary}
+                </p>
+                {coachingCue.secondary && (
+                  <p className="text-xs text-blue-700 mt-1">
+                    {coachingCue.secondary}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
