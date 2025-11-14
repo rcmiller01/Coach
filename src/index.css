@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .progress-bar {
+    transition: width 0.3s ease;
+  }
+}
