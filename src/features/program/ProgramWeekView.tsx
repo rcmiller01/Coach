@@ -8,9 +8,10 @@ import SubstitutionModal from './exercise-substitution/SubstitutionModal';
 
 interface ProgramWeekViewProps {
   onStartDay?: (day: ProgramDay) => void;
+  onViewExercise?: (exerciseId: string) => void;
 }
 
-const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({ onStartDay }) => {
+const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({ onStartDay, onViewExercise }) => {
   const [programWeek, setProgramWeek] = useState<ProgramWeek>(mockProgramWeek);
   const [selectedExercise, setSelectedExercise] = useState<{
     dayId: string;
@@ -99,6 +100,7 @@ const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({ onStartDay }) => {
                 handleSubstituteClick(day.id, exerciseId, exercise)
               }
               onStartWorkout={onStartDay ? () => onStartDay(day) : undefined}
+              onViewExercise={onViewExercise}
             />
           ))}
         </div>

@@ -5,9 +5,10 @@ interface ProgramDayCardProps {
   day: ProgramDay;
   onSubstitute?: (exerciseId: string, exercise: ProgramExercise) => void;
   onStartWorkout?: () => void;
+  onViewExercise?: (exerciseId: string) => void;
 }
 
-const ProgramDayCard: React.FC<ProgramDayCardProps> = ({ day, onSubstitute, onStartWorkout }) => {
+const ProgramDayCard: React.FC<ProgramDayCardProps> = ({ day, onSubstitute, onStartWorkout, onViewExercise }) => {
   const [showAllExercises, setShowAllExercises] = useState(false);
   const totalSets = day.exercises.reduce((sum, ex) => sum + ex.sets, 0);
 
@@ -69,17 +70,30 @@ const ProgramDayCard: React.FC<ProgramDayCardProps> = ({ day, onSubstitute, onSt
                     {exercise.sets}×{exercise.reps}
                   </span>
                 </div>
-                {onSubstitute && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSubstitute(exercise.id, exercise);
-                    }}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline whitespace-nowrap"
-                  >
-                    Substitute
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {onViewExercise && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewExercise(exercise.id);
+                      }}
+                      className="text-xs text-gray-600 hover:text-gray-800 font-medium hover:underline whitespace-nowrap"
+                    >
+                      Details
+                    </button>
+                  )}
+                  {onSubstitute && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSubstitute(exercise.id, exercise);
+                      }}
+                      className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline whitespace-nowrap"
+                    >
+                      Substitute
+                    </button>
+                  )}
+                </div>
               </div>
               {exercise.notes && (
                 <p className="text-xs text-gray-500 ml-5 mt-1">{exercise.notes}</p>

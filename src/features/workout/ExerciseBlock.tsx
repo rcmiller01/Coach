@@ -6,20 +6,33 @@ interface ExerciseBlockProps {
   exercise: ProgramExercise;
   sets: WorkoutSetState[];
   onUpdateSet: (setId: string, updates: Partial<WorkoutSetState>) => void;
+  onViewExercise?: (exerciseId: string) => void;
 }
 
-const ExerciseBlock: React.FC<ExerciseBlockProps> = ({ exercise, sets, onUpdateSet }) => {
+const ExerciseBlock: React.FC<ExerciseBlockProps> = ({ exercise, sets, onUpdateSet, onViewExercise }) => {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
       {/* Exercise header */}
       <div className="mb-4">
-        <h3 className="text-xl font-semibold text-gray-900">{exercise.name}</h3>
-        <p className="text-sm text-gray-600">
-          Target: {exercise.sets} sets × {exercise.reps} reps
-        </p>
-        {exercise.notes && (
-          <p className="text-sm text-gray-500 mt-1 italic">{exercise.notes}</p>
-        )}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1">
+            <h3 className="text-xl font-semibold text-gray-900">{exercise.name}</h3>
+            <p className="text-sm text-gray-600">
+              Target: {exercise.sets} sets × {exercise.reps} reps
+            </p>
+            {exercise.notes && (
+              <p className="text-sm text-gray-500 mt-1 italic">{exercise.notes}</p>
+            )}
+          </div>
+          {onViewExercise && (
+            <button
+              onClick={() => onViewExercise(exercise.id)}
+              className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium border border-blue-300 rounded hover:bg-blue-50 transition-colors"
+            >
+              View Details
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Sets list */}

@@ -1,14 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ProgramDay } from '../program/types';
 import type { WorkoutSessionState, WorkoutSetState } from './types';
 import ExerciseBlock from './ExerciseBlock';
+import RestTimer from './RestTimer';
+import { getSetHint } from './coachingHints';
+import CameraPreview from '../pose/CameraPreview';
+import PoseDebugPanel from '../pose/PoseDebugPanel';
+import type { DerivedAngle } from '../pose/poseTypes';
+import { loadPoseModel, estimatePose } from '../pose/detector/poseDetector';
+import { calculateAngles } from '../pose/detector/angleCalculator';
+import type { DerivedAngle } from '../pose/poseTypes';
+import { loadPoseModel, estimatePose } from '../pose/detector/poseDetector';
+import { calculateAngles } from '../pose/detector/angleCalculator';
 
 interface WorkoutSessionViewProps {
   programDay: ProgramDay;
   onExit: () => void;
+  onViewExercise?: (exerciseId: string) => void;
 }
 
-const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({ programDay, onExit }) => {
+const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({ programDay, onExit, onViewExercise }) => {
   // Initialize session state once on mount using lazy initializer
   const [session, setSession] = useState<WorkoutSessionState>(() => {
     const sets: WorkoutSetState[] = [];
@@ -34,16 +45,105 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({ programDay, onE
     };
   });
 
+  // Track the last completed set for rest timer and coaching hints
+  const [lastCompletedSet, setLastCompletedSet] = useState<WorkoutSetState | null>(null);
+  const [restTimerActive, setRestTimerActive] = useState(false);
+
+  // Form check (camera + pose) state
+  const [formCheckEnabled, setFormCheckEnabled] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [liveAngles, setLiveAngles] = useState<DerivedAngle[]>([]);
+  
+  const videoElementRef = useRef<HTMLVideoElement | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Pose detection effect
+  useEffect(() => {
+    if (!formCheckEnabled || !videoElementRef.current) {
+      // Stop detection loop
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      setLiveAngles([]);
+      return;
+    }
+
+    let isActive = true;
+
+    // Load model and start detection loop
+    const startDetection = async () => {
+      try {
+        await loadPoseModel();
+        
+        const detectLoop = async () => {
+          if (!isActive || !videoElementRef.current) {
+            return;
+          }
+
+          try {
+            // Estimate pose from video
+            const keypoints = await estimatePose(videoElementRef.current);
+            
+            // Calculate angles from keypoints
+            const angles = calculateAngles(keypoints);
+            
+            // Update state
+            setLiveAngles(angles);
+          } catch (error) {
+            console.error('Pose detection error:', error);
+          }
+
+          // Continue loop
+          if (isActive) {
+            animationFrameRef.current = requestAnimationFrame(detectLoop);
+          }
+        };
+
+        // Start the loop
+        detectLoop();
+      } catch (error) {
+        console.error('Failed to start pose detection:', error);
+        setCameraError('Failed to load pose detection model');
+      }
+    };
+
+    startDetection();
+
+    // Cleanup
+    return () => {
+      isActive = false;
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [formCheckEnabled]);
+  const [liveAngles, setLiveAngles] = useState<DerivedAngle[]>([]);
+  
+  const videoElementRef = useRef<HTMLVideoElement | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
   const handleUpdateSet = (setId: string, updates: Partial<WorkoutSetState>) => {
     if (!session) return;
 
     setSession((prev) => {
       if (!prev) return prev;
+      
+      const updatedSets = prev.sets.map((set) =>
+        set.id === setId ? { ...set, ...updates } : set
+      );
+      
+      // Check if this update marked a set as completed
+      const updatedSet = updatedSets.find((s) => s.id === setId);
+      if (updatedSet && updates.status === 'completed') {
+        setLastCompletedSet(updatedSet);
+        setRestTimerActive(true);
+      }
+      
       return {
         ...prev,
-        sets: prev.sets.map((set) =>
-          set.id === setId ? { ...set, ...updates } : set
-        ),
+        sets: updatedSets,
       };
     });
   };
@@ -144,6 +244,57 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({ programDay, onE
           </div>
         </div>
 
+        {/* Form Check (beta) */}
+        {session.status === 'in_progress' && (
+          <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Form Check (beta)</h2>
+                <p className="text-xs text-gray-500">Enable camera to preview form feedback</p>
+              </div>
+              <button
+                onClick={() => {
+                  setFormCheckEnabled(!formCheckEnabled);
+                  if (formCheckEnabled) {
+                    setCameraError(null);
+                  }
+                }}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  formCheckEnabled
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                }`}
+              >
+                {formCheckEnabled ? 'Disable' : 'Enable'}
+              </button>
+            </div>
+
+            {formCheckEnabled && (
+              <div className="space-y-4">
+                <div>
+                  <CameraPreview 
+                    isActive={true} 
+                    onError={setCameraError}
+                    onVideoReady={(video) => {
+                      videoElementRef.current = video;
+                    }}
+                  />
+                  {cameraError && (
+                    <p className="text-xs text-red-600 mt-2">
+                      Error: {cameraError}
+                    </p>
+                  )}
+                </div>
+                <PoseDebugPanel 
+                  exerciseId={programDay.exercises[0]?.id || 'unknown'}
+                  exerciseName={programDay.exercises[0]?.name || 'Exercise'}
+                  angles={liveAngles}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Exercises */}
         <div className="space-y-4">
           {programDay.exercises.map((exercise) => {
@@ -154,10 +305,39 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({ programDay, onE
                 exercise={exercise}
                 sets={exerciseSets}
                 onUpdateSet={handleUpdateSet}
+                onViewExercise={onViewExercise}
               />
             );
           })}
         </div>
+
+        {/* Rest & Coaching */}
+        {session.status === 'in_progress' && lastCompletedSet && (
+          <div className="mt-6 space-y-3">
+            <h2 className="text-lg font-semibold text-gray-900">Rest & Coaching</h2>
+            
+            <RestTimer
+              durationSeconds={90}
+              isActive={restTimerActive}
+              onComplete={() => setRestTimerActive(false)}
+              onCancel={() => setRestTimerActive(false)}
+            />
+            
+            {(() => {
+              const hint = getSetHint(lastCompletedSet);
+              if (hint) {
+                return (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-900">
+                      <span className="font-medium">💡 Tip:</span> {hint}
+                    </p>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+          </div>
+        )}
 
         {/* Finish button */}
         {session.status === 'in_progress' && (
