@@ -1,18 +1,31 @@
 import React from 'react';
 import type { ProgramExercise } from '../program/types';
 import type { WorkoutSetState } from './types';
+import type { ActualExerciseLoad } from '../progression/actualLoads';
 
 interface ExerciseBlockProps {
   exercise: ProgramExercise;
   sets: WorkoutSetState[];
   onUpdateSet: (setId: string, updates: Partial<WorkoutSetState>) => void;
   onViewExercise?: (exerciseId: string) => void;
+  previousWeekLoad?: ActualExerciseLoad; // Last week's actual performance for this exercise
 }
 
-const ExerciseBlock: React.FC<ExerciseBlockProps> = ({ exercise, sets, onUpdateSet, onViewExercise }) => {
+const ExerciseBlock: React.FC<ExerciseBlockProps> = ({ 
+  exercise, 
+  sets, 
+  onUpdateSet, 
+  onViewExercise,
+  previousWeekLoad 
+}) => {
   // Check if any set has a suggested load
   const suggestedLoadKg = sets[0]?.targetLoadKg;
   const suggestedLoadLbs = suggestedLoadKg ? Math.round(suggestedLoadKg * 2.20462) : null;
+
+  // Previous week's performance
+  const lastWeekLoadKg = previousWeekLoad?.averageLoadKg;
+  const lastWeekLoadLbs = lastWeekLoadKg ? Math.round(lastWeekLoadKg * 2.20462) : null;
+  const lastWeekSets = previousWeekLoad?.setCount;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
@@ -24,7 +37,25 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({ exercise, sets, onUpdateS
             <p className="text-sm text-gray-600">
               Target: {exercise.sets} sets × {exercise.reps} reps
             </p>
-            {suggestedLoadLbs && (
+            
+            {/* Last vs Today comparison */}
+            {lastWeekLoadLbs && suggestedLoadLbs && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-700">Last week:</span>
+                  <span className="font-medium text-gray-900">
+                    {lastWeekLoadLbs} lbs × {lastWeekSets} sets
+                  </span>
+                  <span className="text-gray-400">→</span>
+                  <span className="text-gray-700">Today:</span>
+                  <span className="font-medium text-blue-700">
+                    {suggestedLoadLbs} lbs × {exercise.sets} sets
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {suggestedLoadLbs && !lastWeekLoadLbs && (
               <p className="text-sm text-green-700 font-medium mt-1">
                 Suggested load: {suggestedLoadLbs} lbs
               </p>

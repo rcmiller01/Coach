@@ -1,12 +1,28 @@
 import React, { useState } from 'react';
-import type { ProgramWeek, ProgramDay, ProgramExercise } from './types';
+import type { ProgramWeek, ProgramDay, ProgramExercise, TrainingBlock } from './types';
 import ProgramDayCard from './ProgramDayCard';
 import type { ExerciseMetadata } from './exercise-substitution/types';
 import { findSubstitutes } from './exercise-substitution/findSubstitutes';
 import SubstitutionModal from './exercise-substitution/SubstitutionModal';
 import WeeklyProgressSummary from './WeeklyProgressSummary';
+import WeeklyDashboard from './WeeklyDashboard';
+import { CoachInsightsPanel } from './CoachInsightsPanel';
+import { BlockSummary } from './BlockSummary';
+import { DietSummary } from '../nutrition/DietSummary';
+import type { DietTargets } from '../nutrition/dietEngine';
+import { 
+  generateCoachInsights, 
+  sortInsightsByPriority,
+  type CoachInsightInputs 
+} from './coachInsights';
+import { 
+  calculateWeeklyAdherence, 
+  calculateWeeklyStress, 
+  summarizeKeyLifts 
+} from './weeklyAdherence';
 import type { ExerciseLoadSuggestion } from '../progression/progressionTypes';
 import type { ActualExerciseLoad } from '../progression/actualLoads';
+import type { WorkoutHistoryEntry } from '../history/types';
 
 interface ProgramWeekViewProps {
   week: ProgramWeek;
@@ -19,6 +35,10 @@ interface ProgramWeekViewProps {
   totalWeeks?: number;
   onRenewWeek?: () => void;
   onNavigateToWeek?: (weekIndex: number) => void;
+  allWeeks?: ProgramWeek[]; // All weeks for getting previous week
+  history?: WorkoutHistoryEntry[]; // Workout history for dashboard
+  blocks?: TrainingBlock[]; // Training blocks for block summary
+  dietTargets?: DietTargets | null; // Diet/nutrition targets
 }
 
 const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({ 
@@ -31,7 +51,11 @@ const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({
   currentWeekIndex = 0,
   totalWeeks = 1,
   onRenewWeek,
-  onNavigateToWeek
+  onNavigateToWeek,
+  allWeeks = [],
+  history = [],
+  blocks = [],
+  dietTargets = null,
 }) => {
   const [programWeek, setProgramWeek] = useState<ProgramWeek>(week);
   const [selectedExercise, setSelectedExercise] = useState<{
@@ -40,6 +64,8 @@ const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({
     exercise: ProgramExercise;
   } | null>(null);
   const [substituteCandidates, setSubstituteCandidates] = useState<ExerciseMetadata[]>([]);
+  const [showBlockSummary, setShowBlockSummary] = useState(false);
+  const [blockToView, setBlockToView] = useState<TrainingBlock | null>(null);
 
   // Mock user equipment - in production this would come from user profile
   const userEquipment = ['barbell', 'dumbbell', 'bodyweight'];
@@ -93,6 +119,37 @@ const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({
     setSubstituteCandidates([]);
   };
 
+  // Find the block that contains this week
+  const currentBlock = blocks.find((block) => {
+    if (block.endWeekIndex === null) {
+      // Active block
+      return currentWeekIndex >= block.startWeekIndex;
+    }
+    return currentWeekIndex >= block.startWeekIndex && currentWeekIndex <= block.endWeekIndex;
+  });
+
+  const handleViewBlockSummary = () => {
+    if (currentBlock) {
+      setBlockToView(currentBlock);
+      setShowBlockSummary(true);
+    }
+  };
+
+  const handleCloseBlockSummary = () => {
+    setShowBlockSummary(false);
+    setBlockToView(null);
+  };
+
+  const formatBlockGoal = (goal: string): string => {
+    const goalMap: Record<string, string> = {
+      strength: 'Strength',
+      hypertrophy: 'Hypertrophy',
+      general: 'General',
+      return_to_training: 'Return to Training',
+    };
+    return goalMap[goal] || goal;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto p-4 py-8">
@@ -113,6 +170,12 @@ const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({
                   }`}
                 >
                   {programWeek.trainingPhase === 'deload' ? 'Deload' : 'Build'}
+                </span>
+              )}
+              {/* Block goal badge */}
+              {currentBlock && (
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+                  {formatBlockGoal(currentBlock.goal)}
                 </span>
               )}
             </div>
@@ -158,6 +221,57 @@ const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({
             </p>
           )}
         </div>
+
+        {/* Diet Summary - Show daily nutrition targets */}
+        {dietTargets && (
+          <div className="mb-6">
+            <DietSummary targets={dietTargets} />
+          </div>
+        )}
+
+        {/* View Block Summary Button */}
+        {currentBlock && (
+          <div className="mb-6">
+            <button
+              onClick={handleViewBlockSummary}
+              className="w-full px-4 py-3 bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-50 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <span>📊</span>
+              <span>View Block Summary (Block {currentBlock.startWeekIndex + 1})</span>
+            </button>
+          </div>
+        )}
+
+        {/* Coach Insights - Actionable coaching messages */}
+        {(() => {
+          const adherence = calculateWeeklyAdherence(programWeek, history);
+          const previousWeek = currentWeekIndex > 0 && allWeeks.length > currentWeekIndex - 1 
+            ? allWeeks[currentWeekIndex - 1] 
+            : null;
+          const stress = calculateWeeklyStress(programWeek, previousWeek, history);
+          const keyLifts = summarizeKeyLifts(programWeek, previousWeek, history);
+
+          const insightInputs: CoachInsightInputs = {
+            weekNumber: currentWeekIndex + 1,
+            phase: programWeek.trainingPhase || 'build',
+            adherence,
+            stress,
+            keyLifts,
+          };
+
+          const insights = generateCoachInsights(insightInputs);
+          const sortedInsights = sortInsightsByPriority(insights);
+
+          return <CoachInsightsPanel insights={sortedInsights} maxDisplay={3} />;
+        })()}
+
+        {/* Weekly Dashboard - Bird's eye view of adherence and progress */}
+        <WeeklyDashboard
+          currentWeek={programWeek}
+          currentWeekIndex={currentWeekIndex}
+          previousWeek={currentWeekIndex > 0 && allWeeks.length > currentWeekIndex - 1 ? allWeeks[currentWeekIndex - 1] : null}
+          history={history}
+        />
 
         {/* Weekly Progress Summary */}
         <WeeklyProgressSummary
@@ -212,6 +326,16 @@ const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({
             candidates={substituteCandidates}
             onSelect={handleSelectSubstitute}
             onClose={handleCloseModal}
+          />
+        )}
+
+        {/* Block Summary Modal */}
+        {showBlockSummary && blockToView && (
+          <BlockSummary
+            block={blockToView}
+            allWeeks={allWeeks}
+            history={history}
+            onClose={handleCloseBlockSummary}
           />
         )}
       </div>

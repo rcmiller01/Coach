@@ -1,5 +1,7 @@
 // Enums and types for Phase 1 onboarding
 
+import type { BlockGoal } from '../program/types';
+
 export type TrainingExperience = 'beginner' | 'intermediate' | 'advanced';
 
 export type PrimaryGoal =
@@ -8,6 +10,23 @@ export type PrimaryGoal =
   | 'get_stronger'
   | 'improve_endurance'
   | 'stay_fit';
+
+/**
+ * Map user's primary goal from onboarding to a training block goal
+ */
+export function mapPrimaryGoalToBlockGoal(primaryGoal: PrimaryGoal | null): BlockGoal {
+  switch (primaryGoal) {
+    case 'get_stronger':
+      return 'strength';
+    case 'build_muscle':
+      return 'hypertrophy';
+    case 'lose_fat':
+    case 'improve_endurance':
+    case 'stay_fit':
+    default:
+      return 'general';
+  }
+}
 
 export type JointArea =
   | 'knee'

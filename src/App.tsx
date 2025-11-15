@@ -7,9 +7,10 @@ import OnboardingWizard from './features/onboarding/OnboardingWizard'
 import SettingsView from './features/settings/SettingsView'
 import NutritionView from './features/nutrition/NutritionView'
 import MealPlanView from './features/meals/MealPlanView'
-import { generateProgramWeekFromOnboarding } from './features/program/programGenerator'
+import { TodayHub } from './features/today/TodayHub'
+import { generateProgramWeekFromOnboarding, generateInitialProgram } from './features/program/programGenerator'
 import { loadMultiWeekProgram, saveMultiWeekProgram, clearMultiWeekProgram } from './features/program/programStorage'
-import { generateNextWeek } from './features/program/weekRenewal'
+import { generateNextWeekAndBlock, ensureBlocksExist } from './features/program/weekRenewal'
 import { saveProfile, loadProfile, clearProfile } from './features/profile/profileStorage'
 import { clearHistory, loadAllHistory } from './features/history/historyStorage'
 import { loadSettings, saveSettings, type CoachSettings } from './features/settings/settingsStorage'
@@ -17,6 +18,10 @@ import { getLoadSuggestionsForExercises } from './features/progression/progressi
 import { getActualLoadsForWeek, type ActualExerciseLoad } from './features/progression/actualLoads'
 import { deriveNutritionProfileFromOnboarding, calculateNutritionTargets } from './features/nutrition/nutritionCalculator'
 import { loadNutritionTargets, saveNutritionTargets } from './features/nutrition/nutritionStorage'
+import { calculateDietTargets, type DietTargets } from './features/nutrition/dietEngine'
+import { extractUserStats } from './features/nutrition/userStatsConverter'
+import { loadDietTargets, saveDietTargets } from './features/nutrition/dietStorage'
+import { mapPrimaryGoalToBlockGoal } from './features/onboarding/types'
 import { generateDailyMealPlan } from './features/meals/mealPlanGenerator'
 import { loadMealPlan, saveMealPlan } from './features/meals/mealPlanStorage'
 import type { DailyMealPlan } from './features/meals/mealTypes'
@@ -27,16 +32,17 @@ import type { WorkoutHistoryEntry } from './features/history/types'
 import type { ExerciseLoadSuggestion } from './features/progression/progressionTypes'
 import './App.css'
 
-type MainView = 'program' | 'history' | 'settings' | 'nutrition' | 'meals';
+type MainView = 'today' | 'program' | 'history' | 'settings' | 'nutrition' | 'meals';
 
 function App() {
-  const [mainView, setMainView] = useState<MainView>('program');
+  const [mainView, setMainView] = useState<MainView>('today');
   const [activeDay, setActiveDay] = useState<ProgramDay | null>(null);
   const [activeExerciseId, setActiveExerciseId] = useState<string | null>(null);
   const [onboardingState, setOnboardingState] = useState<OnboardingState | null>(null);
   const [multiWeekProgram, setMultiWeekProgram] = useState<ProgramMultiWeek | null>(null);
   const [settings, setSettings] = useState<CoachSettings>(() => loadSettings());
   const [nutritionTargets, setNutritionTargets] = useState<NutritionTargets | null>(null);
+  const [dietTargets, setDietTargets] = useState<DietTargets | null>(null);
   const [mealPlan, setMealPlan] = useState<DailyMealPlan | null>(null);
   const [history, setHistory] = useState<WorkoutHistoryEntry[]>([]);
   const [loadSuggestions, setLoadSuggestions] = useState<ExerciseLoadSuggestion[]>([]);
@@ -52,14 +58,15 @@ function App() {
       // Try to load existing multi-week program
       const savedMultiWeek = loadMultiWeekProgram();
       if (savedMultiWeek) {
-        setMultiWeekProgram(savedMultiWeek);
+        // Ensure legacy programs have blocks
+        const programWithBlocks = ensureBlocksExist(savedMultiWeek);
+        setMultiWeekProgram(programWithBlocks);
+        if (programWithBlocks !== savedMultiWeek) {
+          saveMultiWeekProgram(programWithBlocks);
+        }
       } else {
-        // Generate initial week 1 if no multi-week program exists
-        const week = generateProgramWeekFromOnboarding(savedProfile);
-        const initialMultiWeek: ProgramMultiWeek = {
-          currentWeekIndex: 0,
-          weeks: [week],
-        };
+        // Generate initial program with first week and block
+        const initialMultiWeek = generateInitialProgram(savedProfile);
         setMultiWeekProgram(initialMultiWeek);
         saveMultiWeekProgram(initialMultiWeek);
       }
@@ -73,6 +80,18 @@ function App() {
         const targets = calculateNutritionTargets(nutritionProfile);
         setNutritionTargets(targets);
         saveNutritionTargets(targets);
+      }
+
+      // Load or calculate diet targets (goal-aware)
+      const savedDiet = loadDietTargets();
+      if (savedDiet) {
+        setDietTargets(savedDiet);
+      } else {
+        const userStats = extractUserStats(savedProfile);
+        const blockGoal = mapPrimaryGoalToBlockGoal(savedProfile.primaryGoal);
+        const dietTargets = calculateDietTargets(userStats, blockGoal);
+        setDietTargets(dietTargets);
+        saveDietTargets(dietTargets);
       }
     }
 
@@ -94,17 +113,29 @@ function App() {
     
     const currentWeek = multiWeekProgram.weeks[multiWeekProgram.currentWeekIndex];
     
+    // Find active block to get current training goal
+    const activeBlock = multiWeekProgram.blocks?.find((block) => {
+      if (block.endWeekIndex === null) {
+        return multiWeekProgram.currentWeekIndex >= block.startWeekIndex;
+      }
+      return (
+        multiWeekProgram.currentWeekIndex >= block.startWeekIndex &&
+        multiWeekProgram.currentWeekIndex <= block.endWeekIndex
+      );
+    });
+    const blockGoal = activeBlock?.goal || 'general';
+    
     // Collect all unique exercises from the current week
     const allExercises = currentWeek.days.flatMap((day) =>
       day.exercises.map((ex) => ({ id: ex.id, name: ex.name }))
     );
     
-    // Get suggestions for current week (for workout session initialization)
-    // Pass the training phase to adjust suggestions for deload weeks
+    // Get suggestions for current week (goal-aware and phase-aware)
     const suggestions = getLoadSuggestionsForExercises(
       history, 
       allExercises, 
-      currentWeek.trainingPhase || 'build' // Default to 'build' for backward compatibility
+      currentWeek.trainingPhase || 'build',
+      blockGoal
     );
     setLoadSuggestions(suggestions);
 
@@ -127,12 +158,8 @@ function App() {
     setOnboardingState(state);
     saveProfile(state);
     
-    // Generate initial week 1 and create multi-week structure
-    const week1 = generateProgramWeekFromOnboarding(state);
-    const initialMultiWeek: ProgramMultiWeek = {
-      currentWeekIndex: 0,
-      weeks: [week1],
-    };
+    // Generate initial program with first week and block
+    const initialMultiWeek = generateInitialProgram(state);
     setMultiWeekProgram(initialMultiWeek);
     saveMultiWeekProgram(initialMultiWeek);
 
@@ -141,6 +168,13 @@ function App() {
     const targets = calculateNutritionTargets(nutritionProfile);
     setNutritionTargets(targets);
     saveNutritionTargets(targets);
+
+    // Calculate and save diet targets based on the initial block goal
+    const userStats = extractUserStats(state);
+    const initialBlockGoal = mapPrimaryGoalToBlockGoal(state.primaryGoal || 'general');
+    const diet = calculateDietTargets(userStats, initialBlockGoal);
+    setDietTargets(diet);
+    saveDietTargets(diet);
 
     setMainView('program');
   }
@@ -191,19 +225,12 @@ function App() {
     // Get progressive overload suggestions
     const suggestions = getLoadSuggestionsForExercises(history, allExercises);
 
-    // Generate next week (pass all weeks and history for phase detection)
-    const nextWeek = generateNextWeek(
-      currentWeek, 
-      suggestions, 
-      multiWeekProgram.weeks, 
+    // Generate next week and manage block transitions
+    const updatedProgram = generateNextWeekAndBlock(
+      multiWeekProgram,
+      suggestions,
       history
     );
-
-    // Update multi-week program
-    const updatedProgram: ProgramMultiWeek = {
-      currentWeekIndex: multiWeekProgram.currentWeekIndex + 1,
-      weeks: [...multiWeekProgram.weeks, nextWeek],
-    };
 
     setMultiWeekProgram(updatedProgram);
     saveMultiWeekProgram(updatedProgram);
@@ -240,7 +267,20 @@ function App() {
   }
 
   // 3. If a day is active, show the workout session view
-  if (activeDay) {
+  if (activeDay && multiWeekProgram) {
+    const currentWeek = multiWeekProgram.weeks[multiWeekProgram.currentWeekIndex];
+    
+    // Find active block to get current training goal
+    const activeBlock = multiWeekProgram.blocks?.find((block) => {
+      if (block.endWeekIndex === null) {
+        return multiWeekProgram.currentWeekIndex >= block.startWeekIndex;
+      }
+      return (
+        multiWeekProgram.currentWeekIndex >= block.startWeekIndex &&
+        multiWeekProgram.currentWeekIndex <= block.endWeekIndex
+      );
+    });
+    
     // Compute suggestions for this day's exercises
     const daySuggestions = activeDay.exercises.map((ex) => {
       const match = loadSuggestions.find((s) => s.exerciseId === ex.id);
@@ -259,6 +299,10 @@ function App() {
         onViewExercise={setActiveExerciseId}
         defaultFormCheckEnabled={settings.defaultFormCheckEnabled}
         loadSuggestions={daySuggestions}
+        weekNumber={multiWeekProgram.currentWeekIndex + 1}
+        trainingPhase={currentWeek.trainingPhase || 'build'}
+        blockGoal={activeBlock?.goal || 'general'}
+        previousWeekLoads={previousWeekActualLoads}
       />
     );
   }
@@ -269,6 +313,16 @@ function App() {
       {/* Top navigation bar */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex gap-2">
+          <button
+            onClick={() => setMainView('today')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              mainView === 'today'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Today
+          </button>
           <button
             onClick={() => setMainView('program')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -323,7 +377,38 @@ function App() {
       </div>
 
       {/* Main content */}
-      {mainView === 'program' ? (
+      {mainView === 'today' ? (
+        <TodayHub
+          todaysSession={(() => {
+            // Find today's session by matching day of week
+            const today = new Date();
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const todayName = dayNames[today.getDay()];
+            
+            const currentWeek = multiWeekProgram.weeks[multiWeekProgram.currentWeekIndex];
+            const todaysDay = currentWeek.days.find(d => d.dayOfWeek === todayName);
+            
+            if (!todaysDay) return null;
+            
+            // Get current block goal
+            const currentBlock = multiWeekProgram.blocks?.find(
+              block => 
+                multiWeekProgram.currentWeekIndex >= block.startWeekIndex &&
+                multiWeekProgram.currentWeekIndex <= block.endWeekIndex
+            );
+            
+            return {
+              day: todaysDay,
+              weekIndex: multiWeekProgram.currentWeekIndex,
+              weekPhase: currentWeek.trainingPhase || 'build',
+              blockGoal: currentBlock?.goal || 'general',
+            };
+          })()}
+          dietTargets={dietTargets}
+          history={history}
+          onStartSession={setActiveDay}
+        />
+      ) : mainView === 'program' ? (
         <ProgramWeekView 
           week={multiWeekProgram.weeks[multiWeekProgram.currentWeekIndex]}
           currentWeekIndex={multiWeekProgram.currentWeekIndex}
@@ -335,6 +420,10 @@ function App() {
           previousWeekActualLoads={previousWeekActualLoads}
           onRenewWeek={handleRenewWeek}
           onNavigateToWeek={handleNavigateToWeek}
+          allWeeks={multiWeekProgram.weeks}
+          history={history}
+          blocks={multiWeekProgram.blocks || []}
+          dietTargets={dietTargets}
         />
       ) : mainView === 'history' ? (
         <WorkoutHistoryView />
@@ -351,6 +440,17 @@ function App() {
           onUpdateSettings={handleUpdateSettings}
           onResetProfile={handleResetProfile}
           onClearHistory={handleClearHistory}
+          program={multiWeekProgram}
+          history={history}
+          dietTargets={dietTargets}
+          foodLog={(() => {
+            try {
+              const raw = localStorage.getItem('ai_coach_food_log_v1');
+              return raw ? JSON.parse(raw) : {};
+            } catch {
+              return {};
+            }
+          })()}
         />
       )}
     </div>

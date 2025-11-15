@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ProgramDay } from '../program/types';
+import type { ProgramDay, BlockGoal } from '../program/types';
 import type { WorkoutSessionState, WorkoutSetState } from './types';
 import ExerciseBlock from './ExerciseBlock';
 import RestTimer from './RestTimer';
@@ -15,6 +15,7 @@ import { calculateAngles } from '../pose/detector/angleCalculator';
 import { appendHistoryEntry } from '../history/historyStorage';
 import type { WorkoutHistoryEntry } from '../history/types';
 import type { ExerciseLoadSuggestion } from '../progression/progressionTypes';
+import type { ActualExerciseLoad } from '../progression/actualLoads';
 
 interface WorkoutSessionViewProps {
   programDay: ProgramDay;
@@ -22,6 +23,10 @@ interface WorkoutSessionViewProps {
   onViewExercise?: (exerciseId: string) => void;
   defaultFormCheckEnabled?: boolean;
   loadSuggestions?: ExerciseLoadSuggestion[];
+  weekNumber?: number; // Current week number (1-indexed)
+  trainingPhase?: 'build' | 'deload'; // Current training phase
+  blockGoal?: BlockGoal; // Current block goal
+  previousWeekLoads?: ActualExerciseLoad[]; // Last week's actual loads for comparison
 }
 
 const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({ 
@@ -29,7 +34,11 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
   onExit, 
   onViewExercise,
   defaultFormCheckEnabled,
-  loadSuggestions = []
+  loadSuggestions = [],
+  weekNumber,
+  trainingPhase,
+  blockGoal,
+  previousWeekLoads = []
 }) => {
   // Initialize session state once on mount using lazy initializer
   const [session, setSession] = useState<WorkoutSessionState>(() => {
@@ -234,6 +243,22 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
   const totalSets = session.sets.length;
   const allSetsComplete = completedSets === totalSets;
 
+  // Calculate average RPE from completed sets
+  const completedSetsWithRpe = session.sets.filter((s) => s.status === 'completed' && s.rpe);
+  const avgRpe = completedSetsWithRpe.length > 0
+    ? completedSetsWithRpe.reduce((sum, s) => sum + (s.rpe || 0), 0) / completedSetsWithRpe.length
+    : null;
+
+  const formatBlockGoal = (goal: BlockGoal): string => {
+    const goalMap: Record<BlockGoal, string> = {
+      strength: 'Strength',
+      hypertrophy: 'Hypertrophy',
+      general: 'General',
+      return_to_training: 'Return to Training',
+    };
+    return goalMap[goal];
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto p-4 py-8">
@@ -254,28 +279,55 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
             )}
           </div>
           
-          <h1 className="text-3xl font-bold text-gray-900">
-            {dayLabels[programDay.dayOfWeek]} – {focusLabels[programDay.focus]}
-          </h1>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900">
+              {focusLabels[programDay.focus]}
+            </h1>
+            {/* Training phase badge */}
+            {trainingPhase && (
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  trainingPhase === 'deload'
+                    ? 'bg-purple-100 text-purple-700'
+                    : 'bg-green-100 text-green-700'
+                }`}
+              >
+                {trainingPhase === 'deload' ? 'Deload' : 'Build'}
+              </span>
+            )}
+            {/* Block goal badge */}
+            {blockGoal && (
+              <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+                {formatBlockGoal(blockGoal)}
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span>{dayLabels[programDay.dayOfWeek]}</span>
+            {weekNumber && (
+              <>
+                <span>•</span>
+                <span>Week {weekNumber}</span>
+              </>
+            )}
+          </div>
           
           {programDay.description && (
-            <p className="text-gray-600 mt-1">{programDay.description}</p>
+            <p className="mt-2 text-sm text-gray-700">{programDay.description}</p>
           )}
-
-          {/* Progress */}
-          <div className="mt-4 bg-white rounded-lg border border-gray-200 p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Progress</span>
-              <span className="text-sm text-gray-600">
-                {completedSets} / {totalSets} sets
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(completedSets / totalSets) * 100}%` }}
-              />
-            </div>
+          
+          {/* Session progress summary */}
+          <div className="mt-3 flex items-center gap-4 text-sm">
+            <span className={`font-medium ${allSetsComplete ? 'text-green-700' : 'text-gray-700'}`}>
+              {completedSets} / {totalSets} sets completed
+            </span>
+            {avgRpe && (
+              <>
+                <span className="text-gray-400">•</span>
+                <span className="text-gray-700">Avg RPE: {avgRpe.toFixed(1)}</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -334,6 +386,7 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
         <div className="space-y-4">
           {programDay.exercises.map((exercise) => {
             const exerciseSets = session.sets.filter((s) => s.exerciseId === exercise.id);
+            const prevLoad = previousWeekLoads.find((load) => load.exerciseId === exercise.id);
             return (
               <ExerciseBlock
                 key={exercise.id}
@@ -341,6 +394,7 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
                 sets={exerciseSets}
                 onUpdateSet={handleUpdateSet}
                 onViewExercise={onViewExercise}
+                previousWeekLoad={prevLoad}
               />
             );
           })}
