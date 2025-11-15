@@ -75,9 +75,16 @@ const MealPlanView: React.FC<MealPlanViewProps> = ({ mealPlan, onGenerate }) => 
                         key={`${food.id}-${index}`}
                         className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
                       >
-                        <span className="text-gray-700">{food.name}</span>
+                        <div>
+                          <span className="text-gray-700">{food.name}</span>
+                          {food.quantity && food.quantity !== 1 && (
+                            <span className="ml-2 text-sm text-gray-500">
+                              ({food.quantity} servings)
+                            </span>
+                          )}
+                        </div>
                         <span className="text-sm text-gray-500">
-                          {food.calories} cal
+                          {Math.round(food.calories)} cal
                         </span>
                       </div>
                     ))}

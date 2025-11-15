@@ -78,19 +78,29 @@ function generateMeal(
   const proteinServings = Math.max(0.5, Math.min(3, Math.round((proteinCals / proteinSource.calories) * 2) / 2));
   const carbServings = Math.max(0.5, Math.min(3, Math.round((carbCals / carbSource.calories) * 2) / 2));
 
-  // Add protein servings
-  for (let i = 0; i < proteinServings; i++) {
-    foods.push({ ...proteinSource });
-  }
+  // Add protein with quantity
+  foods.push({
+    ...proteinSource,
+    quantity: proteinServings,
+    calories: proteinSource.calories * proteinServings,
+    protein: proteinSource.protein * proteinServings,
+    carbs: proteinSource.carbs * proteinServings,
+    fat: proteinSource.fat * proteinServings,
+  });
 
-  // Add carb servings
-  for (let i = 0; i < carbServings; i++) {
-    foods.push({ ...carbSource });
-  }
+  // Add carb with quantity
+  foods.push({
+    ...carbSource,
+    quantity: carbServings,
+    calories: carbSource.calories * carbServings,
+    protein: carbSource.protein * carbServings,
+    carbs: carbSource.carbs * carbServings,
+    fat: carbSource.fat * carbServings,
+  });
 
   // Add vegetables (always 1 serving for lunch/dinner)
   if (id !== 'breakfast' && VEGETABLES.length > 0) {
-    foods.push({ ...VEGETABLES[0] });
+    foods.push({ ...VEGETABLES[0], quantity: 1 });
   }
 
   // Add fat source if needed (avocado for breakfast, olive oil for dinner)
@@ -99,10 +109,10 @@ function generateMeal(
   if (currentFat < targetFat - 5) {
     if (id === 'breakfast') {
       const avocado = FATS.find(f => f.id === 'avocado');
-      if (avocado) foods.push({ ...avocado });
+      if (avocado) foods.push({ ...avocado, quantity: 1 });
     } else {
       const oil = FATS.find(f => f.id === 'olive-oil');
-      if (oil) foods.push({ ...oil });
+      if (oil) foods.push({ ...oil, quantity: 1 });
     }
   }
 

@@ -5,6 +5,7 @@ export interface FoodItem {
   carbs: number;
   fat: number;
   calories: number; // convenience
+  quantity?: number; // How many servings (for display)
 }
 
 export interface Meal {

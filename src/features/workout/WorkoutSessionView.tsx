@@ -9,9 +9,6 @@ import PoseDebugPanel from '../pose/PoseDebugPanel';
 import type { DerivedAngle } from '../pose/poseTypes';
 import { loadPoseModel, estimatePose } from '../pose/detector/poseDetector';
 import { calculateAngles } from '../pose/detector/angleCalculator';
-import type { DerivedAngle } from '../pose/poseTypes';
-import { loadPoseModel, estimatePose } from '../pose/detector/poseDetector';
-import { calculateAngles } from '../pose/detector/angleCalculator';
 import { appendHistoryEntry } from '../history/historyStorage';
 import type { WorkoutHistoryEntry } from '../history/types';
 import type { ExerciseLoadSuggestion } from '../progression/progressionTypes';
@@ -146,10 +143,6 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
       }
     };
   }, [formCheckEnabled]);
-  const [liveAngles, setLiveAngles] = useState<DerivedAngle[]>([]);
-  
-  const videoElementRef = useRef<HTMLVideoElement | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
 
   const handleUpdateSet = (setId: string, updates: Partial<WorkoutSetState>) => {
     if (!session) return;

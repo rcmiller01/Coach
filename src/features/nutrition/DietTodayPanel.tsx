@@ -3,6 +3,7 @@ import type { DietTargets } from './dietEngine';
 import { loadDailyFoodTotals } from './foodLog';
 import type { DailyFoodTotals } from './foodLog';
 import { FoodQuickEntry } from './FoodQuickEntry';
+import { FoodSearchEntry } from './FoodSearchEntry';
 
 interface DietTodayPanelProps {
   dietTargets: DietTargets;
@@ -23,8 +24,9 @@ export function DietTodayPanel({ dietTargets, date }: DietTodayPanelProps) {
   const [dailyTotals, setDailyTotals] = useState<DailyFoodTotals | null>(() => 
     loadDailyFoodTotals(date)
   );
+  const [entryMode, setEntryMode] = useState<'food' | 'macros'>('food');
 
-  // Handle updates from FoodQuickEntry
+  // Handle updates from both entry components
   const handleTotalsChange = (updated: DailyFoodTotals) => {
     setDailyTotals(updated);
   };
@@ -164,8 +166,36 @@ export function DietTodayPanel({ dietTargets, date }: DietTodayPanelProps) {
         </div>
       </div>
 
-      {/* Quick entry form */}
-      <FoodQuickEntry date={date} onTotalsChange={handleTotalsChange} />
+      {/* Entry mode selector */}
+      <div className="mb-3 flex gap-2">
+        <button
+          onClick={() => setEntryMode('food')}
+          className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
+            entryMode === 'food'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          By Food
+        </button>
+        <button
+          onClick={() => setEntryMode('macros')}
+          className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
+            entryMode === 'macros'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          By Macros
+        </button>
+      </div>
+
+      {/* Entry form (mode-dependent) */}
+      {entryMode === 'food' ? (
+        <FoodSearchEntry date={date} onTotalsChange={handleTotalsChange} />
+      ) : (
+        <FoodQuickEntry date={date} onTotalsChange={handleTotalsChange} />
+      )}
     </div>
   );
 }

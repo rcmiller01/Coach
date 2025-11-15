@@ -344,16 +344,6 @@ function App() {
             History
           </button>
           <button
-            onClick={() => setMainView('settings')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              mainView === 'settings'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Settings
-          </button>
-          <button
             onClick={() => setMainView('nutrition')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               mainView === 'nutrition'
@@ -372,6 +362,16 @@ function App() {
             }`}
           >
             Meals
+          </button>
+          <button
+            onClick={() => setMainView('settings')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              mainView === 'settings'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Settings
           </button>
         </div>
       </div>
