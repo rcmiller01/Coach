@@ -13,6 +13,10 @@ import { submitOnboarding } from '../../lib/submitOnboarding';
 
 type Step = 'welcome' | 'profile' | 'goals' | 'constraints' | 'environment' | 'schedule' | 'summary' | 'complete';
 
+interface OnboardingWizardProps {
+  onComplete: (state: OnboardingState) => void;
+}
+
 const ProgressBar: React.FC<{ percent: number }> = ({ percent }) => {
   return (
     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -24,7 +28,7 @@ const ProgressBar: React.FC<{ percent: number }> = ({ percent }) => {
   );
 };
 
-const OnboardingWizard: React.FC = () => {
+const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState<Step>('welcome');
   const [state, setState] = useState<OnboardingState>(initialOnboardingState);
 
@@ -53,6 +57,7 @@ const OnboardingWizard: React.FC = () => {
 
   const handleSubmit = async () => {
     await submitOnboarding(state);
+    onComplete(state);
     setCurrentStep('complete');
   };
 

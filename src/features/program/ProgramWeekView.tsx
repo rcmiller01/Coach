@@ -1,18 +1,39 @@
 import React, { useState } from 'react';
-import { mockProgramWeek } from './mockProgramWeek';
 import type { ProgramWeek, ProgramDay, ProgramExercise } from './types';
 import ProgramDayCard from './ProgramDayCard';
 import type { ExerciseMetadata } from './exercise-substitution/types';
 import { findSubstitutes } from './exercise-substitution/findSubstitutes';
 import SubstitutionModal from './exercise-substitution/SubstitutionModal';
+import WeeklyProgressSummary from './WeeklyProgressSummary';
+import type { ExerciseLoadSuggestion } from '../progression/progressionTypes';
+import type { ActualExerciseLoad } from '../progression/actualLoads';
 
 interface ProgramWeekViewProps {
-  onStartDay?: (day: ProgramDay) => void;
-  onViewExercise?: (exerciseId: string) => void;
+  week: ProgramWeek;
+  onStartDay: (day: ProgramDay) => void;
+  onViewExercise: (exerciseId: string) => void;
+  loadSuggestions?: ExerciseLoadSuggestion[];
+  currentWeekActualLoads?: ActualExerciseLoad[];
+  previousWeekActualLoads?: ActualExerciseLoad[];
+  currentWeekIndex?: number;
+  totalWeeks?: number;
+  onRenewWeek?: () => void;
+  onNavigateToWeek?: (weekIndex: number) => void;
 }
 
-const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({ onStartDay, onViewExercise }) => {
-  const [programWeek, setProgramWeek] = useState<ProgramWeek>(mockProgramWeek);
+const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({ 
+  week, 
+  onStartDay, 
+  onViewExercise,
+  loadSuggestions = [],
+  currentWeekActualLoads = [],
+  previousWeekActualLoads = [],
+  currentWeekIndex = 0,
+  totalWeeks = 1,
+  onRenewWeek,
+  onNavigateToWeek
+}) => {
+  const [programWeek, setProgramWeek] = useState<ProgramWeek>(week);
   const [selectedExercise, setSelectedExercise] = useState<{
     dayId: string;
     exerciseId: string;
@@ -77,18 +98,74 @@ const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({ onStartDay, onViewExe
       <div className="max-w-3xl mx-auto p-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-            This Week
-          </h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+                Week {currentWeekIndex + 1}
+              </h1>
+              {/* Training phase badge */}
+              {programWeek.trainingPhase && (
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    programWeek.trainingPhase === 'deload'
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'bg-green-100 text-green-700'
+                  }`}
+                >
+                  {programWeek.trainingPhase === 'deload' ? 'Deload' : 'Build'}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Previous week button */}
+              {onNavigateToWeek && currentWeekIndex > 0 && (
+                <button
+                  onClick={() => onNavigateToWeek(currentWeekIndex - 1)}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <span>←</span>
+                  <span>Previous</span>
+                </button>
+              )}
+              {/* Next week button (navigate to existing week) */}
+              {onNavigateToWeek && currentWeekIndex < totalWeeks - 1 && (
+                <button
+                  onClick={() => onNavigateToWeek(currentWeekIndex + 1)}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <span>Next</span>
+                  <span>→</span>
+                </button>
+              )}
+              {/* Generate new week button */}
+              {onRenewWeek && currentWeekIndex === totalWeeks - 1 && (
+                <button
+                  onClick={onRenewWeek}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <span>New Week</span>
+                  <span>→</span>
+                </button>
+              )}
+            </div>
+          </div>
           <p className="text-gray-600">
-            Week of {formatWeekDate(mockProgramWeek.weekStartDate)}
+            Week of {formatWeekDate(programWeek.weekStartDate)}
           </p>
-          {mockProgramWeek.focus && (
+          {programWeek.focus && (
             <p className="mt-2 text-sm text-gray-700 bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <span className="font-medium">Focus:</span> {mockProgramWeek.focus}
+              <span className="font-medium">Focus:</span> {programWeek.focus}
             </p>
           )}
         </div>
+
+        {/* Weekly Progress Summary */}
+        <WeeklyProgressSummary
+          currentWeekIndex={currentWeekIndex}
+          currentWeekActualLoads={currentWeekActualLoads}
+          previousWeekActualLoads={previousWeekActualLoads}
+          currentWeekPhase={programWeek.trainingPhase}
+        />
 
         {/* Training Days */}
         <div className="space-y-4">
@@ -99,8 +176,9 @@ const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({ onStartDay, onViewExe
               onSubstitute={(exerciseId, exercise) => 
                 handleSubstituteClick(day.id, exerciseId, exercise)
               }
-              onStartWorkout={onStartDay ? () => onStartDay(day) : undefined}
+              onStartWorkout={() => onStartDay(day)}
               onViewExercise={onViewExercise}
+              loadSuggestions={loadSuggestions}
             />
           ))}
         </div>

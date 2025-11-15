@@ -1,16 +1,40 @@
 import React, { useState } from 'react';
 import type { ProgramDay, ProgramExercise } from './types';
+import type { ExerciseLoadSuggestion } from '../progression/progressionTypes';
 
 interface ProgramDayCardProps {
   day: ProgramDay;
   onSubstitute?: (exerciseId: string, exercise: ProgramExercise) => void;
   onStartWorkout?: () => void;
   onViewExercise?: (exerciseId: string) => void;
+  loadSuggestions?: ExerciseLoadSuggestion[];
 }
 
-const ProgramDayCard: React.FC<ProgramDayCardProps> = ({ day, onSubstitute, onStartWorkout, onViewExercise }) => {
+const ProgramDayCard: React.FC<ProgramDayCardProps> = ({ 
+  day, 
+  onSubstitute, 
+  onStartWorkout, 
+  onViewExercise,
+  loadSuggestions = []
+}) => {
   const [showAllExercises, setShowAllExercises] = useState(false);
   const totalSets = day.exercises.reduce((sum, ex) => sum + ex.sets, 0);
+
+  // Helper to get load suggestion for an exercise
+  const getSuggestion = (exerciseId: string): ExerciseLoadSuggestion | undefined => {
+    return loadSuggestions.find((s) => s.exerciseId === exerciseId);
+  };
+
+  // Helper to format load suggestion display
+  const formatLoadSuggestion = (suggestion: ExerciseLoadSuggestion | undefined): string => {
+    if (!suggestion) return '';
+    if (suggestion.suggestedLoadKg === null) {
+      return 'No prior data';
+    }
+    // Convert kg to lbs for display
+    const lbs = Math.round(suggestion.suggestedLoadKg * 2.20462);
+    return `Suggested: ${lbs} lbs`;
+  };
 
   const dayLabels: Record<string, string> = {
     monday: 'Monday',
@@ -60,46 +84,56 @@ const ProgramDayCard: React.FC<ProgramDayCardProps> = ({ day, onSubstitute, onSt
       {/* Exercise preview */}
       <div className="mt-3 pt-3 border-t border-gray-100">
         <ul className="space-y-2">
-          {(showAllExercises ? day.exercises : day.exercises.slice(0, 3)).map((exercise) => (
-            <li key={exercise.id} className="text-sm text-gray-700">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 flex-1">
-                  <span className="text-gray-400">•</span>
-                  <span className="truncate">{exercise.name}</span>
-                  <span className="text-gray-500 text-xs whitespace-nowrap">
-                    {exercise.sets}×{exercise.reps}
-                  </span>
+          {(showAllExercises ? day.exercises : day.exercises.slice(0, 3)).map((exercise) => {
+            const suggestion = getSuggestion(exercise.id);
+            const suggestionText = formatLoadSuggestion(suggestion);
+            
+            return (
+              <li key={exercise.id} className="text-sm text-gray-700">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-gray-400">•</span>
+                    <span className="truncate">{exercise.name}</span>
+                    <span className="text-gray-500 text-xs whitespace-nowrap">
+                      {exercise.sets}×{exercise.reps}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {onViewExercise && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewExercise(exercise.id);
+                        }}
+                        className="text-xs text-gray-600 hover:text-gray-800 font-medium hover:underline whitespace-nowrap"
+                      >
+                        Details
+                      </button>
+                    )}
+                    {onSubstitute && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSubstitute(exercise.id, exercise);
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline whitespace-nowrap"
+                      >
+                        Substitute
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {onViewExercise && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onViewExercise(exercise.id);
-                      }}
-                      className="text-xs text-gray-600 hover:text-gray-800 font-medium hover:underline whitespace-nowrap"
-                    >
-                      Details
-                    </button>
-                  )}
-                  {onSubstitute && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSubstitute(exercise.id, exercise);
-                      }}
-                      className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline whitespace-nowrap"
-                    >
-                      Substitute
-                    </button>
-                  )}
-                </div>
-              </div>
-              {exercise.notes && (
-                <p className="text-xs text-gray-500 ml-5 mt-1">{exercise.notes}</p>
-              )}
-            </li>
-          ))}
+                {suggestionText && (
+                  <p className="text-xs text-green-700 ml-5 mt-1 font-medium">
+                    {suggestionText}
+                  </p>
+                )}
+                {exercise.notes && (
+                  <p className="text-xs text-gray-500 ml-5 mt-1">{exercise.notes}</p>
+                )}
+              </li>
+            );
+          })}
         </ul>
         {day.exercises.length > 3 && (
           <button

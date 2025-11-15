@@ -10,6 +10,10 @@ interface ExerciseBlockProps {
 }
 
 const ExerciseBlock: React.FC<ExerciseBlockProps> = ({ exercise, sets, onUpdateSet, onViewExercise }) => {
+  // Check if any set has a suggested load
+  const suggestedLoadKg = sets[0]?.targetLoadKg;
+  const suggestedLoadLbs = suggestedLoadKg ? Math.round(suggestedLoadKg * 2.20462) : null;
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
       {/* Exercise header */}
@@ -20,6 +24,11 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({ exercise, sets, onUpdateS
             <p className="text-sm text-gray-600">
               Target: {exercise.sets} sets × {exercise.reps} reps
             </p>
+            {suggestedLoadLbs && (
+              <p className="text-sm text-green-700 font-medium mt-1">
+                Suggested load: {suggestedLoadLbs} lbs
+              </p>
+            )}
             {exercise.notes && (
               <p className="text-sm text-gray-500 mt-1 italic">{exercise.notes}</p>
             )}

@@ -46,3 +46,19 @@ export function appendHistoryEntry(entry: WorkoutHistoryEntry): void {
   existing.push(entry);
   saveHistory(existing);
 }
+
+/**
+ * Clear all workout history from localStorage.
+ */
+export function clearHistory(): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(LOCAL_STORAGE_KEY);
+}
+
+/**
+ * Alias for loadHistory() - loads all workout history entries.
+ * Provided for clarity when used in progression engine context.
+ */
+export function loadAllHistory(): WorkoutHistoryEntry[] {
+  return loadHistory();
+}

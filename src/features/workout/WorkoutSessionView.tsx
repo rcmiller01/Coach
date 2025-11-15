@@ -14,25 +14,39 @@ import { loadPoseModel, estimatePose } from '../pose/detector/poseDetector';
 import { calculateAngles } from '../pose/detector/angleCalculator';
 import { appendHistoryEntry } from '../history/historyStorage';
 import type { WorkoutHistoryEntry } from '../history/types';
+import type { ExerciseLoadSuggestion } from '../progression/progressionTypes';
 
 interface WorkoutSessionViewProps {
   programDay: ProgramDay;
   onExit: () => void;
   onViewExercise?: (exerciseId: string) => void;
+  defaultFormCheckEnabled?: boolean;
+  loadSuggestions?: ExerciseLoadSuggestion[];
 }
 
-const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({ programDay, onExit, onViewExercise }) => {
+const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({ 
+  programDay, 
+  onExit, 
+  onViewExercise,
+  defaultFormCheckEnabled,
+  loadSuggestions = []
+}) => {
   // Initialize session state once on mount using lazy initializer
   const [session, setSession] = useState<WorkoutSessionState>(() => {
     const sets: WorkoutSetState[] = [];
     
     programDay.exercises.forEach((exercise) => {
+      // Find load suggestion for this exercise
+      const suggestion = loadSuggestions.find((s) => s.exerciseId === exercise.id);
+      const targetLoadKg = suggestion?.suggestedLoadKg ?? undefined;
+      
       for (let i = 0; i < exercise.sets; i++) {
         sets.push({
           id: `${exercise.id}-set-${i}`,
           exerciseId: exercise.id,
           setIndex: i,
           targetReps: exercise.reps,
+          targetLoadKg,
           status: 'pending',
         });
       }
@@ -52,7 +66,9 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({ programDay, onE
   const [restTimerActive, setRestTimerActive] = useState(false);
 
   // Form check (camera + pose) state
-  const [formCheckEnabled, setFormCheckEnabled] = useState(false);
+  const [formCheckEnabled, setFormCheckEnabled] = useState(
+    defaultFormCheckEnabled ?? false
+  );
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [liveAngles, setLiveAngles] = useState<DerivedAngle[]>([]);
   
