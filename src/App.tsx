@@ -236,6 +236,45 @@ function App() {
     saveMultiWeekProgram(updatedProgram);
   }
 
+  // Handle exercise substitution (persist to program)
+  function handleExerciseSubstitution(dayId: string, exerciseId: string, newExerciseName: string) {
+    if (!multiWeekProgram) return;
+
+    const updatedProgram: ProgramMultiWeek = {
+      ...multiWeekProgram,
+      weeks: multiWeekProgram.weeks.map((week, wIndex) => {
+        if (wIndex !== multiWeekProgram.currentWeekIndex) return week;
+
+        return {
+          ...week,
+          days: week.days.map(day => {
+            if (day.id !== dayId) return day;
+
+            return {
+              ...day,
+              exercises: day.exercises.map(ex =>
+                ex.id === exerciseId
+                  ? { ...ex, name: newExerciseName }
+                  : ex
+              ),
+            };
+          }),
+        };
+      }),
+    };
+
+    setMultiWeekProgram(updatedProgram);
+    saveMultiWeekProgram(updatedProgram);
+    
+    // Update activeDay if it's the current day
+    if (activeDay && activeDay.id === dayId) {
+      const updatedDay = updatedProgram.weeks[multiWeekProgram.currentWeekIndex].days.find(d => d.id === dayId);
+      if (updatedDay) {
+        setActiveDay(updatedDay);
+      }
+    }
+  }
+
   // Handle week navigation (go back to previous weeks)
   function handleNavigateToWeek(weekIndex: number) {
     if (!multiWeekProgram) return;
@@ -297,6 +336,7 @@ function App() {
         programDay={activeDay} 
         onExit={() => setActiveDay(null)}
         onViewExercise={setActiveExerciseId}
+        onSubstituteExercise={handleExerciseSubstitution}
         defaultFormCheckEnabled={settings.defaultFormCheckEnabled}
         loadSuggestions={daySuggestions}
         weekNumber={multiWeekProgram.currentWeekIndex + 1}
@@ -415,6 +455,7 @@ function App() {
           totalWeeks={multiWeekProgram.weeks.length}
           onStartDay={setActiveDay}
           onViewExercise={setActiveExerciseId}
+          onSubstituteExercise={handleExerciseSubstitution}
           loadSuggestions={loadSuggestions}
           currentWeekActualLoads={currentWeekActualLoads}
           previousWeekActualLoads={previousWeekActualLoads}

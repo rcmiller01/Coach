@@ -28,6 +28,7 @@ interface ProgramWeekViewProps {
   week: ProgramWeek;
   onStartDay: (day: ProgramDay) => void;
   onViewExercise: (exerciseId: string) => void;
+  onSubstituteExercise?: (dayId: string, exerciseId: string, newExerciseName: string) => void;
   loadSuggestions?: ExerciseLoadSuggestion[];
   currentWeekActualLoads?: ActualExerciseLoad[];
   previousWeekActualLoads?: ActualExerciseLoad[];
@@ -45,6 +46,7 @@ const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({
   week, 
   onStartDay, 
   onViewExercise,
+  onSubstituteExercise,
   loadSuggestions = [],
   currentWeekActualLoads = [],
   previousWeekActualLoads = [],
@@ -94,6 +96,7 @@ const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({
   const handleSelectSubstitute = (replacement: ExerciseMetadata) => {
     if (!selectedExercise) return;
 
+    // Update local UI state
     setProgramWeek((prev) => ({
       ...prev,
       days: prev.days.map((day) =>
@@ -109,6 +112,11 @@ const ProgramWeekView: React.FC<ProgramWeekViewProps> = ({
           : day
       ),
     }));
+
+    // Persist to program via callback
+    if (onSubstituteExercise) {
+      onSubstituteExercise(selectedExercise.dayId, selectedExercise.exerciseId, replacement.name);
+    }
 
     setSelectedExercise(null);
     setSubstituteCandidates([]);
