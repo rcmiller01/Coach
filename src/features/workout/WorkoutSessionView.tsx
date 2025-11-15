@@ -392,7 +392,6 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
             )}
           </div>
         </div>
-        </div>
 
         {/* Form Check & Rep Counting (beta) */}
         {session.status === 'in_progress' && (
