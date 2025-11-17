@@ -10,17 +10,13 @@ interface SessionHudProps {
   blockGoal?: BlockGoal;
   trainingPhase?: 'build' | 'deload';
   weekNumber?: number;
-  nextExerciseName?: string;
+  sessionName?: string;
+  onBack?: () => void;
 }
 
 /**
- * SessionHud - Compact status bar showing workout progress
- * 
- * Purpose:
- * - Show current position in workout (exercise X of Y)
- * - Display overall progress (sets completed)
- * - Provide context (block goal, week number)
- * - Preview next exercise
+ * SessionHud - Mobile-first compact status bar
+ * Shows session context and progress at a glance
  */
 const SessionHud: React.FC<SessionHudProps> = ({
   currentExerciseIndex,
@@ -31,7 +27,8 @@ const SessionHud: React.FC<SessionHudProps> = ({
   blockGoal,
   trainingPhase,
   weekNumber,
-  nextExerciseName,
+  sessionName,
+  onBack,
 }) => {
   const progressPercent = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
 
@@ -46,60 +43,69 @@ const SessionHud: React.FC<SessionHudProps> = ({
   };
 
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-4 mb-6 shadow-lg">
-      {/* Top row: Context badges */}
-      <div className="flex items-center gap-2 mb-3">
-        {weekNumber && (
-          <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded">
-            Week {weekNumber}
-          </span>
-        )}
-        {trainingPhase && (
-          <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded">
-            {trainingPhase === 'deload' ? 'Deload' : 'Build'}
-          </span>
-        )}
-        {blockGoal && (
-          <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded">
-            {formatBlockGoal(blockGoal)}
-          </span>
-        )}
+    <div className="bg-slate-900 rounded-lg border border-slate-800">
+      {/* Header row */}
+      <div className="p-3 flex items-center justify-between border-b border-slate-800">
+        <div className="flex items-center gap-2">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="text-slate-400 active:text-slate-300 -ml-1"
+              aria-label="Go back"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          <div>
+            <div className="text-sm font-semibold text-white">
+              {sessionName || 'Workout Session'}
+            </div>
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              {weekNumber && <span>Week {weekNumber}</span>}
+              {trainingPhase && (
+                <>
+                  {weekNumber && <span>•</span>}
+                  <span>{trainingPhase === 'deload' ? 'Deload' : 'Build'}</span>
+                </>
+              )}
+              {blockGoal && (
+                <>
+                  {(weekNumber || trainingPhase) && <span>•</span>}
+                  <span>{formatBlockGoal(blockGoal)}</span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <div className="text-right">
+          <div className="text-sm font-bold text-white">
+            {currentExerciseIndex + 1}/{totalExercises}
+          </div>
+          <div className="text-xs text-slate-400">exercises</div>
+        </div>
       </div>
 
-      {/* Main status */}
-      <div className="mb-3">
-        <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-2xl font-bold">
-            Exercise {currentExerciseIndex + 1}/{totalExercises}
-          </span>
-          <span className="text-sm text-white/80">
-            · {completedSets}/{totalSets} sets
-          </span>
+      {/* Progress section */}
+      <div className="p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-sm font-medium text-white truncate flex-1 pr-2">
+            {currentExerciseName}
+          </div>
+          <div className="text-xs text-slate-400 whitespace-nowrap">
+            {completedSets}/{totalSets} sets
+          </div>
         </div>
-        <div className="text-sm font-medium text-white/90">
-          {currentExerciseName}
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="mb-2">
-        <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+        
+        <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-white transition-all duration-300"
+            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <div className="text-xs text-white/80 mt-1">
-          {Math.round(progressPercent)}% complete
-        </div>
       </div>
-
-      {/* Next up */}
-      {nextExerciseName && (
-        <div className="text-xs text-white/70 pt-2 border-t border-white/20">
-          Next: <span className="text-white/90 font-medium">{nextExerciseName}</span>
-        </div>
-      )}
     </div>
   );
 };
