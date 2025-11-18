@@ -1,12 +1,27 @@
-import React from 'react';
-import type { DailyMealPlan } from './mealTypes';
+import React, { useState } from 'react';
+import type { DailyMealPlan, FoodItem } from './mealTypes';
+import { substituteFoodInMealPlan } from './mealPlanActions';
+import { FoodSearchEntry } from '../nutrition/FoodSearchEntry';
 
 interface MealPlanViewProps {
   mealPlan: DailyMealPlan | null;
   onGenerate: () => void;
+  onCopyFromYesterday?: () => void;
+  onPlanUpdated?: (plan: DailyMealPlan) => void;
 }
 
-const MealPlanView: React.FC<MealPlanViewProps> = ({ mealPlan, onGenerate }) => {
+const MealPlanView: React.FC<MealPlanViewProps> = ({ 
+  mealPlan, 
+  onGenerate,
+  onCopyFromYesterday,
+  onPlanUpdated
+}) => {
+  const [swapState, setSwapState] = useState<{
+    mealId: string;
+    foodId: string;
+    foodName: string;
+  } | null>(null);
+
   const formatDate = (dateStr: string): string => {
     const date = new Date(dateStr + 'T00:00:00');
     return date.toLocaleDateString('en-US', { 
@@ -17,6 +32,31 @@ const MealPlanView: React.FC<MealPlanViewProps> = ({ mealPlan, onGenerate }) => 
     });
   };
 
+  const handleSwapFood = (mealId: string, foodId: string, foodName: string) => {
+    setSwapState({ mealId, foodId, foodName });
+  };
+
+  const handleSelectSwap = (newFood: FoodItem) => {
+    if (!swapState || !mealPlan) return;
+
+    const updatedPlan = substituteFoodInMealPlan(
+      mealPlan.date,
+      swapState.mealId,
+      swapState.foodId,
+      newFood
+    );
+
+    if (updatedPlan && onPlanUpdated) {
+      onPlanUpdated(updatedPlan);
+    }
+
+    setSwapState(null);
+  };
+
+  const handleCancelSwap = () => {
+    setSwapState(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto p-4 py-8">
@@ -24,13 +64,51 @@ const MealPlanView: React.FC<MealPlanViewProps> = ({ mealPlan, onGenerate }) => 
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
             Today's Meal Plan
           </h1>
-          <button
-            onClick={onGenerate}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-          >
-            {mealPlan ? 'Regenerate' : 'Generate'}
-          </button>
+          <div className="flex gap-2">
+            {onCopyFromYesterday && mealPlan && (
+              <button
+                onClick={onCopyFromYesterday}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors"
+                title="Copy yesterday's plan"
+              >
+                📋 Copy Yesterday
+              </button>
+            )}
+            <button
+              onClick={onGenerate}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            >
+              {mealPlan ? '🔄 Regenerate' : 'Generate'}
+            </button>
+          </div>
         </div>
+
+        {/* Swap Food Modal */}
+        {swapState && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Swap: {swapState.foodName}
+                  </h2>
+                  <button
+                    onClick={handleCancelSwap}
+                    className="text-gray-400 hover:text-gray-600 text-2xl"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 overflow-y-auto flex-1">
+                <FoodSearchEntry
+                  onFoodSelected={handleSelectSwap}
+                  autoFocus={true}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {!mealPlan ? (
           <div className="bg-white rounded-lg shadow border border-gray-200 p-8 text-center">
@@ -75,7 +153,7 @@ const MealPlanView: React.FC<MealPlanViewProps> = ({ mealPlan, onGenerate }) => 
                         key={`${food.id}-${index}`}
                         className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
                       >
-                        <div>
+                        <div className="flex-1">
                           <span className="text-gray-700">{food.name}</span>
                           {food.quantity && food.quantity !== 1 && (
                             <span className="ml-2 text-sm text-gray-500">
@@ -83,9 +161,17 @@ const MealPlanView: React.FC<MealPlanViewProps> = ({ mealPlan, onGenerate }) => 
                             </span>
                           )}
                         </div>
-                        <span className="text-sm text-gray-500">
-                          {Math.round(food.calories)} cal
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-gray-500">
+                            {Math.round(food.calories)} cal
+                          </span>
+                          <button
+                            onClick={() => handleSwapFood(meal.id, food.id, food.name)}
+                            className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
+                          >
+                            Swap
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

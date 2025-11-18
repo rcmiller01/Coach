@@ -15,7 +15,7 @@ import SessionSummary from './SessionSummary';
 import FormCheckSection from './mobile/FormCheckSection';
 import ExerciseFocusCard from './mobile/ExerciseFocusCard';
 import BetweenExerciseRest from './mobile/BetweenExerciseRest';
-import SessionControlBar from './mobile/SessionControlBar';
+import { SessionControlBar } from './mobile/SessionControlBar';
 
 interface WorkoutSessionViewProps {
   programDay: ProgramDay;

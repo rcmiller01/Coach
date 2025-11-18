@@ -40,3 +40,45 @@ export function saveMealPlan(plan: DailyMealPlan): void {
     console.error('Failed to save meal plan:', error);
   }
 }
+
+/**
+ * Copy meal plan from one date to another.
+ * Creates new IDs for meals and items to keep them distinct.
+ */
+export function copyMealPlan(fromDate: string, toDate: string): DailyMealPlan | null {
+  if (typeof window === 'undefined') return null;
+
+  const sourcePlan = loadMealPlan(fromDate);
+  if (!sourcePlan) return null;
+
+  // Deep clone and update IDs
+  const newPlan: DailyMealPlan = {
+    ...sourcePlan,
+    date: toDate,
+    meals: sourcePlan.meals.map((meal) => ({
+      ...meal,
+      id: `${meal.name.toLowerCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      foods: meal.foods.map((food) => ({
+        ...food,
+        id: `${food.id}-copy-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      })),
+    })),
+  };
+
+  saveMealPlan(newPlan);
+  return newPlan;
+}
+
+/**
+ * Get all meal plans from storage (for calendar views, etc.).
+ */
+export function loadAllMealPlans(): MealPlanStorage {
+  if (typeof window === 'undefined') return {};
+
+  try {
+    const raw = window.localStorage.getItem(MEAL_PLAN_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}

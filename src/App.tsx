@@ -24,7 +24,7 @@ import { extractUserStats } from './features/nutrition/userStatsConverter'
 import { loadDietTargets, saveDietTargets } from './features/nutrition/dietStorage'
 import { mapPrimaryGoalToBlockGoal } from './features/onboarding/types'
 import { generateDailyMealPlan } from './features/meals/mealPlanGenerator'
-import { loadMealPlan, saveMealPlan } from './features/meals/mealPlanStorage'
+import { loadMealPlan, saveMealPlan, copyMealPlan } from './features/meals/mealPlanStorage'
 import type { DailyMealPlan } from './features/meals/mealTypes'
 import type { NutritionTargets } from './features/nutrition/nutritionTypes'
 import type { ProgramDay, ProgramWeek, ProgramMultiWeek } from './features/program/types'
@@ -210,6 +210,49 @@ function App() {
     const plan = generateDailyMealPlan(nutritionTargets, today);
     saveMealPlan(plan);
     setMealPlan(plan);
+  }
+
+  // Handle copying meal plan from yesterday
+  function handleCopyFromYesterday() {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const todayStr = today.toISOString().slice(0, 10);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+    
+    const copiedPlan = copyMealPlan(yesterdayStr, todayStr);
+    if (copiedPlan) {
+      setMealPlan(copiedPlan);
+    }
+  }
+
+  // Handle meal plan updates (after food substitution)
+  function handleMealPlanUpdated(updatedPlan: DailyMealPlan) {
+    setMealPlan(updatedPlan);
+  }
+
+  setMealPlan(plan);
+  }
+
+  // Handle copying meal plan from yesterday
+  function handleCopyFromYesterday() {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const todayStr = today.toISOString().slice(0, 10);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+    
+    const copiedPlan = copyMealPlan(yesterdayStr, todayStr);
+    if (copiedPlan) {
+      setMealPlan(copiedPlan);
+    }
+  }
+
+  // Handle meal plan updates (after food substitution)
+  function handleMealPlanUpdated(updatedPlan: DailyMealPlan) {
+    setMealPlan(updatedPlan);
   }
 
   // Handle week renewal (generate next week with progressive overload)
@@ -479,6 +522,8 @@ function App() {
         <MealPlanView
           mealPlan={mealPlan}
           onGenerate={handleGenerateMealPlan}
+          onCopyFromYesterday={handleCopyFromYesterday}
+          onPlanUpdated={handleMealPlanUpdated}
         />
       ) : (
         <SettingsView
