@@ -16,6 +16,7 @@ interface TodayHubProps {
   dietTargets: DietTargets | null;
   history?: WorkoutHistoryEntry[];
   onStartSession?: (day: ProgramDay) => void;
+  onViewSummary?: () => void;
 }
 
 /**
@@ -33,6 +34,7 @@ export function TodayHub({
   dietTargets,
   history = [],
   onStartSession,
+  onViewSummary,
 }: TodayHubProps) {
   const todayISO = getTodayISODate();
 
@@ -150,6 +152,7 @@ export function TodayHub({
             totalSets={sessionStats?.totalSets}
             avgRPE={sessionStats?.avgRPE}
             onStartSession={() => onStartSession?.(todaysSession.day)}
+            onViewSummary={onViewSummary}
           />
         ) : (
           <TodayWorkoutHero

@@ -8,6 +8,7 @@ import SettingsView from './features/settings/SettingsView'
 import NutritionView from './features/nutrition/NutritionView'
 import MealPlanView from './features/meals/MealPlanView'
 import { TodayHub } from './features/today/TodayHub'
+import { PwaInstallHint } from './features/today/PwaInstallHint'
 import { generateProgramWeekFromOnboarding, generateInitialProgram } from './features/program/programGenerator'
 import { loadMultiWeekProgram, saveMultiWeekProgram, clearMultiWeekProgram } from './features/program/programStorage'
 import { generateNextWeekAndBlock, ensureBlocksExist } from './features/program/weekRenewal'
@@ -350,6 +351,9 @@ function App() {
   // 4. Otherwise show the main view with navigation
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* PWA Install Hint - shows only on mobile browsers */}
+      <PwaInstallHint />
+
       {/* Top navigation bar */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex gap-2">
@@ -447,6 +451,7 @@ function App() {
           dietTargets={dietTargets}
           history={history}
           onStartSession={setActiveDay}
+          onViewSummary={() => setMainView('history')}
         />
       ) : mainView === 'program' ? (
         <ProgramWeekView 

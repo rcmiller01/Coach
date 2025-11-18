@@ -6,7 +6,9 @@ interface TodayWorkoutHeroProps {
   status: 'not_started' | 'completed';
   completedSets?: number;
   totalSets?: number;
+  avgRPE?: string;
   onStartSession: () => void;
+  onViewSummary?: () => void;
   isRestDay?: boolean;
 }
 
@@ -21,7 +23,9 @@ export function TodayWorkoutHero({
   status,
   completedSets,
   totalSets,
+  avgRPE,
   onStartSession,
+  onViewSummary,
   isRestDay,
 }: TodayWorkoutHeroProps) {
   if (isRestDay) {
@@ -54,17 +58,23 @@ export function TodayWorkoutHero({
 
       {/* Status or Action */}
       {status === 'completed' && completedSets && totalSets ? (
-        <div className="bg-white/20 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-white">
-            <span className="text-2xl">✓</span>
-            <div>
-              <div className="font-semibold">Completed</div>
-              <div className="text-sm text-white/80">
-                {completedSets}/{totalSets} sets
+        <button
+          onClick={onViewSummary}
+          className="w-full bg-white/20 rounded-lg p-4 active:bg-white/30 transition-colors text-left"
+        >
+          <div className="flex items-center justify-between text-white">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">✓</span>
+              <div>
+                <div className="font-semibold">Completed</div>
+                <div className="text-sm text-white/80">
+                  {completedSets}/{totalSets} sets{avgRPE ? ` · RPE ${avgRPE}` : ''}
+                </div>
               </div>
             </div>
+            <span className="text-white/60">→</span>
           </div>
-        </div>
+        </button>
       ) : (
         <button
           onClick={onStartSession}
