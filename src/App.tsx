@@ -232,29 +232,6 @@ function App() {
     setMealPlan(updatedPlan);
   }
 
-  setMealPlan(plan);
-  }
-
-  // Handle copying meal plan from yesterday
-  function handleCopyFromYesterday() {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    const todayStr = today.toISOString().slice(0, 10);
-    const yesterdayStr = yesterday.toISOString().slice(0, 10);
-    
-    const copiedPlan = copyMealPlan(yesterdayStr, todayStr);
-    if (copiedPlan) {
-      setMealPlan(copiedPlan);
-    }
-  }
-
-  // Handle meal plan updates (after food substitution)
-  function handleMealPlanUpdated(updatedPlan: DailyMealPlan) {
-    setMealPlan(updatedPlan);
-  }
-
   // Handle week renewal (generate next week with progressive overload)
   function handleRenewWeek() {
     if (!multiWeekProgram) return;
