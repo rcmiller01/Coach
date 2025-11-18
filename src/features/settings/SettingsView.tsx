@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { CoachSettings } from './settingsStorage';
 import { ConfirmationModal } from './ConfirmationModal';
+import ReminderSettingsSection from './ReminderSettingsSection';
+import type { MealReminderSettings } from '../nutrition/nutritionTypes';
 import {
   exportTrainingData,
   downloadBackup,
@@ -57,7 +59,14 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     });
   };
 
-  const handleResetProfileClick = () => {
+  const handleUpdateMealReminders = (mealReminders: MealReminderSettings) => {
+    onUpdateSettings({
+      ...settings,
+      mealReminders,
+    });
+  };
+
+  const handleClearHistoryClick = () => {
     if (window.confirm('Are you sure you want to reset your profile? You will need to redo onboarding.')) {
       onResetProfile();
     }
@@ -165,6 +174,14 @@ const SettingsView: React.FC<SettingsViewProps> = ({
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Meal Reminders */}
+        <div className="bg-white rounded-lg shadow border border-gray-200 p-6 mb-4">
+          <ReminderSettingsSection
+            settings={settings.mealReminders || { timesPerDay: 0 }}
+            onChange={handleUpdateMealReminders}
+          />
         </div>
 
         {/* Developer Diagnostics */}

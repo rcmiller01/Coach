@@ -5,8 +5,9 @@ import ExerciseDetailView from './features/exercise/ExerciseDetailView'
 import WorkoutHistoryView from './features/history/WorkoutHistoryView'
 import OnboardingWizard from './features/onboarding/OnboardingWizard'
 import SettingsView from './features/settings/SettingsView'
-import NutritionView from './features/nutrition/NutritionView'
-import MealPlanView from './features/meals/MealPlanView'
+// New AI-assisted nutrition pages
+import NutritionPage from './features/nutrition/NutritionPage'
+import MealsPage from './features/meals/MealsPage'
 import { TodayHub } from './features/today/TodayHub'
 import { PwaInstallHint } from './features/today/PwaInstallHint'
 import { generateProgramWeekFromOnboarding, generateInitialProgram } from './features/program/programGenerator'
@@ -23,10 +24,7 @@ import { calculateDietTargets, type DietTargets } from './features/nutrition/die
 import { extractUserStats } from './features/nutrition/userStatsConverter'
 import { loadDietTargets, saveDietTargets } from './features/nutrition/dietStorage'
 import { mapPrimaryGoalToBlockGoal } from './features/onboarding/types'
-import { generateDailyMealPlan } from './features/meals/mealPlanGenerator'
-import { loadMealPlan, saveMealPlan, copyMealPlan } from './features/meals/mealPlanStorage'
-import type { DailyMealPlan } from './features/meals/mealTypes'
-import type { NutritionTargets } from './features/nutrition/nutritionTypes'
+import type { NutritionTargets, UserContext } from './features/nutrition/nutritionTypes'
 import type { ProgramDay, ProgramWeek, ProgramMultiWeek } from './features/program/types'
 import type { OnboardingState } from './features/onboarding/types'
 import type { WorkoutHistoryEntry } from './features/history/types'
@@ -44,11 +42,19 @@ function App() {
   const [settings, setSettings] = useState<CoachSettings>(() => loadSettings());
   const [nutritionTargets, setNutritionTargets] = useState<NutritionTargets | null>(null);
   const [dietTargets, setDietTargets] = useState<DietTargets | null>(null);
-  const [mealPlan, setMealPlan] = useState<DailyMealPlan | null>(null);
   const [history, setHistory] = useState<WorkoutHistoryEntry[]>([]);
   const [loadSuggestions, setLoadSuggestions] = useState<ExerciseLoadSuggestion[]>([]);
   const [currentWeekActualLoads, setCurrentWeekActualLoads] = useState<ActualExerciseLoad[]>([]);
   const [previousWeekActualLoads, setPreviousWeekActualLoads] = useState<ActualExerciseLoad[]>([]);
+
+  // Build UserContext from onboarding data for AI nutrition features
+  const userContext: UserContext | undefined = onboardingState
+    ? {
+        city: onboardingState.city,
+        zipCode: onboardingState.zipCode,
+        locale: 'en-US',
+      }
+    : undefined;
 
   // Load saved profile on mount and generate program
   useEffect(() => {
@@ -94,13 +100,6 @@ function App() {
         setDietTargets(dietTargets);
         saveDietTargets(dietTargets);
       }
-    }
-
-    // Load today's meal plan
-    const today = new Date().toISOString().slice(0, 10);
-    const savedMealPlan = loadMealPlan(today);
-    if (savedMealPlan) {
-      setMealPlan(savedMealPlan);
     }
 
     // Load workout history
@@ -201,35 +200,6 @@ function App() {
     clearHistory();
     setHistory([]);
     // History view will show "no workouts logged yet" after this
-  }
-
-  // Handle meal plan generation
-  function handleGenerateMealPlan() {
-    if (!nutritionTargets) return;
-    const today = new Date().toISOString().slice(0, 10);
-    const plan = generateDailyMealPlan(nutritionTargets, today);
-    saveMealPlan(plan);
-    setMealPlan(plan);
-  }
-
-  // Handle copying meal plan from yesterday
-  function handleCopyFromYesterday() {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    const todayStr = today.toISOString().slice(0, 10);
-    const yesterdayStr = yesterday.toISOString().slice(0, 10);
-    
-    const copiedPlan = copyMealPlan(yesterdayStr, todayStr);
-    if (copiedPlan) {
-      setMealPlan(copiedPlan);
-    }
-  }
-
-  // Handle meal plan updates (after food substitution)
-  function handleMealPlanUpdated(updatedPlan: DailyMealPlan) {
-    setMealPlan(updatedPlan);
   }
 
   // Handle week renewal (generate next week with progressive overload)
@@ -494,14 +464,12 @@ function App() {
       ) : mainView === 'history' ? (
         <WorkoutHistoryView />
       ) : mainView === 'nutrition' ? (
-        <NutritionView targets={nutritionTargets} />
-      ) : mainView === 'meals' ? (
-        <MealPlanView
-          mealPlan={mealPlan}
-          onGenerate={handleGenerateMealPlan}
-          onCopyFromYesterday={handleCopyFromYesterday}
-          onPlanUpdated={handleMealPlanUpdated}
+        <NutritionPage
+          targets={nutritionTargets || { caloriesPerDay: 2000, proteinGrams: 150, carbsGrams: 200, fatGrams: 65 }}
+          userContext={userContext}
         />
+      ) : mainView === 'meals' ? (
+        <MealsPage userContext={userContext} />
       ) : (
         <SettingsView
           settings={settings}

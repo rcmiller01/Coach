@@ -7,6 +7,8 @@ interface OnboardingStepBasicProfileProps {
   heightInches: number | null;
   weightLbs: number | null;
   trainingExperience: TrainingExperience | null;
+  city?: string;
+  zipCode?: string;
   onChange: (field: string, value: number | string | null) => void;
   onNext: () => void;
   onBack: () => void;
@@ -18,6 +20,8 @@ const OnboardingStepBasicProfile: React.FC<OnboardingStepBasicProfileProps> = ({
   heightInches,
   weightLbs,
   trainingExperience,
+  city,
+  zipCode,
   onChange,
   onNext,
   onBack,
@@ -141,6 +145,45 @@ const OnboardingStepBasicProfile: React.FC<OnboardingStepBasicProfileProps> = ({
                 </div>
               </label>
             ))}
+          </div>
+        </div>
+
+        {/* Location (Optional) */}
+        <div className="pt-6 border-t border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Location <span className="text-sm font-normal text-gray-500">(Optional)</span>
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Help us provide better nutrition recommendations (e.g., local restaurant options)
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                City
+              </label>
+              <input
+                type="text"
+                id="city"
+                value={city ?? ''}
+                onChange={(e) => onChange('city', e.target.value || undefined)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Austin"
+              />
+            </div>
+            <div>
+              <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-2">
+                ZIP Code
+              </label>
+              <input
+                type="text"
+                id="zipCode"
+                value={zipCode ?? ''}
+                onChange={(e) => onChange('zipCode', e.target.value || undefined)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., 78701"
+                maxLength={10}
+              />
+            </div>
           </div>
         </div>
       </div>

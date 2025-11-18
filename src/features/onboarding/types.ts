@@ -64,6 +64,9 @@ export interface OnboardingState {
   sessionsPerWeek: number | null;
   preferredDays: string[]; // ['monday', 'wednesday']
   preferredTimeOfDay: TimeOfDay | null;
+  // Optional location info for AI-assisted nutrition (restaurant context, etc.)
+  city?: string;
+  zipCode?: string;
 }
 
 export const initialOnboardingState: OnboardingState = {
@@ -82,4 +85,6 @@ export const initialOnboardingState: OnboardingState = {
   sessionsPerWeek: null,
   preferredDays: [],
   preferredTimeOfDay: null,
+  city: undefined,
+  zipCode: undefined,
 };
