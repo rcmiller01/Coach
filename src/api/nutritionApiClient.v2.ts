@@ -22,6 +22,8 @@ import type {
   UserContext,
   ApiErrorResponse,
   ErrorCode,
+  PlanProfile,
+  RegenerateMealRequest,
 } from '../features/nutrition/nutritionTypes';
 import { NutritionApiError } from '../features/nutrition/nutritionTypes';
 
@@ -101,52 +103,23 @@ export async function fetchWeeklyPlan(weekStartDate: string): Promise<WeeklyPlan
  * @param weekStartDate - Monday of the week (YYYY-MM-DD)
  * @param targets - Daily nutrition targets
  * @param userContext - Optional location/locale for restaurant personalization
+ * @param planProfile - Optional meal plan profile ('standard' or 'glp1')
  * @throws NutritionApiError with retryable=true if AI timeout/quota exceeded
  */
 export async function generateMealPlanForWeek(
   weekStartDate: string,
   targets: NutritionTargets,
-  userContext?: UserContext
+  userContext?: UserContext,
+  planProfile?: PlanProfile
 ): Promise<WeeklyPlan> {
-  // TODO: Replace with real fetch call
-  // const response = await fetch(`${API_BASE}/plan/week`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ weekStartDate, targets, userContext }),
-  // });
-  // return handleResponse<WeeklyPlan>(response);
-
-  // Stub: Return a minimal 7-day plan
-  console.log('[API Stub] generateMealPlanForWeek', { weekStartDate, targets, userContext });
+  const response = await fetch(`${API_BASE}/plan/week`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ weekStartDate, targets, userContext, planProfile }),
+  });
   
-  const days: DayPlan[] = [];
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(weekStartDate);
-    date.setDate(date.getDate() + i);
-    days.push({
-      date: date.toISOString().split('T')[0],
-      meals: [
-        {
-          id: `breakfast-${i}`,
-          type: 'breakfast',
-          items: [
-            {
-              id: `item-${i}-1`,
-              name: 'Oatmeal with berries',
-              quantity: 1,
-              unit: 'serving',
-              calories: 300,
-              proteinGrams: 10,
-              carbsGrams: 50,
-              fatsGrams: 5,
-            },
-          ],
-        },
-      ],
-    });
-  }
-
-  return { weekStartDate, days };
+  const result = await handleResponse<{ data: WeeklyPlan }>(response);
+  return result.data;
 }
 
 /**
@@ -154,45 +127,23 @@ export async function generateMealPlanForWeek(
  * @param date - Target date (YYYY-MM-DD)
  * @param targets - Daily nutrition targets
  * @param userContext - Optional location/locale for restaurant personalization
+ * @param planProfile - Optional meal plan profile ('standard' or 'glp1')
  * @throws NutritionApiError with retryable=true if AI timeout/quota exceeded
  */
 export async function generateMealPlanForDay(
   date: string,
   targets: NutritionTargets,
-  userContext?: UserContext
+  userContext?: UserContext,
+  planProfile?: PlanProfile
 ): Promise<DayPlan> {
-  // TODO: Replace with real fetch call
-  // const response = await fetch(`${API_BASE}/plan/day`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ date, targets, userContext }),
-  // });
-  // return handleResponse<DayPlan>(response);
-
-  // Stub: Return a minimal day plan
-  console.log('[API Stub] generateMealPlanForDay', { date, targets, userContext });
+  const response = await fetch(`${API_BASE}/plan/day`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date, targets, userContext, planProfile }),
+  });
   
-  return {
-    date,
-    meals: [
-      {
-        id: `breakfast-${date}`,
-        type: 'breakfast',
-        items: [
-          {
-            id: `item-${date}-1`,
-            name: 'Greek yogurt with granola',
-            quantity: 1,
-            unit: 'serving',
-            calories: 250,
-            proteinGrams: 15,
-            carbsGrams: 30,
-            fatsGrams: 8,
-          },
-        ],
-      },
-    ],
-  };
+  const result = await handleResponse<{ data: DayPlan }>(response);
+  return result.data;
 }
 
 /**
@@ -234,6 +185,22 @@ export async function copyDayPlan(fromDate: string, toDate: string): Promise<Day
     date: toDate,
     meals: [],
   };
+}
+
+/**
+ * Regenerate a single meal within a day plan while keeping other meals intact.
+ * @param request - Regeneration parameters (date, day plan, meal index, targets, etc.)
+ * @throws NutritionApiError if validation fails or AI request fails
+ */
+export async function regenerateMeal(request: RegenerateMealRequest): Promise<DayPlan> {
+  const response = await fetch(`${API_BASE}/plan/day/regenerate-meal`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  
+  const result = await handleResponse<{ data: DayPlan }>(response);
+  return result.data;
 }
 
 // ============================================================================

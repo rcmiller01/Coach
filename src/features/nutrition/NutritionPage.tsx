@@ -8,7 +8,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { NutritionTargets, WeeklyPlan, DayPlan, UserContext } from './nutritionTypes';
+import type { NutritionTargets, WeeklyPlan, DayPlan, UserContext, PlanProfile } from './nutritionTypes';
+import { NutritionApiError } from './nutritionTypes';
 import { fetchWeeklyPlan, generateMealPlanForWeek, generateMealPlanForDay } from '../../api/nutritionApiClient';
 import WeeklyPlanView from './WeeklyPlanView';
 import MealPlanEditor from './MealPlanEditor';
@@ -25,7 +26,8 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
     return today.toISOString().split('T')[0];
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; code?: string; retryable?: boolean } | null>(null);
+  const [planProfile, setPlanProfile] = useState<PlanProfile>('standard');
 
   // Get Monday of the current week
   const getWeekStart = (date: Date): string => {
@@ -61,11 +63,15 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
     setLoading(true);
     setError(null);
     try {
-      const plan = await generateMealPlanForWeek(currentWeekStart, targets, userContext);
+      const plan = await generateMealPlanForWeek(currentWeekStart, targets, userContext, planProfile);
       setWeeklyPlan(plan);
     } catch (err) {
-      setError('Failed to generate meal plan');
-      console.error(err);
+      console.error('Generate week error:', err);
+      if (err instanceof NutritionApiError) {
+        setError({ message: err.message, code: err.code, retryable: err.retryable });
+      } else {
+        setError({ message: 'Failed to generate meal plan. Please try again.' });
+      }
     } finally {
       setLoading(false);
     }
@@ -75,7 +81,7 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
     setLoading(true);
     setError(null);
     try {
-      const dayPlan = await generateMealPlanForDay(date, targets, userContext);
+      const dayPlan = await generateMealPlanForDay(date, targets, userContext, planProfile);
       // Update the weekly plan with the new day
       if (weeklyPlan) {
         const updatedDays = weeklyPlan.days.map(d => d.date === date ? dayPlan : d);
@@ -92,8 +98,12 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
         });
       }
     } catch (err) {
-      setError('Failed to regenerate day');
-      console.error(err);
+      console.error('Regenerate day error:', err);
+      if (err instanceof NutritionApiError) {
+        setError({ message: err.message, code: err.code, retryable: err.retryable });
+      } else {
+        setError({ message: 'Failed to regenerate day. Please try again.' });
+      }
     } finally {
       setLoading(false);
     }
@@ -133,7 +143,24 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
         
         {/* Targets Card */}
         <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
-          <h2 className="text-lg font-semibold text-slate-100 mb-3">Daily Targets</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-slate-100">Daily Targets</h2>
+            
+            {/* Plan Profile Selector */}
+            <div className="flex items-center gap-2">
+              <label htmlFor="planProfile" className="text-xs text-slate-400">Profile:</label>
+              <select
+                id="planProfile"
+                value={planProfile}
+                onChange={(e) => setPlanProfile(e.target.value as PlanProfile)}
+                className="px-2 py-1 text-xs bg-slate-800 border border-slate-700 text-slate-200 rounded hover:bg-slate-750 transition-colors"
+              >
+                <option value="standard">Standard</option>
+                <option value="glp1">GLP-1 Medication</option>
+              </select>
+            </div>
+          </div>
+          
           <div className="grid grid-cols-2 gap-3">
             <div>
               <div className="text-2xl font-bold text-blue-400">{targets.caloriesPerDay}</div>
@@ -156,13 +183,40 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
             <div className="text-sm text-slate-400">
               Weekly: {(targets.caloriesPerDay * 7).toLocaleString()} kcal · {targets.proteinGrams * 7}g P
             </div>
+            {planProfile === 'glp1' && (
+              <div className="mt-2 text-xs text-blue-400 bg-blue-950/30 px-2 py-1.5 rounded border border-blue-900/50">
+                💊 GLP-1 mode: Smaller portions, protein-focused, 4 meals
+              </div>
+            )}
           </div>
         </div>
 
         {/* Error Display */}
         {error && (
-          <div className="bg-red-900/20 border border-red-800 rounded-lg p-3 text-red-300 text-sm">
-            {error}
+          <div className={`rounded-lg p-4 text-sm ${
+            error.code === 'AI_QUOTA_EXCEEDED' 
+              ? 'bg-amber-900/20 border border-amber-700 text-amber-300'
+              : error.code === 'AI_PLAN_INFEASIBLE'
+              ? 'bg-orange-900/20 border border-orange-700 text-orange-300'
+              : 'bg-red-900/20 border border-red-800 text-red-300'
+          }`}>
+            <div className="font-medium mb-1">
+              {error.code === 'AI_QUOTA_EXCEEDED' && '⚠️ Daily Limit Reached'}
+              {error.code === 'AI_TIMEOUT' && '⏱️ Request Timed Out'}
+              {error.code === 'AI_PLAN_FAILED' && '❌ Plan Generation Failed'}
+              {error.code === 'AI_RATE_LIMITED' && '⏱️ Please Slow Down'}
+              {error.code === 'AI_PLAN_INFEASIBLE' && '🚫 Impossible Targets'}
+              {!error.code && '❌ Error'}
+            </div>
+            <div className="text-sm opacity-90">{error.message}</div>
+            {error.retryable && (
+              <button
+                onClick={() => selectedDate ? handleRegenerateDay(selectedDate) : handleGenerateWeek()}
+                className="mt-2 px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded"
+              >
+                Try Again
+              </button>
+            )}
           </div>
         )}
 
@@ -210,6 +264,25 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
                 </button>
               </div>
               
+              {/* AI Explanation Summary */}
+              {selectedDayPlan?.aiExplanation && (
+                <div className="mt-3 pt-3 border-t border-slate-800">
+                  <div className="text-sm text-slate-300">
+                    🤖 {selectedDayPlan.aiExplanation.summary}
+                  </div>
+                  {selectedDayPlan.aiExplanation.details && (
+                    <details className="mt-2">
+                      <summary className="text-xs text-blue-400 cursor-pointer hover:text-blue-300">
+                        How this plan was created
+                      </summary>
+                      <div className="mt-2 text-xs text-slate-400 leading-relaxed">
+                        {selectedDayPlan.aiExplanation.details}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              )}
+              
               {/* Day Totals */}
               <div className="flex gap-3 text-sm">
                 <div>
@@ -235,6 +308,8 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
               dayPlan={selectedDayPlan}
               onUpdate={handleDayPlanUpdate}
               weeklyPlan={weeklyPlan}
+              targets={targets}
+              planProfile={planProfile}
             />
           </div>
         )}

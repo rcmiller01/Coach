@@ -17,6 +17,10 @@ import type {
   LoggedFoodItem,
   NutritionTargets,
   UserContext,
+  PlanProfile,
+  DietaryPreferences,
+  RegenerateMealRequest,
+  RegenerateMealResponse,
 } from '../src/features/nutrition/nutritionTypes';
 
 /**
@@ -60,6 +64,9 @@ export interface NutritionAiService {
     targets: NutritionTargets;
     userContext: UserContext;
     userId: string;
+    planProfile?: PlanProfile;
+    preferences?: DietaryPreferences;
+    previousWeek?: WeeklyPlan; // Reuse locked meals from previous week
   }): Promise<WeeklyPlan>;
 
   /**
@@ -75,7 +82,18 @@ export interface NutritionAiService {
     targets: NutritionTargets;
     userContext: UserContext;
     userId: string;
+    planProfile?: PlanProfile;
+    preferences?: DietaryPreferences;
   }): Promise<DayPlan>;
+
+  /**
+   * Regenerate a single meal within an existing day plan.
+   * Preserves all other meals and re-validates daily constraints.
+   * 
+   * @param request - Meal regeneration parameters
+   * @returns Updated DayPlan with regenerated meal
+   */
+  regenerateMeal(request: RegenerateMealRequest & { userId: string }): Promise<RegenerateMealResponse>;
 
   /**
    * Parse free-text food description into structured data.

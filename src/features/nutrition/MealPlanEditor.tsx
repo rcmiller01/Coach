@@ -3,22 +3,37 @@
  * 
  * Shows meals (Breakfast, Lunch, Dinner, Snacks) with food items.
  * Supports:
+ * - Regenerating individual meals with AI
+ * - Locking meals to reuse in future weeks
  * - Swapping individual foods (AI-assisted search)
  * - Copying from another day
  */
 
 import { useState } from 'react';
-import type { DayPlan, WeeklyPlan, PlannedFoodItem } from './nutritionTypes';
-import { copyDayPlan, updateDayPlan } from '../../api/nutritionApiClient';
+import type { DayPlan, WeeklyPlan, PlannedFoodItem, NutritionTargets } from './nutritionTypes';
+import { copyDayPlan, updateDayPlan, regenerateMeal } from '../../api/nutritionApiClient';
+import { NutritionApiError } from './nutritionTypes';
 
 interface MealPlanEditorProps {
   dayPlan: DayPlan | undefined;
   onUpdate: (plan: DayPlan) => void;
   weeklyPlan: WeeklyPlan | null;
+  targets: NutritionTargets;
+  planProfile?: 'standard' | 'glp1';
+  preferences?: any; // DietaryPreferences
 }
 
-export default function MealPlanEditor({ dayPlan, onUpdate, weeklyPlan }: MealPlanEditorProps) {
+export default function MealPlanEditor({ 
+  dayPlan, 
+  onUpdate, 
+  weeklyPlan,
+  targets,
+  planProfile,
+  preferences
+}: MealPlanEditorProps) {
   const [loading, setLoading] = useState(false);
+  const [regeneratingMealIndex, setRegeneratingMealIndex] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [swapState, setSwapState] = useState<{
     mealId: string;
     foodId: string;
@@ -37,14 +52,61 @@ export default function MealPlanEditor({ dayPlan, onUpdate, weeklyPlan }: MealPl
     if (!dayPlan) return;
     
     setLoading(true);
+    setError(null);
     try {
       const copiedPlan = await copyDayPlan(fromDate, dayPlan.date);
       onUpdate(copiedPlan);
     } catch (err) {
       console.error('Failed to copy plan:', err);
+      setError('Failed to copy plan. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRegenerateMeal = async (mealIndex: number) => {
+    if (!dayPlan) return;
+    
+    setRegeneratingMealIndex(mealIndex);
+    setError(null);
+    try {
+      const updatedPlan = await regenerateMeal({
+        date: dayPlan.date,
+        dayPlan,
+        mealIndex,
+        targets,
+        planProfile,
+        preferences,
+      });
+      onUpdate(updatedPlan);
+    } catch (err) {
+      console.error('Failed to regenerate meal:', err);
+      if (err instanceof NutritionApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to regenerate meal. Please try again.');
+      }
+    } finally {
+      setRegeneratingMealIndex(null);
+    }
+  };
+
+  const handleToggleLock = (mealIndex: number) => {
+    if (!dayPlan) return;
+    
+    const updatedMeals = dayPlan.meals.map((meal, idx) => {
+      if (idx === mealIndex) {
+        return { ...meal, locked: !meal.locked };
+      }
+      return meal;
+    });
+
+    const updatedPlan: DayPlan = {
+      ...dayPlan,
+      meals: updatedMeals,
+    };
+
+    onUpdate(updatedPlan);
   };
 
   const handleSwapFood = (mealId: string, foodId: string, foodName: string) => {
@@ -73,11 +135,12 @@ export default function MealPlanEditor({ dayPlan, onUpdate, weeklyPlan }: MealPl
     };
 
     try {
-      const savedPlan = await updateDayPlan(updatedPlan);
-      onUpdate(savedPlan);
+      await updateDayPlan(dayPlan.date, updatedPlan);
+      onUpdate(updatedPlan);
       setSwapState(null);
     } catch (err) {
       console.error('Failed to update plan:', err);
+      setError('Failed to update plan. Please try again.');
     }
   };
 
@@ -99,6 +162,19 @@ export default function MealPlanEditor({ dayPlan, onUpdate, weeklyPlan }: MealPl
 
   return (
     <div className="divide-y divide-slate-800">
+      
+      {/* Error Display */}
+      {error && (
+        <div className="p-4 bg-red-900/20 border-b border-red-800">
+          <div className="text-sm text-red-300">{error}</div>
+          <button
+            onClick={() => setError(null)}
+            className="mt-2 text-xs text-red-400 hover:text-red-300"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       
       {/* Copy From Dropdown */}
       {otherDays.length > 0 && (
@@ -125,20 +201,48 @@ export default function MealPlanEditor({ dayPlan, onUpdate, weeklyPlan }: MealPl
       )}
 
       {/* Meals List */}
-      {dayPlan.meals.map(meal => {
+      {dayPlan.meals.map((meal, mealIndex) => {
         const mealTotal = meal.items.reduce(
           (sum, item) => sum + item.calories,
           0
         );
+        const isRegenerating = regeneratingMealIndex === mealIndex;
 
         return (
           <div key={meal.id} className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-slate-200">
-                {getMealTypeLabel(meal.type)}
-              </h3>
-              <div className="text-sm text-slate-400">
-                {mealTotal} cal
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-200">
+                  {getMealTypeLabel(meal.type)}
+                </h3>
+                {meal.locked && (
+                  <span className="text-xs px-2 py-0.5 bg-amber-900/30 text-amber-400 border border-amber-700 rounded">
+                    🔒 Locked
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-sm text-slate-400">
+                  {mealTotal} cal
+                </div>
+                <button
+                  onClick={() => handleToggleLock(mealIndex)}
+                  title={meal.locked ? 'Unlock (allow regeneration)' : 'Lock (reuse in future weeks)'}
+                  className={`px-2 py-1 text-xs rounded transition-colors ${
+                    meal.locked
+                      ? 'bg-amber-700 hover:bg-amber-600 text-white'
+                      : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                  }`}
+                >
+                  {meal.locked ? '🔓' : '🔒'}
+                </button>
+                <button
+                  onClick={() => handleRegenerateMeal(mealIndex)}
+                  disabled={isRegenerating || loading}
+                  className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded transition-colors"
+                >
+                  {isRegenerating ? '⏳' : '🔄'}
+                </button>
               </div>
             </div>
 
@@ -151,7 +255,7 @@ export default function MealPlanEditor({ dayPlan, onUpdate, weeklyPlan }: MealPl
                   <div className="flex-1">
                     <div className="text-sm text-slate-200">{item.name}</div>
                     <div className="text-xs text-slate-400">
-                      {item.quantity} {item.unit} · {item.calories} cal
+                      {item.quantity} {item.unit} · {item.calories} cal · {Math.round(item.proteinGrams)}g P
                     </div>
                   </div>
                   <button

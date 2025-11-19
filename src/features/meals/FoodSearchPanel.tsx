@@ -24,7 +24,11 @@ export default function FoodSearchPanel({
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<LoggedFoodItem | null>(null);
-  const [error, setError] = useState<{ message: string; retryable: boolean } | null>(null);
+  const [error, setError] = useState<{ 
+    code: string;
+    message: string; 
+    retryable: boolean;
+  } | null>(null);
 
   const handleSearch = async () => {
     if (!searchText.trim()) return;
@@ -39,11 +43,13 @@ export default function FoodSearchPanel({
     } catch (err) {
       if (err instanceof NutritionApiError) {
         setError({
+          code: err.code,
           message: err.message,
           retryable: err.retryable,
         });
       } else {
         setError({
+          code: 'UNKNOWN_ERROR',
           message: 'An unexpected error occurred. Please try again.',
           retryable: true,
         });
@@ -68,6 +74,24 @@ export default function FoodSearchPanel({
     };
     return colors[confidence as keyof typeof colors] || colors.medium;
   };
+
+  const getErrorBannerStyle = (code: string) => {
+    switch (code) {
+      case 'AI_QUOTA_EXCEEDED':
+      case 'AI_DISABLED_FOR_USER':
+        return 'bg-amber-900/20 border-amber-800 text-amber-300';
+      case 'AI_RATE_LIMITED':
+      case 'AI_TIMEOUT':
+        return 'bg-blue-900/20 border-blue-800 text-blue-300';
+      default:
+        return 'bg-red-900/20 border-red-800 text-red-300';
+    }
+  };
+
+  const shouldDisableAISearch = error && (
+    error.code === 'AI_QUOTA_EXCEEDED' || 
+    error.code === 'AI_DISABLED_FOR_USER'
+  );
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
@@ -99,21 +123,47 @@ export default function FoodSearchPanel({
             placeholder="e.g., 6-inch Italian BMT, no cheese"
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             rows={3}
+            disabled={shouldDisableAISearch}
           />
           <button
             onClick={handleSearch}
-            disabled={loading || !searchText.trim()}
+            disabled={loading || !searchText.trim() || shouldDisableAISearch}
             className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
           >
-            {loading ? '🔍 Searching...' : '🔍 Search'}
+            {loading ? '🔍 Searching...' : shouldDisableAISearch ? '🔍 AI Search (Unavailable)' : '🔍 Search'}
           </button>
         </div>
 
         {/* Error */}
         {error && (
-          <div className="mx-4 mb-4 p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-300 text-sm space-y-2">
+          <div className={`mx-4 mb-4 p-3 border rounded-lg text-sm space-y-2 ${getErrorBannerStyle(error.code)}`}>
+            <div className="font-medium">
+              {error.code === 'AI_QUOTA_EXCEEDED' && '⚠️ Daily Limit Reached'}
+              {error.code === 'AI_RATE_LIMITED' && '⏱️ Please Slow Down'}
+              {error.code === 'AI_TIMEOUT' && '⏱️ Request Timed Out'}
+              {error.code === 'AI_DISABLED_FOR_USER' && '🚫 AI Features Disabled'}
+              {error.code === 'AI_PARSE_FAILED' && '❌ Could Not Parse'}
+              {!['AI_QUOTA_EXCEEDED', 'AI_RATE_LIMITED', 'AI_TIMEOUT', 'AI_DISABLED_FOR_USER', 'AI_PARSE_FAILED'].includes(error.code) && '❌ Error'}
+            </div>
             <p>{error.message}</p>
-            {error.retryable && (
+            
+            {error.code === 'AI_QUOTA_EXCEEDED' && (
+              <div className="pt-2 border-t border-amber-800/50">
+                <p className="text-xs text-amber-400/80">
+                  You can still add foods manually using the quick entry form below.
+                </p>
+              </div>
+            )}
+            
+            {error.code === 'AI_DISABLED_FOR_USER' && (
+              <div className="pt-2 border-t border-amber-800/50">
+                <p className="text-xs text-amber-400/80">
+                  Manual food logging is still available. Contact support if you believe this is an error.
+                </p>
+              </div>
+            )}
+            
+            {error.retryable && !shouldDisableAISearch && (
               <button
                 onClick={handleSearch}
                 className="text-blue-400 hover:text-blue-300 underline text-sm"
@@ -135,16 +185,27 @@ export default function FoodSearchPanel({
                   <h4 className="text-base font-medium text-slate-200">
                     {result.name}
                   </h4>
-                  {result.dataSource === 'official' && (
-                    <span className="px-2 py-0.5 bg-green-900/30 border border-green-800 text-green-400 text-xs rounded">
-                      Official
+                  
+                  {/* Badge: Official/Estimate + Edited */}
+                  {(result.dataSource || result.userAdjusted) && (
+                    <span className={`px-2 py-0.5 text-xs rounded border ${
+                      result.dataSource === 'official' 
+                        ? 'bg-green-900/30 border-green-800 text-green-400'
+                        : result.dataSource === 'estimated'
+                        ? 'bg-amber-900/30 border-amber-800 text-amber-400'
+                        : result.userAdjusted
+                        ? 'bg-purple-900/30 border-purple-800 text-purple-400'
+                        : ''
+                    }`}>
+                      {result.dataSource === 'official' && !result.userAdjusted && 'Official'}
+                      {result.dataSource === 'estimated' && !result.userAdjusted && 'Estimate'}
+                      {result.dataSource === 'official' && result.userAdjusted && 'Official · Edited'}
+                      {result.dataSource === 'estimated' && result.userAdjusted && 'Estimate · Edited'}
+                      {!result.dataSource && result.userAdjusted && 'Edited'}
                     </span>
                   )}
-                  {result.dataSource === 'estimated' && (
-                    <span className="px-2 py-0.5 bg-amber-900/30 border border-amber-800 text-amber-400 text-xs rounded">
-                      Estimate
-                    </span>
-                  )}
+                  
+                  {/* Confidence Badge */}
                   {result.aiExplanation && (
                     <span
                       className={`px-2 py-0.5 text-xs rounded border ${getConfidenceBadge(
@@ -191,6 +252,16 @@ export default function FoodSearchPanel({
               {/* AI Explanation */}
               {result.aiExplanation && (
                 <div className="pt-3 border-t border-slate-700">
+                  {/* Low confidence warning */}
+                  {result.dataSource === 'estimated' && result.aiExplanation.confidence === 'low' && (
+                    <div className="mb-3 p-2 bg-amber-900/10 border border-amber-800/50 rounded text-xs text-amber-400/90 flex items-start gap-2">
+                      <span className="flex-shrink-0">⚠️</span>
+                      <span>
+                        Estimated based on ingredients. Actual values may differ from this food item.
+                      </span>
+                    </div>
+                  )}
+                  
                   <div className="text-xs font-medium text-slate-400 mb-1">
                     How this was calculated
                   </div>

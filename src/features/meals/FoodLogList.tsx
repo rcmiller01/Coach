@@ -18,9 +18,16 @@ interface FoodLogListProps {
   onRemoveItem: (itemId: string) => void;
 }
 
+interface MacroWarning {
+  itemId: string;
+  message: string;
+  pendingUpdate: LoggedFoodItem;
+}
+
 export default function FoodLogList({ items, onUpdateItem, onRemoveItem }: FoodLogListProps) {
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [editingMacros, setEditingMacros] = useState<string | null>(null);
+  const [macroWarning, setMacroWarning] = useState<MacroWarning | null>(null);
 
   if (items.length === 0) {
     return (
@@ -59,7 +66,53 @@ export default function FoodLogList({ items, onUpdateItem, onRemoveItem }: FoodL
         [field]: value,
       },
     };
+
+    // Sanity check: warn on extreme values or unbalanced macros
+    const warning = validateMacros(updatedItem);
+    if (warning) {
+      setMacroWarning({
+        itemId: item.id,
+        message: warning,
+        pendingUpdate: updatedItem,
+      });
+      return;
+    }
+
     onUpdateItem(updatedItem);
+  };
+
+  const validateMacros = (item: LoggedFoodItem): string | null => {
+    const cal = item.userOverrides?.calories ?? item.calories;
+    const protein = item.userOverrides?.proteinGrams ?? item.proteinGrams;
+    const carbs = item.userOverrides?.carbsGrams ?? item.carbsGrams;
+    const fats = item.userOverrides?.fatsGrams ?? item.fatsGrams;
+
+    // Check 1: Extreme calorie values
+    if (cal > 10000) {
+      return `This food has ${Math.round(cal).toLocaleString()} calories. That's unusually high – are you sure?`;
+    }
+
+    // Check 2: Macro balance (4×P + 4×C + 9×F should ≈ calories)
+    const calculatedCal = protein * 4 + carbs * 4 + fats * 9;
+    const diff = Math.abs(cal - calculatedCal);
+    const percentDiff = diff / Math.max(cal, 1);
+
+    if (percentDiff > 0.5 && cal > 0) {
+      return `Macros add up to ${Math.round(calculatedCal)} cal, but you entered ${Math.round(cal)} cal. Check your numbers?`;
+    }
+
+    return null;
+  };
+
+  const handleConfirmWarning = () => {
+    if (macroWarning) {
+      onUpdateItem(macroWarning.pendingUpdate);
+      setMacroWarning(null);
+    }
+  };
+
+  const handleCancelWarning = () => {
+    setMacroWarning(null);
   };
 
   const getDisplayValue = (
@@ -80,6 +133,37 @@ export default function FoodLogList({ items, onUpdateItem, onRemoveItem }: FoodL
 
   return (
     <div className="space-y-3">
+      {/* Macro Warning Banner */}
+      {macroWarning && (
+        <div className="bg-amber-900/20 border border-amber-700 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">⚠️</span>
+            <div className="flex-1">
+              <div className="font-medium text-amber-400 mb-1">
+                Double-check this entry
+              </div>
+              <div className="text-sm text-slate-300 mb-3">
+                {macroWarning.message}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleConfirmWarning}
+                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-sm rounded font-medium"
+                >
+                  Save Anyway
+                </button>
+                <button
+                  onClick={handleCancelWarning}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm rounded"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {items.map(item => {
         const isExpanded = expandedItem === item.id;
         const isEditingMacros = editingMacros === item.id;

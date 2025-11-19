@@ -16,6 +16,10 @@ export type ErrorCode =
   | 'AI_TIMEOUT'
   | 'AI_QUOTA_EXCEEDED'
   | 'AI_PARSE_FAILED'
+  | 'AI_PLAN_FAILED'
+  | 'AI_PLAN_INFEASIBLE'
+  | 'AI_RATE_LIMITED'
+  | 'AI_DISABLED_FOR_USER'
   | 'NETWORK_ERROR'
   | 'VALIDATION_ERROR'
   | 'NOT_FOUND'
@@ -46,6 +50,8 @@ export class NutritionApiError extends Error {
 // NUTRITION TARGETS
 // ============================================================================
 
+export type PlanProfile = 'standard' | 'glp1';
+
 export interface NutritionTargets {
   caloriesPerDay: number;
   proteinGrams: number;
@@ -60,6 +66,7 @@ export interface NutritionProfile {
   sex: 'male' | 'female' | 'other';
   activityLevel: 'low' | 'moderate' | 'high';
   primaryGoal: 'lose_fat' | 'build_muscle' | 'get_stronger' | 'improve_endurance' | 'stay_fit';
+  planProfile?: PlanProfile; // 'standard' (default) or 'glp1' (smaller, more frequent meals)
 }
 
 // ============================================================================
@@ -84,11 +91,18 @@ export interface PlannedMeal {
   id: string;
   type: MealType;
   items: PlannedFoodItem[];
+  locked?: boolean; // If true, this meal should be reused in subsequent plan generations
+}
+
+export interface AiPlanExplanation {
+  summary: string; // e.g., "~2300 kcal (target 2300) · 165g protein (target 160) · 3 meals + 1 snack"
+  details?: string; // Optional longer explanation for accordion UI
 }
 
 export interface DayPlan {
   date: string; // YYYY-MM-DD
   meals: PlannedMeal[];
+  aiExplanation?: AiPlanExplanation; // Optional AI-generated explanation
 }
 
 export interface WeeklyPlan {
@@ -149,10 +163,29 @@ export interface DayLog {
 // USER CONTEXT (for AI personalization)
 // ============================================================================
 
+export type DietType = 
+  | 'none'
+  | 'vegetarian'
+  | 'vegan'
+  | 'pescatarian'
+  | 'keto'
+  | 'paleo'
+  | 'low_carb'
+  | 'mediterranean'
+  | 'halal'
+  | 'kosher';
+
+export interface DietaryPreferences {
+  dietType?: DietType;
+  avoidIngredients?: string[]; // e.g., ["dairy", "soy", "shellfish"]
+  dislikedFoods?: string[]; // e.g., ["mushrooms", "olives"]
+}
+
 export interface UserContext {
   city?: string;
   zipCode?: string;
   locale?: string; // e.g., "en-US"
+  preferences?: DietaryPreferences;
 }
 
 // ============================================================================
@@ -164,4 +197,31 @@ export type MealReminderCount = 0 | 1 | 2 | 3;
 export interface MealReminderSettings {
   timesPerDay: MealReminderCount;
   preferredTimes?: string[]; // e.g., ["09:00", "13:00", "18:00"]
+}
+
+// ============================================================================
+// MEAL PLAN REQUESTS
+// ============================================================================
+
+export interface MealPlanRequest {
+  weekStartDate?: string; // For weekly plans (YYYY-MM-DD Monday)
+  date?: string; // For single day plans (YYYY-MM-DD)
+  targets: NutritionTargets;
+  userContext?: UserContext;
+  planProfile?: PlanProfile;
+  preferences?: DietaryPreferences;
+  previousWeek?: WeeklyPlan; // Optional: reuse locked meals from previous week
+}
+
+export interface RegenerateMealRequest {
+  date: string; // YYYY-MM-DD
+  dayPlan: DayPlan; // Current day plan with all meals
+  mealIndex: number; // Which meal to regenerate (0-based index into dayPlan.meals)
+  targets: NutritionTargets;
+  planProfile?: PlanProfile;
+  preferences?: DietaryPreferences;
+}
+
+export interface RegenerateMealResponse {
+  updatedDayPlan: DayPlan;
 }

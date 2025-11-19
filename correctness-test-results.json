@@ -1,0 +1,212 @@
+[
+  {
+    "input": "1 apple",
+    "success": true,
+    "name": "Apple, raw, with skin",
+    "calories": 52,
+    "provenance": "official",
+    "confidence": "high",
+    "reasoning": "The food item 'Apple, raw, with skin' from USDA FoodData Central was selected as it matches the description of '1 apple'. The nutritional values provided are based on official data.",
+    "duration": 3366
+  },
+  {
+    "input": "1 banana",
+    "success": true,
+    "name": "Banana, raw",
+    "calories": 89,
+    "provenance": "official",
+    "confidence": "high",
+    "reasoning": "The nutrition data for 1 raw banana is sourced from the USDA FoodData Central, which is an official and reliable source for food information.",
+    "duration": 3082
+  },
+  {
+    "input": "2 eggs",
+    "success": true,
+    "name": "Egg, whole, cooked, scrambled",
+    "calories": 298,
+    "provenance": "official",
+    "confidence": "high",
+    "reasoning": "The food item 'Egg, whole, cooked, scrambled' was selected as it closely matches the description of '2 eggs'. Each whole cooked scrambled egg provides approximately 149 calories, 10g of protein, 1.3g of carbs, and 11g of fats. Multiplying these values by 2 gives the total nutrition for 2 eggs.",
+    "duration": 3260
+  },
+  {
+    "input": "6oz chicken breast",
+    "success": true,
+    "name": "Chicken breast, skinless, cooked, roasted",
+    "calories": 282,
+    "provenance": "official",
+    "confidence": "medium",
+    "reasoning": "The search result provides nutrition data for 'Chicken breast, skinless, cooked, roasted.' Since the description mentions 'chicken breast' without specifying the cooking method, the closest match is the cooked and roasted version. The quantity has been adjusted to match the standard serving size for chicken breast.",
+    "duration": 3230
+  },
+  {
+    "input": "Big Mac",
+    "success": true,
+    "name": "Big Mac",
+    "calories": 550,
+    "provenance": "official",
+    "confidence": "high",
+    "reasoning": "The nutrition information for the Big Mac was sourced from McDonald's official nutrition facts. The values provided are based on a serving size of 219 grams.",
+    "duration": 3119
+  },
+  {
+    "input": "Subway Italian BMT 6 inch",
+    "success": true,
+    "name": "Italian BMT 6 inch",
+    "calories": 480,
+    "provenance": "estimated",
+    "confidence": "medium",
+    "reasoning": "The nutrition information for Subway's Italian BMT 6-inch sandwich is estimated based on typical ingredients and portion sizes. The values provided are approximate and may vary slightly based on specific ingredients used.",
+    "duration": 2729
+  },
+  {
+    "input": "Chipotle chicken burrito bowl",
+    "success": true,
+    "name": "Chipotle Chicken Burrito Bowl",
+    "calories": 650,
+    "provenance": "estimated",
+    "confidence": "low",
+    "reasoning": "The nutrition information for the Chipotle Chicken Burrito Bowl is estimated based on typical ingredients and portion sizes used in similar menu items. The values provided are approximate and may vary depending on specific ingredients and preparation methods.",
+    "duration": 2420
+  },
+  {
+    "input": "Starbucks grande latte",
+    "success": true,
+    "name": "Starbucks Caffe Latte, Grande",
+    "calories": 190,
+    "provenance": "official",
+    "confidence": "high",
+    "reasoning": "The nutrition data for Starbucks Grande Latte is sourced from official Starbucks information. A Grande Latte from Starbucks typically contains 190 calories, 12g of protein, 18g of carbohydrates, and 7g of fats.",
+    "duration": 3718
+  },
+  {
+    "input": "a bowl of cereal with milk",
+    "success": true,
+    "name": "Cereal with Milk",
+    "calories": 165,
+    "provenance": "estimated",
+    "confidence": "medium",
+    "reasoning": "The nutrition values for the bowl of cereal with milk were calculated based on 240g of whole milk and 30g of plain whole milk yogurt. The total calories are 165, with 8.7g of protein, 12.9g of carbs, and 8.9g of fats.",
+    "duration": 4263
+  },
+  {
+    "input": "a plate of spaghetti",
+    "success": true,
+    "name": "spaghetti",
+    "calories": 221,
+    "provenance": "estimated",
+    "confidence": "medium",
+    "reasoning": "The nutrition data for spaghetti is estimated based on standard values for cooked pasta. The portion size is assumed to be 180 grams, a common serving size for a plate of spaghetti.",
+    "duration": 3691
+  },
+  {
+    "input": "a handful of almonds",
+    "success": true,
+    "name": "Almonds",
+    "calories": 579,
+    "provenance": "official",
+    "confidence": "medium",
+    "reasoning": "The nutrition data for almonds is sourced from the USDA FoodData Central, providing official and accurate information. The quantity is estimated based on a typical handful size.",
+    "duration": 3375
+  },
+  {
+    "input": "some peanut butter",
+    "success": true,
+    "name": "Peanut butter, smooth",
+    "calories": 588,
+    "provenance": "official",
+    "confidence": "high",
+    "reasoning": "The nutrition data for peanut butter, smooth was sourced from the USDA FoodData Central, which is an official and reliable database for food information.",
+    "duration": 2877
+  },
+  {
+    "input": "dirty chai with oat milk, iced, venti",
+    "success": true,
+    "name": "Dirty Chai with Oat Milk Iced Venti",
+    "calories": 200,
+    "provenance": "estimated",
+    "confidence": "low",
+    "reasoning": "Since there were no exact matches found for the specific branded item, the nutrition values for a typical iced dirty chai with oat milk in a venti size have been estimated based on similar beverages. The calorie count is estimated at 200 with 2g of protein, 40g of carbs, and 4g of fats.",
+    "duration": 3602
+  },
+  {
+    "input": "loaded fries with cheese and bacon",
+    "success": true,
+    "name": "Loaded Fries with Cheese and Bacon",
+    "calories": 530,
+    "provenance": "estimated",
+    "confidence": "medium",
+    "reasoning": "The nutrition information for the loaded fries with cheese and bacon was estimated based on the individual ingredients. The recipe includes 100g of Cheddar cheese and 50g of Mozzarella cheese, contributing to a total of 530 calories, 61g of protein, 2.7g of carbs, and 41g of fats.",
+    "duration": 5866
+  },
+  {
+    "input": "skinless grilled chicken breast",
+    "success": true,
+    "name": "skinless grilled chicken breast",
+    "calories": 165,
+    "provenance": "estimated",
+    "confidence": "medium",
+    "reasoning": "The nutrition values provided are estimated based on the typical composition of grilled chicken breast. Actual values may vary slightly based on cooking methods and specific cuts of chicken.",
+    "duration": 2523
+  },
+  {
+    "input": "McDonald's Big Mac no sauce",
+    "success": true,
+    "name": "Big Mac",
+    "calories": 550,
+    "provenance": "official",
+    "confidence": "high",
+    "reasoning": "The nutrition data for the Big Mac without sauce was sourced from McDonald's official nutrition facts. The serving size of a Big Mac is 219 grams and provides 550 calories, 25g of protein, 45g of carbs, and 30g of fats.",
+    "duration": 3184
+  },
+  {
+    "input": "Starbucks grande caramel macchiato with skim milk",
+    "success": true,
+    "name": "Starbucks Grande Caramel Macchiato with Skim Milk",
+    "calories": 140,
+    "provenance": "estimated",
+    "confidence": "low",
+    "reasoning": "The nutrition information for Starbucks Grande Caramel Macchiato with Skim Milk was not found in the database, so the values are estimated based on similar beverages. The calorie count is estimated to be around 140, with 8g of protein, 24g of carbs, and 0.5g of fats.",
+    "duration": 2950
+  },
+  {
+    "input": "Chipotle burrito bowl no rice extra chicken",
+    "success": true,
+    "name": "Chipotle Chicken Burrito Bowl",
+    "calories": 605,
+    "provenance": "estimated",
+    "confidence": "medium",
+    "reasoning": "The nutrition information for a Chipotle Chicken Burrito Bowl without rice but with extra chicken has been estimated based on typical ingredients and portion sizes. The calorie count is higher due to the extra chicken added. The macronutrient values are approximate and may vary based on specific preparation methods.",
+    "duration": 3218
+  },
+  {
+    "input": "chicken shawarma wrap",
+    "success": true,
+    "name": "chicken shawarma wrap",
+    "calories": 600,
+    "provenance": "estimated",
+    "confidence": "low",
+    "reasoning": "The nutrition information for a chicken shawarma wrap is estimated based on typical ingredients and portion sizes. The values provided are approximate and may vary depending on the specific recipe and preparation method.",
+    "duration": 2318
+  },
+  {
+    "input": "small doner kebab with garlic sauce",
+    "success": true,
+    "name": "small doner kebab with garlic sauce",
+    "calories": 600,
+    "provenance": "estimated",
+    "confidence": "low",
+    "reasoning": "Since there were no exact matches for the branded item, the nutrition values for a small doner kebab with garlic sauce were estimated based on typical ingredients and portion sizes. The calorie count is relatively high due to the combination of meat, bread, and sauce. The protein content is moderate, while the fat and carbohydrate content is higher, typical for such a dish.",
+    "duration": 2685
+  },
+  {
+    "input": "pho with beef and noodles",
+    "success": true,
+    "name": "Pho with Beef",
+    "calories": 500,
+    "provenance": "official",
+    "confidence": "medium",
+    "reasoning": "The nutrition data for ground beef (85% lean, cooked) was used as the closest match for beef in the description. The estimated macros for the noodles were not available, so they were excluded from the calculation. The total calories are based on the ground beef portion in the pho.",
+    "duration": 4088
+  }
+]

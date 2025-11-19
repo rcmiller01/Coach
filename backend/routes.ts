@@ -30,15 +30,23 @@ import type {
   DayPlan,
   DayLog,
   LoggedFoodItem,
+  ApiErrorResponse,
+  RegenerateMealRequest,
+  RegenerateMealResponse,
 } from '../src/features/nutrition/nutritionTypes';
+import { NutritionApiError } from '../src/features/nutrition/nutritionTypes';
 import { StubNutritionAiService } from './NutritionAiService';
+import { RealNutritionAiService } from './RealNutritionAiService';
 
 // In-memory storage for development (replace with real database)
 const weeklyPlansStore: Map<string, WeeklyPlan> = new Map();
 const dayLogsStore: Map<string, DayLog> = new Map();
 
-// Service instance
-const nutritionAiService = new StubNutritionAiService();
+// Service instance - use real or stub based on environment
+const USE_REAL_AI = process.env.USE_REAL_AI === 'true';
+const nutritionAiService = USE_REAL_AI 
+  ? new RealNutritionAiService() 
+  : new StubNutritionAiService();
 
 // Placeholder user ID (in real app, extract from auth token)
 const STUB_USER_ID = 'user-123';
@@ -80,14 +88,23 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { weekStartDate, targets, userContext } = req.body as any;
 
-    // Check quota
-    await nutritionAiService.checkUserAiQuota(STUB_USER_ID, 'generatePlan');
+    // Validate inputs
+    if (!weekStartDate || !targets) {
+      const errorResponse: ApiErrorResponse = {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'weekStartDate and targets are required',
+          retryable: false,
+        },
+      };
+      return res.status(400).json(errorResponse);
+    }
 
-    // Generate plan
+    // Generate plan using real AI service
     const plan = await nutritionAiService.generateMealPlanForWeek({
       weekStartDate,
       targets,
-      userContext,
+      userContext: userContext || {},
       userId: STUB_USER_ID,
     });
 
@@ -97,7 +114,34 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
     res.json({ data: plan });
   } catch (error) {
     console.error('generateWeeklyPlan error:', error);
-    res.status(500).json({ error: 'Failed to generate weekly plan' });
+    
+    if (error instanceof NutritionApiError) {
+      const errorResponse: ApiErrorResponse = {
+        error: {
+          code: error.code,
+          message: error.message,
+          retryable: error.retryable,
+          details: error.details,
+        },
+      };
+      
+      const statusCode =
+        error.code === 'AI_QUOTA_EXCEEDED' ? 429 :
+        error.code === 'AI_TIMEOUT' ? 504 :
+        error.code === 'VALIDATION_ERROR' ? 400 :
+        500;
+      
+      return res.status(statusCode).json(errorResponse);
+    }
+    
+    const errorResponse: ApiErrorResponse = {
+      error: {
+        code: 'UNKNOWN_ERROR',
+        message: 'Failed to generate weekly plan',
+        retryable: false,
+      },
+    };
+    res.status(500).json(errorResponse);
   }
 }
 
@@ -111,14 +155,23 @@ export async function generateDailyPlan(req: Request, res: Response) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { date, targets, userContext } = req.body as any;
 
-    // Check quota
-    await nutritionAiService.checkUserAiQuota(STUB_USER_ID, 'generatePlan');
+    // Validate inputs
+    if (!date || !targets) {
+      const errorResponse: ApiErrorResponse = {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'date and targets are required',
+          retryable: false,
+        },
+      };
+      return res.status(400).json(errorResponse);
+    }
 
-    // Generate plan
+    // Generate plan using real AI service
     const dayPlan = await nutritionAiService.generateMealPlanForDay({
       date,
       targets,
-      userContext,
+      userContext: userContext || {},
       userId: STUB_USER_ID,
     });
 
@@ -134,7 +187,34 @@ export async function generateDailyPlan(req: Request, res: Response) {
     res.json({ data: dayPlan });
   } catch (error) {
     console.error('generateDailyPlan error:', error);
-    res.status(500).json({ error: 'Failed to generate daily plan' });
+    
+    if (error instanceof NutritionApiError) {
+      const errorResponse: ApiErrorResponse = {
+        error: {
+          code: error.code,
+          message: error.message,
+          retryable: error.retryable,
+          details: error.details,
+        },
+      };
+      
+      const statusCode =
+        error.code === 'AI_QUOTA_EXCEEDED' ? 429 :
+        error.code === 'AI_TIMEOUT' ? 504 :
+        error.code === 'VALIDATION_ERROR' ? 400 :
+        500;
+      
+      return res.status(statusCode).json(errorResponse);
+    }
+    
+    const errorResponse: ApiErrorResponse = {
+      error: {
+        code: 'UNKNOWN_ERROR',
+        message: 'Failed to generate daily plan',
+        retryable: false,
+      },
+    };
+    res.status(500).json(errorResponse);
   }
 }
 
@@ -210,6 +290,77 @@ export async function copyDayPlan(req: Request, res: Response) {
   }
 }
 
+/**
+ * POST /api/nutrition/plan/day/regenerate-meal
+ * Regenerate a single meal within a day plan
+ * Body: RegenerateMealRequest
+ */
+export async function regenerateMeal(req: Request, res: Response) {
+  try {
+    const request = req.body as RegenerateMealRequest;
+
+    // Validate inputs
+    if (!request.date || !request.dayPlan || request.mealIndex === undefined || !request.targets) {
+      const errorResponse: ApiErrorResponse = {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'date, dayPlan, mealIndex, and targets are required',
+          retryable: false,
+        },
+      };
+      return res.status(400).json(errorResponse);
+    }
+
+    // Regenerate meal using AI service
+    const response: RegenerateMealResponse = await nutritionAiService.regenerateMeal({
+      ...request,
+      userId: STUB_USER_ID,
+    });
+
+    // Update in weekly plan store
+    const weekStart = getWeekStart(new Date(request.date));
+    const weeklyPlan = weeklyPlansStore.get(weekStart);
+    if (weeklyPlan) {
+      const updatedDays = weeklyPlan.days.map(d => 
+        d.date === request.date ? response.updatedDayPlan : d
+      );
+      weeklyPlansStore.set(weekStart, { ...weeklyPlan, days: updatedDays });
+    }
+
+    res.json({ data: response.updatedDayPlan });
+  } catch (error) {
+    console.error('regenerateMeal error:', error);
+    
+    if (error instanceof NutritionApiError) {
+      const errorResponse: ApiErrorResponse = {
+        error: {
+          code: error.code,
+          message: error.message,
+          retryable: error.retryable,
+          details: error.details,
+        },
+      };
+      
+      const statusCode =
+        error.code === 'AI_QUOTA_EXCEEDED' ? 429 :
+        error.code === 'AI_TIMEOUT' ? 504 :
+        error.code === 'VALIDATION_ERROR' ? 400 :
+        500;
+      
+      return res.status(statusCode).json(errorResponse);
+    }
+    
+    const errorResponse: ApiErrorResponse = {
+      error: {
+        code: 'UNKNOWN_ERROR',
+        message: 'Failed to regenerate meal',
+        retryable: false,
+      },
+    };
+    res.status(500).json(errorResponse);
+  }
+}
+
 // ============================================================================
 // MEAL LOG ENDPOINTS
 // ============================================================================
@@ -267,13 +418,17 @@ export async function parseFood(req: Request, res: Response) {
     const { text, city, zipCode, locale } = req.body as any;
 
     if (!text || typeof text !== 'string') {
-      return res.status(400).json({ error: 'text field required' });
+      const errorResponse: ApiErrorResponse = {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'text field is required and must be a string',
+          retryable: false,
+        },
+      };
+      return res.status(400).json(errorResponse);
     }
 
-    // Check quota
-    await nutritionAiService.checkUserAiQuota(STUB_USER_ID, 'parseFood');
-
-    // Parse food
+    // Parse food using AI service
     const foodItem: LoggedFoodItem = await nutritionAiService.parseFood({
       text,
       userContext: { city, zipCode, locale },
@@ -283,7 +438,38 @@ export async function parseFood(req: Request, res: Response) {
     res.json({ data: foodItem });
   } catch (error) {
     console.error('parseFood error:', error);
-    res.status(500).json({ error: 'Failed to parse food' });
+    
+    // Handle typed errors
+    if (error instanceof NutritionApiError) {
+      const errorResponse: ApiErrorResponse = {
+        error: {
+          code: error.code,
+          message: error.message,
+          retryable: error.retryable,
+          details: error.details,
+        },
+      };
+      
+      // Map error codes to HTTP status codes
+      const statusCode = 
+        error.code === 'AI_QUOTA_EXCEEDED' ? 429 :
+        error.code === 'AI_TIMEOUT' ? 504 :
+        error.code === 'VALIDATION_ERROR' ? 400 :
+        error.code === 'NOT_FOUND' ? 404 :
+        500;
+      
+      return res.status(statusCode).json(errorResponse);
+    }
+    
+    // Unhandled errors
+    const errorResponse: ApiErrorResponse = {
+      error: {
+        code: 'UNKNOWN_ERROR',
+        message: 'An unexpected error occurred while parsing your food',
+        retryable: false,
+      },
+    };
+    res.status(500).json(errorResponse);
   }
 }
 
