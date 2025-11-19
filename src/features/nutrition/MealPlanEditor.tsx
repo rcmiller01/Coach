@@ -10,7 +10,7 @@
  */
 
 import { useState } from 'react';
-import type { DayPlan, WeeklyPlan, PlannedFoodItem, NutritionTargets } from './nutritionTypes';
+import type { DayPlan, WeeklyPlan, PlannedFoodItem, NutritionTargets, DietaryPreferences } from './nutritionTypes';
 import { copyDayPlan, updateDayPlan, regenerateMeal } from '../../api/nutritionApiClient';
 import { NutritionApiError } from './nutritionTypes';
 
@@ -20,7 +20,7 @@ interface MealPlanEditorProps {
   weeklyPlan: WeeklyPlan | null;
   targets: NutritionTargets;
   planProfile?: 'standard' | 'glp1';
-  preferences?: any; // DietaryPreferences
+  preferences?: DietaryPreferences;
 }
 
 export default function MealPlanEditor({ 

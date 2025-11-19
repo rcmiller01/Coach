@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { NutritionTargets, WeeklyPlan, DayPlan, UserContext, PlanProfile } from './nutritionTypes';
+import type { NutritionTargets, WeeklyPlan, DayPlan, UserContext, PlanProfile, DietaryPreferences, DietType } from './nutritionTypes';
 import { NutritionApiError } from './nutritionTypes';
 import { fetchWeeklyPlan, generateMealPlanForWeek, generateMealPlanForDay } from '../../api/nutritionApiClient';
 import WeeklyPlanView from './WeeklyPlanView';
@@ -28,6 +28,11 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<{ message: string; code?: string; retryable?: boolean } | null>(null);
   const [planProfile, setPlanProfile] = useState<PlanProfile>('standard');
+  const [preferences, setPreferences] = useState<DietaryPreferences>({
+    dietType: 'none',
+    avoidIngredients: [],
+    dislikedFoods: [],
+  });
 
   // Get Monday of the current week
   const getWeekStart = (date: Date): string => {
@@ -63,7 +68,11 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
     setLoading(true);
     setError(null);
     try {
-      const plan = await generateMealPlanForWeek(currentWeekStart, targets, userContext, planProfile);
+      const contextWithPreferences: UserContext = {
+        ...userContext,
+        preferences,
+      };
+      const plan = await generateMealPlanForWeek(currentWeekStart, targets, contextWithPreferences, planProfile);
       setWeeklyPlan(plan);
     } catch (err) {
       console.error('Generate week error:', err);
@@ -81,7 +90,11 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
     setLoading(true);
     setError(null);
     try {
-      const dayPlan = await generateMealPlanForDay(date, targets, userContext, planProfile);
+      const contextWithPreferences: UserContext = {
+        ...userContext,
+        preferences,
+      };
+      const dayPlan = await generateMealPlanForDay(date, targets, contextWithPreferences, planProfile);
       // Update the weekly plan with the new day
       if (weeklyPlan) {
         const updatedDays = weeklyPlan.days.map(d => d.date === date ? dayPlan : d);
@@ -160,6 +173,141 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
               </select>
             </div>
           </div>
+
+          {/* Diet Type Selector */}
+          <div className="mb-3">
+            <label htmlFor="dietType" className="block text-sm font-medium text-slate-300 mb-1.5">
+              Diet Type
+            </label>
+            <select
+              id="dietType"
+              value={preferences.dietType}
+              onChange={(e) => setPreferences(prev => ({ ...prev, dietType: e.target.value as DietType }))}
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-slate-200 rounded-lg hover:bg-slate-750 transition-colors"
+            >
+              <option value="none">No Restrictions</option>
+              <option value="vegetarian">Vegetarian</option>
+              <option value="vegan">Vegan</option>
+              <option value="pescatarian">Pescatarian</option>
+              <option value="keto">Keto</option>
+              <option value="paleo">Paleo</option>
+              <option value="low_carb">Low Carb</option>
+              <option value="mediterranean">Mediterranean</option>
+              <option value="halal">Halal</option>
+              <option value="kosher">Kosher</option>
+            </select>
+          </div>
+
+          {/* Avoid Ingredients */}
+          <div className="mb-3">
+            <label htmlFor="avoidIngredients" className="block text-sm font-medium text-slate-300 mb-1.5">
+              Avoid Ingredients
+            </label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {preferences.avoidIngredients.map((ingredient, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-amber-900/30 text-amber-200 text-xs rounded border border-amber-800/50"
+                >
+                  {ingredient}
+                  <button
+                    onClick={() => setPreferences(prev => ({
+                      ...prev,
+                      avoidIngredients: prev.avoidIngredients.filter((_, i) => i !== idx)
+                    }))}
+                    className="hover:text-amber-100"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              type="text"
+              id="avoidIngredients"
+              placeholder="e.g., dairy, nuts, shellfish (press Enter)"
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-slate-200 rounded-lg placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const input = e.currentTarget;
+                  const value = input.value.trim().toLowerCase();
+                  if (value && !preferences.avoidIngredients.includes(value)) {
+                    setPreferences(prev => ({
+                      ...prev,
+                      avoidIngredients: [...prev.avoidIngredients, value]
+                    }));
+                    input.value = '';
+                  }
+                }
+              }}
+            />
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {['dairy', 'soy', 'nuts', 'shellfish', 'gluten', 'eggs'].map(suggestion => (
+                <button
+                  key={suggestion}
+                  onClick={() => {
+                    if (!preferences.avoidIngredients.includes(suggestion)) {
+                      setPreferences(prev => ({
+                        ...prev,
+                        avoidIngredients: [...prev.avoidIngredients, suggestion]
+                      }));
+                    }
+                  }}
+                  className="px-2 py-0.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 rounded border border-slate-700 transition-colors"
+                >
+                  + {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Disliked Foods (Collapsible) */}
+          <details className="mb-3">
+            <summary className="cursor-pointer text-sm font-medium text-slate-300 hover:text-slate-200">
+              Disliked Foods (Optional)
+            </summary>
+            <div className="mt-2">
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {preferences.dislikedFoods.map((food, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded border border-slate-700"
+                  >
+                    {food}
+                    <button
+                      onClick={() => setPreferences(prev => ({
+                        ...prev,
+                        dislikedFoods: prev.dislikedFoods.filter((_, i) => i !== idx)
+                      }))}
+                      className="hover:text-slate-100"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <input
+                type="text"
+                placeholder="e.g., broccoli, tofu (press Enter)"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-slate-200 rounded-lg placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const input = e.currentTarget;
+                    const value = input.value.trim().toLowerCase();
+                    if (value && !preferences.dislikedFoods.includes(value)) {
+                      setPreferences(prev => ({
+                        ...prev,
+                        dislikedFoods: [...prev.dislikedFoods, value]
+                      }));
+                      input.value = '';
+                    }
+                  }
+                }}
+              />
+            </div>
+          </details>
           
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -186,6 +334,36 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
             {planProfile === 'glp1' && (
               <div className="mt-2 text-xs text-blue-400 bg-blue-950/30 px-2 py-1.5 rounded border border-blue-900/50">
                 💊 GLP-1 mode: Smaller portions, protein-focused, 4 meals
+              </div>
+            )}
+            
+            {/* Active Preferences Display */}
+            {(preferences.dietType !== 'none' || preferences.avoidIngredients.length > 0) && (
+              <div className="mt-2 space-y-1.5">
+                <div className="text-xs text-slate-500 uppercase tracking-wide">Active Restrictions:</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {preferences.dietType !== 'none' && (
+                    <span className="px-2 py-0.5 text-xs bg-green-900/30 text-green-300 rounded border border-green-800/50">
+                      {preferences.dietType === 'vegetarian' && '🥗 Vegetarian'}
+                      {preferences.dietType === 'vegan' && '🌱 Vegan'}
+                      {preferences.dietType === 'pescatarian' && '🐟 Pescatarian'}
+                      {preferences.dietType === 'keto' && '🥓 Keto'}
+                      {preferences.dietType === 'paleo' && '🦴 Paleo'}
+                      {preferences.dietType === 'low_carb' && '🥩 Low Carb'}
+                      {preferences.dietType === 'mediterranean' && '🫒 Mediterranean'}
+                      {preferences.dietType === 'halal' && '☪️ Halal'}
+                      {preferences.dietType === 'kosher' && '✡️ Kosher'}
+                    </span>
+                  )}
+                  {preferences.avoidIngredients.map((ingredient, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-0.5 text-xs bg-amber-900/30 text-amber-300 rounded border border-amber-800/50"
+                    >
+                      ⚠️ No {ingredient}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -310,6 +488,7 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
               weeklyPlan={weeklyPlan}
               targets={targets}
               planProfile={planProfile}
+              preferences={preferences}
             />
           </div>
         )}
