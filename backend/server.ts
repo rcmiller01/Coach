@@ -11,6 +11,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { Pool } from 'pg';
 import * as dotenv from 'dotenv';
 import * as nutritionTools from './nutritionTools.js';
+import * as routes from './routes.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -65,7 +66,15 @@ app.use((req, res, next) => {
 });
 
 // Mount nutrition API routes
-app.use('/api/nutrition', createNutritionRoutes());
+app.get('/api/nutrition/plan', routes.getNutritionPlan);
+app.post('/api/nutrition/plan/week', routes.generateWeeklyPlan);
+app.post('/api/nutrition/plan/day', routes.generateDailyPlan);
+app.put('/api/nutrition/plan/day/:date', routes.updateDayPlan);
+app.post('/api/nutrition/plan/copy', routes.copyDayPlan);
+app.post('/api/nutrition/plan/day/regenerate-meal', routes.regenerateMeal);
+app.get('/api/meals/log/:date', routes.getDayLog);
+app.put('/api/meals/log/:date', routes.saveDayLog);
+app.post('/api/nutrition/parse-food', routes.parseFood);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
