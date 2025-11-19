@@ -10,7 +10,8 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { RealNutritionAiService } from './RealNutritionAiService';
-import type { NutritionTargets, DayPlan } from '../src/features/nutrition/nutritionTypes';
+import type { NutritionTargets, DayPlan, WeeklyPlan, DietaryPreferences } from '../src/features/nutrition/nutritionTypes';
+import { NutritionApiError } from '../src/features/nutrition/nutritionTypes';
 import { Pool } from 'pg';
 import { initializeDb } from './nutritionTools';
 
@@ -380,6 +381,528 @@ async function testGLP1InfeasiblePlan(): Promise<boolean> {
 }
 
 // ============================================================================
+// PHASE 7 TESTS: Regeneration, Locking, and Preferences
+// ============================================================================
+
+async function testRegenerateMealKeepsDayConstraints(): Promise<boolean> {
+  console.log('\n🔄 TEST: Regenerate Meal Keeps Day Constraints');
+  console.log('='.repeat(60));
+  
+  const service = new RealNutritionAiService();
+  const today = new Date().toISOString().split('T')[0];
+  
+  try {
+    console.log('Step 1: Generate initial day plan...');
+    const originalPlan = await service.generateMealPlanForDay({
+      date: today,
+      targets: SAMPLE_TARGETS,
+      userContext: { locale: 'en-US' },
+      userId: TEST_USER_ID,
+    });
+    
+    const originalTotals = calculateDayTotals(originalPlan);
+    const originalLunch = originalPlan.meals.find(m => m.type === 'lunch');
+    
+    console.log(`Original totals: ${originalTotals.calories} kcal, ${Math.round(originalTotals.protein)}g protein`);
+    console.log(`Original lunch: ${originalLunch?.items.map(i => i.name).join(', ')}`);
+    
+    // Find lunch index
+    const lunchIndex = originalPlan.meals.findIndex(m => m.type === 'lunch');
+    if (lunchIndex === -1) {
+      console.log('❌ No lunch meal found');
+      return false;
+    }
+    
+    console.log('\nStep 2: Regenerate lunch...');
+    const updatedPlan = await service.regenerateMeal({
+      date: today,
+      dayPlan: originalPlan,
+      mealIndex: lunchIndex,
+      targets: SAMPLE_TARGETS,
+      userId: TEST_USER_ID,
+      planProfile: 'standard',
+    });
+    
+    const updatedTotals = calculateDayTotals(updatedPlan);
+    const updatedLunch = updatedPlan.meals[lunchIndex];
+    
+    console.log(`Updated totals: ${updatedTotals.calories} kcal, ${Math.round(updatedTotals.protein)}g protein`);
+    console.log(`Updated lunch: ${updatedLunch.items.map(i => i.name).join(', ')}`);
+    
+    // Validation
+    const has4Meals = updatedPlan.meals.length === 4;
+    const caloriesValid = validateCalories(updatedTotals.calories, SAMPLE_TARGETS.caloriesPerDay);
+    const proteinValid = validateProtein(updatedTotals.protein, SAMPLE_TARGETS.proteinGrams);
+    
+    // Check that lunch changed
+    const lunchChanged = originalLunch?.items[0]?.name !== updatedLunch.items[0]?.name;
+    
+    // Check that other meals unchanged
+    const breakfastSame = originalPlan.meals[0].items[0].name === updatedPlan.meals[0].items[0].name;
+    const dinnerIndex = originalPlan.meals.findIndex(m => m.type === 'dinner');
+    const dinnerSame = dinnerIndex !== -1 && 
+      originalPlan.meals[dinnerIndex].items[0].name === updatedPlan.meals[dinnerIndex].items[0].name;
+    
+    console.log('\nValidation:');
+    console.log(`  - 4 meals: ${has4Meals ? '✅' : '❌'}`);
+    console.log(`  ${caloriesValid.message}`);
+    console.log(`  ${proteinValid.message}`);
+    console.log(`  - Lunch changed: ${lunchChanged ? '✅' : '❌'}`);
+    console.log(`  - Breakfast unchanged: ${breakfastSame ? '✅' : '❌'}`);
+    console.log(`  - Dinner unchanged: ${dinnerSame ? '✅' : '❌'}`);
+    
+    const allTestsPass = has4Meals && caloriesValid.pass && proteinValid.pass && lunchChanged && breakfastSame;
+    
+    if (allTestsPass) {
+      console.log('\n✅ ALL TESTS PASSED');
+    } else {
+      console.log('\n⚠️ SOME TESTS FAILED');
+    }
+    
+    return allTestsPass;
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+    return false;
+  }
+}
+
+async function testRegenerateMealRespectsGLP1Profile(): Promise<boolean> {
+  console.log('\n💊 TEST: Regenerate Meal Respects GLP-1 Profile');
+  console.log('='.repeat(60));
+  
+  const service = new RealNutritionAiService();
+  const today = new Date().toISOString().split('T')[0];
+  
+  const glp1Targets: NutritionTargets = {
+    caloriesPerDay: 1500,
+    proteinGrams: 110,
+    carbsGrams: 130,
+    fatGrams: 55,
+  };
+  
+  try {
+    console.log('Step 1: Generate GLP-1 day plan...');
+    const originalPlan = await service.generateMealPlanForDay({
+      date: today,
+      targets: glp1Targets,
+      userContext: { locale: 'en-US' },
+      userId: TEST_USER_ID,
+      planProfile: 'glp1',
+    });
+    
+    const dinnerIndex = originalPlan.meals.findIndex(m => m.type === 'dinner');
+    if (dinnerIndex === -1) {
+      console.log('❌ No dinner meal found');
+      return false;
+    }
+    
+    console.log('\nStep 2: Regenerate dinner...');
+    const updatedPlan = await service.regenerateMeal({
+      date: today,
+      dayPlan: originalPlan,
+      mealIndex: dinnerIndex,
+      targets: glp1Targets,
+      userId: TEST_USER_ID,
+      planProfile: 'glp1',
+    });
+    
+    const updatedDinner = updatedPlan.meals[dinnerIndex];
+    const dinnerCalories = updatedDinner.items.reduce((sum, item) => sum + item.calories, 0);
+    
+    console.log(`Updated dinner: ${updatedDinner.items.map(i => i.name).join(', ')}`);
+    console.log(`Dinner calories: ${dinnerCalories} (${Math.round((dinnerCalories / glp1Targets.caloriesPerDay) * 100)}% of daily)`);
+    
+    // Validation
+    const hasGLP1Label = updatedPlan.aiExplanation?.summary.includes('GLP-1') ?? false;
+    const dinnerAppropriateCals = dinnerCalories >= 300 && dinnerCalories <= 450; // 25% of 1500 = 375, allow ±20%
+    
+    // Check portion sizes (should be reasonable for GLP-1)
+    const hasLargePortions = updatedDinner.items.some(item => {
+      const qty = parseFloat(item.quantity);
+      return (item.unit === 'oz' && qty > 8) || (item.unit === 'cup' && qty > 2);
+    });
+    
+    console.log('\nValidation:');
+    console.log(`  - GLP-1 in summary: ${hasGLP1Label ? '✅' : '❌'}`);
+    console.log(`  - Dinner calories appropriate (300-450): ${dinnerAppropriateCals ? '✅' : '❌'}`);
+    console.log(`  - No large portions: ${!hasLargePortions ? '✅' : '❌'}`);
+    
+    const allTestsPass = hasGLP1Label && dinnerAppropriateCals && !hasLargePortions;
+    
+    if (allTestsPass) {
+      console.log('\n✅ ALL TESTS PASSED');
+    } else {
+      console.log('\n⚠️ SOME TESTS FAILED');
+    }
+    
+    return allTestsPass;
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+    return false;
+  }
+}
+
+async function testLockedMealsAreReusedAcrossWeeks(): Promise<boolean> {
+  console.log('\n🔒 TEST: Locked Meals Are Reused Across Weeks');
+  console.log('='.repeat(60));
+  
+  const service = new RealNutritionAiService();
+  
+  // Get Monday of current week
+  const today = new Date();
+  const day = today.getDay();
+  const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+  today.setDate(diff);
+  const weekStart = today.toISOString().split('T')[0];
+  
+  try {
+    console.log('Step 1: Generate week 1...');
+    const week1 = await service.generateMealPlanForWeek({
+      weekStartDate: weekStart,
+      targets: SAMPLE_TARGETS,
+      userContext: { locale: 'en-US' },
+      userId: TEST_USER_ID,
+    });
+    
+    // Lock Monday breakfast
+    const mondayPlan = week1.days[0];
+    const breakfastIndex = mondayPlan.meals.findIndex(m => m.type === 'breakfast');
+    if (breakfastIndex === -1) {
+      console.log('❌ No breakfast found on Monday');
+      return false;
+    }
+    
+    mondayPlan.meals[breakfastIndex].locked = true;
+    const lockedBreakfast = mondayPlan.meals[breakfastIndex];
+    const lockedCalories = lockedBreakfast.items.reduce((sum, item) => sum + item.calories, 0);
+    
+    console.log(`Locked Monday breakfast: ${lockedBreakfast.items.map(i => `${i.name} (${i.calories} kcal)`).join(', ')}`);
+    console.log(`Total locked calories: ${lockedCalories}`);
+    
+    console.log('\nStep 2: Generate week 2 with previousWeek...');
+    
+    // Advance to next week
+    const nextWeekDate = new Date(weekStart);
+    nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+    const nextWeekStart = nextWeekDate.toISOString().split('T')[0];
+    
+    const week2 = await service.generateMealPlanForWeek({
+      weekStartDate: nextWeekStart,
+      targets: SAMPLE_TARGETS,
+      userContext: { locale: 'en-US' },
+      userId: TEST_USER_ID,
+      previousWeek: week1,
+    });
+    
+    const newMondayBreakfast = week2.days[0].meals.find(m => m.type === 'breakfast');
+    if (!newMondayBreakfast) {
+      console.log('❌ No breakfast found on new Monday');
+      return false;
+    }
+    
+    console.log(`Week 2 Monday breakfast: ${newMondayBreakfast.items.map(i => `${i.name} (${i.calories} kcal)`).join(', ')}`);
+    
+    // Validation: Check if meals are identical
+    const itemsMatch = lockedBreakfast.items.length === newMondayBreakfast.items.length &&
+      lockedBreakfast.items.every((item, idx) => {
+        const newItem = newMondayBreakfast.items[idx];
+        return item.name === newItem.name &&
+               item.quantity === newItem.quantity &&
+               Math.abs(item.calories - newItem.calories) < 5;
+      });
+    
+    const caloriesMatch = Math.abs(
+      lockedBreakfast.items.reduce((sum, i) => sum + i.calories, 0) -
+      newMondayBreakfast.items.reduce((sum, i) => sum + i.calories, 0)
+    ) < 10;
+    
+    // Check that other meals are different (Tuesday breakfast should be new)
+    const tuesdayBreakfast = week2.days[1].meals.find(m => m.type === 'breakfast');
+    const tuesdayDifferent = tuesdayBreakfast && 
+      tuesdayBreakfast.items[0].name !== lockedBreakfast.items[0].name;
+    
+    console.log('\nValidation:');
+    console.log(`  - Items match: ${itemsMatch ? '✅' : '❌'}`);
+    console.log(`  - Calories match: ${caloriesMatch ? '✅' : '❌'}`);
+    console.log(`  - Other meals regenerated: ${tuesdayDifferent ? '✅' : '❌'}`);
+    console.log(`  - Locked badge present: ${newMondayBreakfast.locked ? '✅' : '❌'}`);
+    
+    const allTestsPass = itemsMatch && caloriesMatch && tuesdayDifferent;
+    
+    if (allTestsPass) {
+      console.log('\n✅ ALL TESTS PASSED');
+    } else {
+      console.log('\n⚠️ SOME TESTS FAILED');
+    }
+    
+    return allTestsPass;
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+    return false;
+  }
+}
+
+async function testRegenerateMealWithPreferences(): Promise<boolean> {
+  console.log('\n🌱 TEST: Regenerate Meal With Dietary Preferences');
+  console.log('='.repeat(60));
+  
+  const service = new RealNutritionAiService();
+  const today = new Date().toISOString().split('T')[0];
+  
+  try {
+    console.log('Step 1: Generate standard day plan...');
+    const originalPlan = await service.generateMealPlanForDay({
+      date: today,
+      targets: SAMPLE_TARGETS,
+      userContext: { locale: 'en-US' },
+      userId: TEST_USER_ID,
+    });
+    
+    const lunchIndex = originalPlan.meals.findIndex(m => m.type === 'lunch');
+    if (lunchIndex === -1) {
+      console.log('❌ No lunch meal found');
+      return false;
+    }
+    
+    console.log('Original lunch:', originalPlan.meals[lunchIndex].items.map(i => i.name).join(', '));
+    
+    console.log('\nStep 2: Regenerate lunch with vegetarian + no dairy preferences...');
+    const preferences: DietaryPreferences = {
+      dietType: 'vegetarian',
+      avoidIngredients: ['dairy'],
+      dislikedFoods: [],
+    };
+    
+    const updatedPlan = await service.regenerateMeal({
+      date: today,
+      dayPlan: originalPlan,
+      mealIndex: lunchIndex,
+      targets: SAMPLE_TARGETS,
+      userId: TEST_USER_ID,
+      planProfile: 'standard',
+      preferences,
+    });
+    
+    const updatedLunch = updatedPlan.meals[lunchIndex];
+    console.log('Updated lunch:', updatedLunch.items.map(i => i.name).join(', '));
+    
+    // Validation: Check for meat/fish/dairy
+    const meatKeywords = ['chicken', 'beef', 'pork', 'turkey', 'steak', 'bacon', 'sausage', 'fish', 'salmon', 'tuna', 'shrimp'];
+    const dairyKeywords = ['milk', 'cheese', 'yogurt', 'butter', 'cream', 'whey'];
+    
+    const hasMeat = updatedLunch.items.some(item => 
+      meatKeywords.some(keyword => item.name.toLowerCase().includes(keyword))
+    );
+    
+    const hasDairy = updatedLunch.items.some(item => 
+      dairyKeywords.some(keyword => item.name.toLowerCase().includes(keyword))
+    );
+    
+    // Check totals still meet targets
+    const updatedTotals = calculateDayTotals(updatedPlan);
+    const caloriesValid = validateCalories(updatedTotals.calories, SAMPLE_TARGETS.caloriesPerDay);
+    const proteinValid = validateProtein(updatedTotals.protein, SAMPLE_TARGETS.proteinGrams);
+    
+    // Check that other meals unchanged
+    const breakfastSame = originalPlan.meals[0].items[0].name === updatedPlan.meals[0].items[0].name;
+    
+    console.log('\nValidation:');
+    console.log(`  - No meat/fish: ${!hasMeat ? '✅' : '❌'}`);
+    console.log(`  - No dairy: ${!hasDairy ? '✅' : '❌'}`);
+    console.log(`  ${caloriesValid.message}`);
+    console.log(`  ${proteinValid.message}`);
+    console.log(`  - Other meals unchanged: ${breakfastSame ? '✅' : '❌'}`);
+    
+    const allTestsPass = !hasMeat && !hasDairy && caloriesValid.pass && proteinValid.pass && breakfastSame;
+    
+    if (allTestsPass) {
+      console.log('\n✅ ALL TESTS PASSED');
+    } else {
+      console.log('\n⚠️ SOME TESTS FAILED');
+    }
+    
+    return allTestsPass;
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+    return false;
+  }
+}
+
+async function testRegenerateMealBudgetCalculation(): Promise<boolean> {
+  console.log('\n💰 TEST: Regenerate Meal Budget Calculation');
+  console.log('='.repeat(60));
+  
+  const service = new RealNutritionAiService();
+  const today = new Date().toISOString().split('T')[0];
+  
+  try {
+    console.log('Step 1: Generate initial day plan...');
+    const originalPlan = await service.generateMealPlanForDay({
+      date: today,
+      targets: SAMPLE_TARGETS,
+      userContext: { locale: 'en-US' },
+      userId: TEST_USER_ID,
+    });
+    
+    // Calculate meal calories
+    const mealCalories = originalPlan.meals.map(meal => ({
+      type: meal.type,
+      calories: meal.items.reduce((sum, item) => sum + item.calories, 0),
+    }));
+    
+    console.log('\nOriginal meal calories:');
+    mealCalories.forEach(m => console.log(`  ${m.type}: ${m.calories} kcal`));
+    
+    const lunchIndex = originalPlan.meals.findIndex(m => m.type === 'lunch');
+    if (lunchIndex === -1) {
+      console.log('❌ No lunch meal found');
+      return false;
+    }
+    
+    const originalLunchCals = mealCalories[lunchIndex].calories;
+    
+    // Calculate expected budget for lunch
+    const otherMealsCals = mealCalories
+      .filter((_, idx) => idx !== lunchIndex)
+      .reduce((sum, m) => sum + m.calories, 0);
+    const expectedLunchBudget = SAMPLE_TARGETS.caloriesPerDay - otherMealsCals;
+    
+    console.log(`\nExpected lunch budget: ${SAMPLE_TARGETS.caloriesPerDay} - ${otherMealsCals} = ${expectedLunchBudget} kcal`);
+    
+    console.log('\nStep 2: Regenerate lunch...');
+    const updatedPlan = await service.regenerateMeal({
+      date: today,
+      dayPlan: originalPlan,
+      mealIndex: lunchIndex,
+      targets: SAMPLE_TARGETS,
+      userId: TEST_USER_ID,
+      planProfile: 'standard',
+    });
+    
+    const newLunchCals = updatedPlan.meals[lunchIndex].items.reduce((sum, item) => sum + item.calories, 0);
+    const updatedTotals = calculateDayTotals(updatedPlan);
+    
+    console.log(`New lunch calories: ${newLunchCals} kcal`);
+    console.log(`Updated day total: ${updatedTotals.calories} kcal`);
+    
+    // Validation: New lunch should be close to expected budget
+    const lunchWithinBudget = Math.abs(newLunchCals - expectedLunchBudget) <= expectedLunchBudget * 0.20; // ±20%
+    const dayTotalValid = validateCalories(updatedTotals.calories, SAMPLE_TARGETS.caloriesPerDay);
+    
+    console.log('\nValidation:');
+    console.log(`  - Lunch within budget (±20%): ${lunchWithinBudget ? '✅' : '❌'} (expected ~${expectedLunchBudget}, got ${newLunchCals})`);
+    console.log(`  ${dayTotalValid.message}`);
+    
+    const allTestsPass = lunchWithinBudget && dayTotalValid.pass;
+    
+    if (allTestsPass) {
+      console.log('\n✅ ALL TESTS PASSED');
+    } else {
+      console.log('\n⚠️ SOME TESTS FAILED');
+    }
+    
+    return allTestsPass;
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+    return false;
+  }
+}
+
+async function testRegenerateMealInvalidIndex(): Promise<boolean> {
+  console.log('\n🚫 TEST: Regenerate Meal Invalid Index');
+  console.log('='.repeat(60));
+  
+  const service = new RealNutritionAiService();
+  const today = new Date().toISOString().split('T')[0];
+  
+  try {
+    console.log('Step 1: Generate day plan...');
+    const dayPlan = await service.generateMealPlanForDay({
+      date: today,
+      targets: SAMPLE_TARGETS,
+      userContext: { locale: 'en-US' },
+      userId: TEST_USER_ID,
+    });
+    
+    console.log(`Day has ${dayPlan.meals.length} meals`);
+    
+    let testsPassed = 0;
+    let totalTests = 2;
+    
+    // Test negative index
+    console.log('\nTest 1: Negative index (-1)...');
+    try {
+      await service.regenerateMeal({
+        date: today,
+        dayPlan,
+        mealIndex: -1,
+        targets: SAMPLE_TARGETS,
+        userId: TEST_USER_ID,
+        planProfile: 'standard',
+      });
+      console.log('❌ Should have thrown error for negative index');
+    } catch (error) {
+      if (error instanceof NutritionApiError && error.code === 'VALIDATION_ERROR') {
+        const hasIndexInMessage = error.message.toLowerCase().includes('index') || error.message.includes('-1');
+        console.log(`✅ Correctly rejected negative index`);
+        console.log(`  Message: ${error.message}`);
+        console.log(`  Code: ${error.code}`);
+        console.log(`  Mentions index: ${hasIndexInMessage ? '✅' : '❌'}`);
+        if (hasIndexInMessage) testsPassed++;
+      } else {
+        console.log(`❌ Wrong error type: ${error}`);
+      }
+    }
+    
+    // Test out-of-bounds index
+    console.log('\nTest 2: Out-of-bounds index (99)...');
+    try {
+      await service.regenerateMeal({
+        date: today,
+        dayPlan,
+        mealIndex: 99,
+        targets: SAMPLE_TARGETS,
+        userId: TEST_USER_ID,
+        planProfile: 'standard',
+      });
+      console.log('❌ Should have thrown error for out-of-bounds index');
+    } catch (error) {
+      if (error instanceof NutritionApiError && error.code === 'VALIDATION_ERROR') {
+        const hasIndexInMessage = error.message.toLowerCase().includes('index') || error.message.includes('99');
+        console.log(`✅ Correctly rejected out-of-bounds index`);
+        console.log(`  Message: ${error.message}`);
+        console.log(`  Code: ${error.code}`);
+        console.log(`  Mentions index: ${hasIndexInMessage ? '✅' : '❌'}`);
+        if (hasIndexInMessage) testsPassed++;
+      } else {
+        console.log(`❌ Wrong error type: ${error}`);
+      }
+    }
+    
+    const allTestsPass = testsPassed === totalTests;
+    
+    console.log(`\nTests passed: ${testsPassed}/${totalTests}`);
+    
+    if (allTestsPass) {
+      console.log('\n✅ ALL TESTS PASSED');
+    } else {
+      console.log('\n⚠️ SOME TESTS FAILED');
+    }
+    
+    return allTestsPass;
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+    return false;
+  }
+}
+
+// ============================================================================
 // RUN TESTS
 // ============================================================================
 
@@ -387,7 +910,9 @@ async function main() {
   console.log('🧪 Meal Planning AI Test Suite');
   console.log('='.repeat(60));
   console.log(`User ID: ${TEST_USER_ID}`);
+  console.log(`USE_OPENROUTER: ${process.env.USE_OPENROUTER}`);
   console.log(`Model: ${process.env.USE_OPENROUTER === 'true' ? process.env.OPENROUTER_MODEL : process.env.OPENAI_MODEL}`);
+  console.log(`API Key present: ${process.env.USE_OPENROUTER === 'true' ? !!process.env.OPENROUTER_API_KEY : !!process.env.OPENAI_API_KEY}`);
   
   // Initialize database connection
   const pool = new Pool({
@@ -406,31 +931,78 @@ async function main() {
       weekPlan: false,
       glp1Feasible: false,
       glp1Infeasible: false,
+      regenerateConstraints: false,
+      regenerateGLP1: false,
+      lockedReuse: false,
+      regeneratePreferences: false,
+      regenerateBudget: false,
+      regenerateInvalidIndex: false,
     };
     
+    // ===== Basic Tests =====
     // Test 1: Generate single day plan
     results.dayPlan = await testGenerateMealPlanForDay();
     
     // Test 2: Generate weekly plan
     results.weekPlan = await testGenerateMealPlanForWeek();
     
+    // ===== GLP-1 Tests =====
     // Test 3: GLP-1 feasible plan
     results.glp1Feasible = await testGLP1FeasiblePlan();
     
     // Test 4: GLP-1 infeasible plan (should reject)
     results.glp1Infeasible = await testGLP1InfeasiblePlan();
     
+    // ===== Regeneration Tests =====
+    // Test 5: Regenerate meal keeps day constraints
+    results.regenerateConstraints = await testRegenerateMealKeepsDayConstraints();
+    
+    // Test 6: Regenerate meal respects GLP-1 profile
+    results.regenerateGLP1 = await testRegenerateMealRespectsGLP1Profile();
+    
+    // ===== Locking Tests =====
+    // Test 7: Locked meals reused across weeks
+    results.lockedReuse = await testLockedMealsAreReusedAcrossWeeks();
+    
+    // ===== Preferences Tests =====
+    // Test 8: Regenerate with dietary preferences
+    results.regeneratePreferences = await testRegenerateMealWithPreferences();
+    
+    // ===== Budget & Error Tests =====
+    // Test 9: Regenerate meal budget calculation
+    results.regenerateBudget = await testRegenerateMealBudgetCalculation();
+    
+    // Test 10: Regenerate meal invalid index
+    results.regenerateInvalidIndex = await testRegenerateMealInvalidIndex();
+    
     // Summary
     console.log('\n' + '='.repeat(60));
     console.log('📊 TEST SUMMARY');
     console.log('='.repeat(60));
-    console.log(`Day Plan: ${results.dayPlan ? '✅ PASS' : '❌ FAIL'}`);
-    console.log(`Week Plan: ${results.weekPlan ? '✅ PASS' : '❌ FAIL'}`);
-    console.log(`GLP-1 Feasible: ${results.glp1Feasible ? '✅ PASS' : '❌ FAIL'}`);
-    console.log(`GLP-1 Infeasible Rejection: ${results.glp1Infeasible ? '✅ PASS' : '❌ FAIL'}`);
+    console.log('\n🔵 Basic Tests:');
+    console.log(`  Day Plan: ${results.dayPlan ? '✅ PASS' : '❌ FAIL'}`);
+    console.log(`  Week Plan: ${results.weekPlan ? '✅ PASS' : '❌ FAIL'}`);
+    console.log('\n💊 GLP-1 Tests:');
+    console.log(`  GLP-1 Feasible: ${results.glp1Feasible ? '✅ PASS' : '❌ FAIL'}`);
+    console.log(`  GLP-1 Infeasible Rejection: ${results.glp1Infeasible ? '✅ PASS' : '❌ FAIL'}`);
+    console.log('\n🔄 Regeneration Tests:');
+    console.log(`  Regenerate Keeps Constraints: ${results.regenerateConstraints ? '✅ PASS' : '❌ FAIL'}`);
+    console.log(`  Regenerate GLP-1: ${results.regenerateGLP1 ? '✅ PASS' : '❌ FAIL'}`);
+    console.log('\n🔒 Locking Tests:');
+    console.log(`  Locked Meal Reuse: ${results.lockedReuse ? '✅ PASS' : '❌ FAIL'}`);
+    console.log('\n🌱 Preferences Tests:');
+    console.log(`  Regenerate with Preferences: ${results.regeneratePreferences ? '✅ PASS' : '❌ FAIL'}`);
+    console.log('\n💰 Budget & Error Tests:');
+    console.log(`  Budget Calculation: ${results.regenerateBudget ? '✅ PASS' : '❌ FAIL'}`);
+    console.log(`  Invalid Index Rejection: ${results.regenerateInvalidIndex ? '✅ PASS' : '❌ FAIL'}`);
     
-    const allPass = results.dayPlan && results.weekPlan && results.glp1Feasible && results.glp1Infeasible;
-    console.log(`\nOverall: ${allPass ? '✅ ALL TESTS PASSED' : '❌ SOME TESTS FAILED'}`);
+    const allPass = Object.values(results).every(v => v === true);
+    const passCount = Object.values(results).filter(v => v === true).length;
+    const totalCount = Object.values(results).length;
+    
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`Overall: ${passCount}/${totalCount} tests passed ${allPass ? '✅' : '❌'}`);
+    console.log(`${allPass ? '🎉 ALL TESTS PASSED!' : '⚠️  SOME TESTS FAILED'}`);
     
     process.exit(allPass ? 0 : 1);
     
