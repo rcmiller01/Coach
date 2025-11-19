@@ -50,88 +50,21 @@ export async function fetchWeeklyPlan(weekStartDate: string): Promise<WeeklyPlan
  */
 export async function generateMealPlanForWeek(
   weekStartDate: string,
-  // @ts-expect-error - Stub function, will use targets in real implementation
   targets: NutritionTargets,
-  // @ts-expect-error - Stub function, will use userContext in real implementation
   userContext?: UserContext
 ): Promise<WeeklyPlan> {
-  // TODO: Replace with real fetch call
-  // const response = await fetch(`${API_BASE}/nutrition/plan/week`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ weekStartDate, targets, userContext }),
-  // });
-  // if (!response.ok) throw new Error('Failed to generate weekly plan');
-  // return response.json();
-
-  // Stub: Return a dummy 7-day plan
-  const days: DayPlan[] = [];
-  const startDate = new Date(weekStartDate);
+  const response = await fetch(`${API_BASE}/nutrition/plan/week`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ weekStartDate, targets, userContext }),
+  });
   
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(startDate);
-    date.setDate(date.getDate() + i);
-    const dateStr = date.toISOString().split('T')[0];
-    
-    days.push({
-      date: dateStr,
-      meals: [
-        {
-          id: `breakfast-${dateStr}`,
-          type: 'breakfast',
-          items: [
-            {
-              id: `food-1-${dateStr}`,
-              name: 'Oatmeal with berries',
-              quantity: 1,
-              unit: 'serving',
-              calories: 320,
-              proteinGrams: 10,
-              carbsGrams: 54,
-              fatsGrams: 8,
-            },
-          ],
-        },
-        {
-          id: `lunch-${dateStr}`,
-          type: 'lunch',
-          items: [
-            {
-              id: `food-2-${dateStr}`,
-              name: 'Grilled chicken salad',
-              quantity: 1,
-              unit: 'serving',
-              calories: 450,
-              proteinGrams: 40,
-              carbsGrams: 20,
-              fatsGrams: 18,
-            },
-          ],
-        },
-        {
-          id: `dinner-${dateStr}`,
-          type: 'dinner',
-          items: [
-            {
-              id: `food-3-${dateStr}`,
-              name: 'Salmon with vegetables',
-              quantity: 1,
-              unit: 'serving',
-              calories: 520,
-              proteinGrams: 45,
-              carbsGrams: 30,
-              fatsGrams: 22,
-            },
-          ],
-        },
-      ],
-    });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to generate weekly plan');
   }
-
-  return {
-    weekStartDate,
-    days,
-  };
+  
+  return response.json();
 }
 
 /**
@@ -231,6 +164,33 @@ export async function updateDayPlan(plan: DayPlan): Promise<DayPlan> {
 }
 
 /**
+ * Regenerate a specific meal in a day plan using AI.
+ * @param date - Date of the plan (YYYY-MM-DD)
+ * @param mealIndex - Index of the meal to regenerate (0-based)
+ * @param targets - Daily nutrition targets
+ * @param currentPlan - Current day plan
+ * @param userContext - Optional location/locale and dietary preferences
+ */
+export async function regenerateMeal(
+  date: string,
+  mealIndex: number,
+  targets: NutritionTargets,
+  currentPlan: DayPlan,
+  userContext?: UserContext
+): Promise<DayPlan> {
+  const response = await fetch(`${API_BASE}/nutrition/plan/day/regenerate-meal`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date, mealIndex, targets, currentPlan, userContext }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to regenerate meal');
+  }
+  return response.json();
+}
+
+/**
  * Copy a meal plan from one day to another.
  * @param fromDate - Source date (YYYY-MM-DD)
  * @param toDate - Destination date (YYYY-MM-DD)
@@ -308,38 +268,18 @@ export async function saveDayLog(log: DayLog): Promise<DayLog> {
  */
 export async function parseFood(
   text: string,
-  // @ts-expect-error - Stub function, will use userContext in real implementation
   userContext?: UserContext
 ): Promise<LoggedFoodItem> {
-  // TODO: Replace with real fetch call
-  // const response = await fetch(`${API_BASE}/nutrition/parse-food`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ text, ...userContext }),
-  // });
-  // if (!response.ok) throw new Error('Failed to parse food');
-  // return response.json();
-
-  // Stub: Return a plausible dummy result
-  return {
-    id: `parsed-${Date.now()}`,
-    name: text,
-    quantity: 1,
-    unit: 'serving',
-    calories: 400,
-    proteinGrams: 25,
-    carbsGrams: 40,
-    fatsGrams: 12,
-    sourceType: 'search',
-    userAdjusted: false,
-    dataSource: 'estimated',
-    aiExplanation: {
-      reasoning: `Based on your description "${text}", I identified this as a typical portion. The nutrition values are estimated from similar foods in the database.`,
-      sources: [
-        { label: 'USDA FoodData Central', url: 'https://fdc.nal.usda.gov/' },
-        { label: 'Internal food database' },
-      ],
-      confidence: 'medium',
-    },
-  };
+  const response = await fetch(`${API_BASE}/nutrition/parse-food`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, ...userContext }),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to parse food');
+  }
+  
+  return response.json();
 }

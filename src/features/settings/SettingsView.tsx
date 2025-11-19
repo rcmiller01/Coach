@@ -66,7 +66,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     });
   };
 
-  const handleClearHistoryClick = () => {
+  const handleResetProfileClick = () => {
     if (window.confirm('Are you sure you want to reset your profile? You will need to redo onboarding.')) {
       onResetProfile();
     }
