@@ -910,9 +910,33 @@ async function main() {
   console.log('🧪 Meal Planning AI Test Suite');
   console.log('='.repeat(60));
   console.log(`User ID: ${TEST_USER_ID}`);
-  console.log(`USE_OPENROUTER: ${process.env.USE_OPENROUTER}`);
-  console.log(`Model: ${process.env.USE_OPENROUTER === 'true' ? process.env.OPENROUTER_MODEL : process.env.OPENAI_MODEL}`);
-  console.log(`API Key present: ${process.env.USE_OPENROUTER === 'true' ? !!process.env.OPENROUTER_API_KEY : !!process.env.OPENAI_API_KEY}`);
+  
+  // Determine which provider is enabled
+  const useOpenAI = process.env.USE_OPENAI === 'true';
+  const useOpenRouter = process.env.USE_OPENROUTER === 'true';
+  const useOllama = process.env.USE_OLLAMA === 'true';
+  
+  let provider = 'Unknown';
+  let model = '';
+  let apiKeyPresent = false;
+  
+  if (useOllama) {
+    provider = 'Ollama (Local)';
+    model = process.env.OLLAMA_MODEL || 'llama3.1:8b';
+    apiKeyPresent = true; // Ollama doesn't need API key
+  } else if (useOpenRouter) {
+    provider = 'OpenRouter';
+    model = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.1-8b-instruct';
+    apiKeyPresent = !!process.env.OPENROUTER_API_KEY;
+  } else if (useOpenAI) {
+    provider = 'OpenAI';
+    model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    apiKeyPresent = !!process.env.OPENAI_API_KEY;
+  }
+  
+  console.log(`Provider: ${provider}`);
+  console.log(`Model: ${model}`);
+  console.log(`API Key present: ${apiKeyPresent}`);
   
   // Initialize database connection
   const pool = new Pool({

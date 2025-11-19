@@ -37,19 +37,33 @@ import * as quotaService from './quotaService.js';
 // CONFIGURATION
 // ============================================================================
 
-// Support both OpenAI and OpenRouter
+// Support OpenAI, OpenRouter, and Ollama
+const USE_OPENAI = process.env.USE_OPENAI === 'true';
 const USE_OPENROUTER = process.env.USE_OPENROUTER === 'true';
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'openai/gpt-3.5-turbo';
+const USE_OLLAMA = process.env.USE_OLLAMA === 'true';
 
-// Initialize OpenAI client (works with OpenRouter too)
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.1-8b-instruct';
+
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.1:8b';
+
+// Initialize OpenAI client (works with OpenRouter and Ollama too via compatible API)
 let openaiClient: OpenAI | null = null;
 
 function getOpenAI(): OpenAI {
   if (!openaiClient) {
-    if (USE_OPENROUTER) {
+    if (USE_OLLAMA) {
+      console.log(`🦙 Using Ollama (local) with model: ${OLLAMA_MODEL}`);
+      console.log(`   Base URL: ${OLLAMA_BASE_URL}`);
+      openaiClient = new OpenAI({
+        apiKey: 'ollama', // Ollama doesn't require a real API key
+        baseURL: `${OLLAMA_BASE_URL}/v1`,
+      });
+    } else if (USE_OPENROUTER) {
       if (!OPENROUTER_API_KEY) {
         throw new Error('OPENROUTER_API_KEY environment variable not set');
       }
@@ -63,19 +77,24 @@ function getOpenAI(): OpenAI {
           'X-Title': 'AI Workout Coach - Nutrition',
         },
       });
-    } else {
+    } else if (USE_OPENAI) {
       if (!OPENAI_API_KEY) {
         throw new Error('OPENAI_API_KEY environment variable not set');
       }
       console.log(`🤖 Using OpenAI with model: ${OPENAI_MODEL}`);
       openaiClient = new OpenAI({ apiKey: OPENAI_API_KEY });
+    } else {
+      throw new Error('No AI provider enabled. Set USE_OPENAI, USE_OPENROUTER, or USE_OLLAMA to true in .env');
     }
   }
   return openaiClient;
 }
 
 function getModel(): string {
-  return USE_OPENROUTER ? OPENROUTER_MODEL : OPENAI_MODEL;
+  if (USE_OLLAMA) return OLLAMA_MODEL;
+  if (USE_OPENROUTER) return OPENROUTER_MODEL;
+  if (USE_OPENAI) return OPENAI_MODEL;
+  throw new Error('No AI provider enabled');
 }
 
 // ============================================================================
