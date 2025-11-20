@@ -4,6 +4,7 @@ const SETTINGS_KEY = 'ai_coach_settings_v1';
 
 export interface CoachSettings {
   defaultFormCheckEnabled: boolean;
+  restTimeBetweenExercises: number; // seconds, default 90
   mealReminders?: MealReminderSettings;
 }
 
@@ -11,6 +12,7 @@ export function loadSettings(): CoachSettings {
   if (typeof window === 'undefined') {
     return {
       defaultFormCheckEnabled: false,
+      restTimeBetweenExercises: 90,
       mealReminders: { timesPerDay: 0 },
     };
   }
@@ -19,6 +21,7 @@ export function loadSettings(): CoachSettings {
   if (!raw) {
     return {
       defaultFormCheckEnabled: false,
+      restTimeBetweenExercises: 90,
       mealReminders: { timesPerDay: 0 },
     };
   }
@@ -29,10 +32,15 @@ export function loadSettings(): CoachSettings {
     if (!parsed.mealReminders) {
       parsed.mealReminders = { timesPerDay: 0 };
     }
+    // Ensure restTimeBetweenExercises exists (backward compatibility)
+    if (parsed.restTimeBetweenExercises === undefined) {
+      parsed.restTimeBetweenExercises = 90;
+    }
     return parsed;
   } catch {
     return {
       defaultFormCheckEnabled: false,
+      restTimeBetweenExercises: 90,
       mealReminders: { timesPerDay: 0 },
     };
   }

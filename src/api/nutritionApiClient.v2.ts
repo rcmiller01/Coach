@@ -270,39 +270,12 @@ export async function parseFood(
   description: string,
   userContext?: UserContext
 ): Promise<LoggedFoodItem> {
-  // TODO: Replace with real fetch call
-  // const response = await fetch(`${API_BASE}/parse-food`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ description, userContext }),
-  // });
-  // return handleResponse<LoggedFoodItem>(response);
-
-  // Stub: Return a simple parsed item
-  console.log('[API Stub] parseFood', { description, userContext });
-
-  // Simulate basic parsing
-  const name = description.trim() || 'Unknown food';
+  const response = await fetch(`${API_BASE}/parse-food`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: description, ...userContext }),
+  });
   
-  return {
-    id: `food-${Date.now()}`,
-    name,
-    foodId: undefined,
-    quantity: 1,
-    unit: 'serving',
-    calories: 200,
-    proteinGrams: 10,
-    carbsGrams: 25,
-    fatsGrams: 8,
-    sourceType: 'search',
-    userAdjusted: false,
-    dataSource: 'estimated',
-    aiExplanation: {
-      reasoning: `Estimated nutrition values for "${name}". This is stub data.`,
-      sources: [
-        { label: 'Stub Database', url: undefined },
-      ],
-      confidence: 'low',
-    },
-  };
+  const result = await handleResponse<{ data: LoggedFoodItem }>(response);
+  return result.data;
 }

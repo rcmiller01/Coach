@@ -70,9 +70,12 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
     try {
       const contextWithPreferences: UserContext = {
         ...userContext,
-        preferences,
+        preferences: {
+          ...preferences,
+          planProfile, // Include planProfile in preferences
+        },
       };
-      const plan = await generateMealPlanForWeek(currentWeekStart, targets, contextWithPreferences, planProfile);
+      const plan = await generateMealPlanForWeek(currentWeekStart, targets, contextWithPreferences);
       setWeeklyPlan(plan);
     } catch (err) {
       console.error('Generate week error:', err);
@@ -92,9 +95,12 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
     try {
       const contextWithPreferences: UserContext = {
         ...userContext,
-        preferences,
+        preferences: {
+          ...preferences,
+          planProfile,
+        },
       };
-      const dayPlan = await generateMealPlanForDay(date, targets, contextWithPreferences, planProfile);
+      const dayPlan = await generateMealPlanForDay(date, targets, contextWithPreferences);
       // Update the weekly plan with the new day
       if (weeklyPlan) {
         const updatedDays = weeklyPlan.days.map(d => d.date === date ? dayPlan : d);

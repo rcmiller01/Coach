@@ -30,6 +30,11 @@ const CameraPreview: React.FC<CameraPreviewProps> = ({ isActive, onError, onVide
     // Request camera access
     const startCamera = async () => {
       try {
+        // Check if mediaDevices is supported
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('Camera access is not supported in this browser. Please use a modern browser like Chrome, Firefox, or Edge.');
+        }
+
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: 'user',

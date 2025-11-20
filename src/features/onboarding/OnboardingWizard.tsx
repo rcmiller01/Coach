@@ -104,6 +104,8 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
             heightInches={state.heightInches}
             weightLbs={state.weightLbs}
             trainingExperience={state.trainingExperience}
+            city={state.city}
+            zipCode={state.zipCode}
             onChange={updateState}
             onNext={handleNext}
             onBack={handleBack}

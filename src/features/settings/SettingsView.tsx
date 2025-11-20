@@ -59,6 +59,15 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     });
   };
 
+  const handleRestTimeChange = (value: number) => {
+    // Clamp between 30 and 300 seconds
+    const clampedValue = Math.max(30, Math.min(300, value));
+    onUpdateSettings({
+      ...settings,
+      restTimeBetweenExercises: clampedValue,
+    });
+  };
+
   const handleUpdateMealReminders = (mealReminders: MealReminderSettings) => {
     onUpdateSettings({
       ...settings,
@@ -152,9 +161,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({
         {/* Form Check Preference */}
         <div className="bg-white rounded-lg shadow border border-gray-200 p-6 mb-4">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Form Check Preferences
+            Workout Preferences
           </h2>
-          <div className="flex items-start">
+          
+          {/* Form Check Toggle */}
+          <div className="flex items-start mb-6">
             <div className="flex items-center h-5">
               <input
                 type="checkbox"
@@ -173,6 +184,35 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 You can still toggle it on/off during each session.
               </p>
             </div>
+          </div>
+
+          {/* Rest Time Setting */}
+          <div className="border-t border-gray-200 pt-6">
+            <label htmlFor="restTime" className="block font-medium text-gray-900 mb-2">
+              Rest Time Between Exercises
+            </label>
+            <div className="flex items-center gap-4">
+              <input
+                type="number"
+                id="restTime"
+                min="30"
+                max="300"
+                step="15"
+                value={settings.restTimeBetweenExercises}
+                onChange={(e) => handleRestTimeChange(parseInt(e.target.value) || 90)}
+                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <span className="text-gray-700 font-medium">seconds</span>
+              <button
+                onClick={() => handleRestTimeChange(90)}
+                className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+              >
+                Reset to 90s
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 mt-2">
+              How long to rest between exercises (30-300 seconds). Default is 90 seconds.
+            </p>
           </div>
         </div>
 

@@ -936,6 +936,7 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
       const messages: ChatCompletionMessageParam[] = [systemMessage, userMessage];
       
       // Call LLM with function calling
+      console.log(`🤖 Calling ${getModel()} for food parsing...`);
       let response = await openai.chat.completions.create({
         model: getModel(),
         messages,
@@ -943,6 +944,8 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
         tool_choice: 'auto',
         temperature: 0.3, // Low temperature for consistency
       });
+      
+      console.log(`📝 AI Response: finish_reason=${response.choices[0].finish_reason}, tool_calls=${response.choices[0].message.tool_calls?.length || 0}`);
       
       // Handle tool calls (may need multiple rounds)
       const maxIterations = 5;

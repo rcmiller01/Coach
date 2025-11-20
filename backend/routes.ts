@@ -413,11 +413,15 @@ export async function saveDayLog(req: Request, res: Response) {
  * Body: { text: string, city?: string, zipCode?: string, locale?: string }
  */
 export async function parseFood(req: Request, res: Response) {
+  console.log('📥 parseFood route hit');
+  console.log('Request body:', JSON.stringify(req.body));
+  
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { text, city, zipCode, locale } = req.body as any;
 
     if (!text || typeof text !== 'string') {
+      console.log('❌ Validation failed: text is required');
       const errorResponse: ApiErrorResponse = {
         error: {
           code: 'VALIDATION_ERROR',
@@ -428,6 +432,7 @@ export async function parseFood(req: Request, res: Response) {
       return res.status(400).json(errorResponse);
     }
 
+    console.log(`🔍 Calling AI to parse: "${text}"`);
     // Parse food using AI service
     const foodItem: LoggedFoodItem = await nutritionAiService.parseFood({
       text,
@@ -435,6 +440,7 @@ export async function parseFood(req: Request, res: Response) {
       userId: STUB_USER_ID,
     });
 
+    console.log('✅ Food parsed successfully:', foodItem.name);
     res.json({ data: foodItem });
   } catch (error) {
     console.error('parseFood error:', error);

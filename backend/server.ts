@@ -16,6 +16,20 @@ import * as routes from './routes.js';
 // Load environment variables from .env file
 dotenv.config();
 
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise);
+  console.error('Reason:', reason);
+  // Don't exit - just log it
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  console.error('Stack:', error.stack);
+  // Exit on uncaught exceptions
+  process.exit(1);
+});
+
 // Load environment variables
 const PORT = process.env.PORT || 3001;
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -53,6 +67,12 @@ const app = express();
 
 // Middleware
 app.use(express.json());
+
+// Request logging
+app.use((req, res, next) => {
+  console.log(`📬 ${req.method} ${req.url}`);
+  next();
+});
 
 // CORS for development
 app.use((req, res, next) => {
@@ -107,11 +127,16 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🍎 Parse food: POST http://localhost:${PORT}/api/nutrition/parse-food`);
 });
+
+// Keep-alive to prevent process exit
+setInterval(() => {
+  console.log('💓 Backend alive...', new Date().toLocaleTimeString());
+}, 5000);
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

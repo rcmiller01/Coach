@@ -23,6 +23,7 @@ interface WorkoutSessionViewProps {
   onViewExercise?: (exerciseId: string) => void;
   onSubstituteExercise?: (dayId: string, exerciseId: string, newExerciseName: string) => void;
   defaultFormCheckEnabled?: boolean;
+  restTimeBetweenExercises?: number; // seconds, default 90
   loadSuggestions?: ExerciseLoadSuggestion[];
   weekNumber?: number; // Current week number (1-indexed)
   trainingPhase?: 'build' | 'deload'; // Current training phase
@@ -36,11 +37,12 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
   onViewExercise,
   onSubstituteExercise,
   defaultFormCheckEnabled,
-  loadSuggestions = [],
+  restTimeBetweenExercises = 90,
+  loadSuggestions,
   weekNumber,
   trainingPhase,
   blockGoal,
-  previousWeekLoads = []
+  previousWeekLoads,
 }) => {
   // Initialize session state once on mount using lazy initializer
   const [session, setSession] = useState<WorkoutSessionState>(() => {
@@ -207,7 +209,7 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
     if (currentExerciseIndex < programDay.exercises.length - 1) {
       // Start between-exercise rest
       setBetweenExerciseRest(true);
-      setRestTimeRemaining(90); // 90 seconds between exercises
+      setRestTimeRemaining(restTimeBetweenExercises); // Use setting value
       
       // Reset rep counter
       if (repCounterRef.current) {

@@ -329,6 +329,7 @@ function App() {
         onViewExercise={setActiveExerciseId}
         onSubstituteExercise={handleExerciseSubstitution}
         defaultFormCheckEnabled={settings.defaultFormCheckEnabled}
+        restTimeBetweenExercises={settings.restTimeBetweenExercises}
         loadSuggestions={daySuggestions}
         weekNumber={multiWeekProgram.currentWeekIndex + 1}
         trainingPhase={currentWeek.trainingPhase || 'build'}

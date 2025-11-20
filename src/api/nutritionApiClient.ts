@@ -61,10 +61,11 @@ export async function generateMealPlanForWeek(
   
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || 'Failed to generate weekly plan');
+    throw new Error(error.error?.message || error.message || 'Failed to generate weekly plan');
   }
   
-  return response.json();
+  const result = await response.json();
+  return result.data;
 }
 
 /**
@@ -185,9 +186,10 @@ export async function regenerateMeal(
   });
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || 'Failed to regenerate meal');
+    throw new Error(error.error?.message || error.message || 'Failed to regenerate meal');
   }
-  return response.json();
+  const result = await response.json();
+  return result.data;
 }
 
 /**
@@ -278,8 +280,9 @@ export async function parseFood(
   
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || 'Failed to parse food');
+    throw new Error(error.error?.message || error.message || 'Failed to parse food');
   }
   
-  return response.json();
+  const result = await response.json();
+  return result.data;
 }
