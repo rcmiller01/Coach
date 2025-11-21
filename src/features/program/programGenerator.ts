@@ -34,8 +34,10 @@ export function generateInitialProgram(
  */
 export function generateProgramWeekFromOnboarding(
   onboarding: OnboardingState,
-  blockGoal: BlockGoal = 'general'
+  blockGoal?: BlockGoal
 ): ProgramWeek {
+  // If blockGoal not provided, derive it from onboarding's primaryGoal
+  const goal = blockGoal || mapPrimaryGoalToBlockGoal(onboarding.primaryGoal);
   // Determine sessions per week
   const sessionsPerWeek =
     onboarding.sessionsPerWeek &&
@@ -87,7 +89,7 @@ export function generateProgramWeekFromOnboarding(
       dayOfWeek,
       focus,
       description,
-      exercises: pickExercisesForDay(focus, onboarding.equipment || [], blockGoal, onboarding.planProfile),
+      exercises: pickExercisesForDay(focus, onboarding.equipment || [], goal, onboarding.planProfile),
     };
   });
 

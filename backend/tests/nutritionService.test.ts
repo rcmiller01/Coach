@@ -6,14 +6,15 @@ import * as quotaService from '../quotaService';
 // Mock OpenAI
 const mockChatCreate = vi.fn();
 vi.mock('openai', () => {
-    return {
-        default: vi.fn().mockImplementation(() => ({
-            chat: {
-                completions: {
-                    create: mockChatCreate,
-                },
+    class MockOpenAI {
+        chat = {
+            completions: {
+                create: mockChatCreate,
             },
-        })),
+        };
+    }
+    return {
+        default: MockOpenAI,
     };
 });
 
