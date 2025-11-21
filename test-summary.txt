@@ -1,0 +1,65 @@
+﻿
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»[39m[1m[41m
+ Failed Tests 5 [49
+m[22m[31mΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/api.test.ts[2m
+ > [22mBackend API 
+Integration[2m > 
+[22mGET 
+/health[2m > 
+[22mreturns 200 
+and status ok
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/api.test.ts[2m
+ > [22mBackend API 
+Integration[2m > 
+[22mPOST /api/nutri
+tion/plan/week[2m 
+> [22mgenerates a 
+weekly meal plan
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/api.test.ts[2m
+ > [22mBackend API 
+Integration[2m > 
+[22mPOST /api/nutri
+tion/plan/day/regene
+rate-meal[2m > 
+[22mregenerates a 
+specific meal
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/api.test.ts[2m
+ > [22mBackend API 
+Integration[2m > 
+[22mPOST /api/progr
+am/week/generate[2m
+ > [22mgenerates a 
+workout week from 
+onboarding state
+[41m[1m FAIL 
+[22m[49m src/featu
+res/nutrition/Nutrit
+ionPage.test.tsx[2m
+ > [22mNutritionPag
+e[2m > [22mshows 
+generate button
+[2m Test Files 
+[22m [1m[31m2 fai
+led[39m[22m[2m | 
+[22m[1m[32m4 pass
+ed[39m[22m[90m 
+(6)[39m
+[2m      Tests 
+[22m [1m[31m5 fai
+led[39m[22m[2m | 
+[22m[1m[32m13 pas
+sed[39m[22m[90m 
+(18)[39m
+
+

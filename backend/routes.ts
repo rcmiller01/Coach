@@ -43,6 +43,7 @@ import { WorkoutRepository } from './db/repositories/WorkoutRepository';
 import { NutritionLogRepository } from './db/repositories/NutritionLogRepository';
 import { WeightRepository } from './db/repositories/WeightRepository';
 import { Pool } from 'pg';
+import { ProgressSummaryService } from './services/progressSummaryService';
 
 // In-memory storage for development (replace with real database)
 const weeklyPlansStore: Map<string, WeeklyPlan> = new Map();
@@ -61,6 +62,7 @@ const STUB_USER_ID = 'user-123';
 let workoutRepo: WorkoutRepository;
 let nutritionLogRepo: NutritionLogRepository;
 let weightRepo: WeightRepository;
+let progressSummaryService: ProgressSummaryService;
 
 /**
  * Initialize repositories with database pool
@@ -70,6 +72,7 @@ export function initializeRepositories(pool: Pool) {
   workoutRepo = new WorkoutRepository(pool);
   nutritionLogRepo = new NutritionLogRepository(pool);
   weightRepo = new WeightRepository(pool);
+  progressSummaryService = new ProgressSummaryService(pool);
 }
 
 // ============================================================================
@@ -619,7 +622,7 @@ export async function logWeight(req: Request, res: Response) {
 
 /**
  * GET /api/progress/week-summary?weekStart=YYYY-MM-DD
- * Get progress summary for a week
+ * Get progress summary for a week with insights
  */
 export async function getWeekSummary(req: Request, res: Response) {
   try {
@@ -629,57 +632,16 @@ export async function getWeekSummary(req: Request, res: Response) {
       return res.status(400).json({ error: 'weekStart query parameter required' });
     }
 
-    // Calculate week end (6 days after start)
-    const startDate = new Date(weekStart);
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 6);
-    const weekEnd = endDate.toISOString().split('T')[0];
-
-    // Fetch data for the week
-    const workoutSessions = await workoutRepo.getWorkoutSessionsByDateRange(
+    // Use the progress summary service to compute everything
+    const summary = await progressSummaryService.computeWeeklySummary(
       STUB_USER_ID,
-      weekStart,
-      weekEnd
-    );
-    const nutritionLogs = await nutritionLogRepo.getNutritionLogsByDateRange(
-      STUB_USER_ID,
-      weekStart,
-      weekEnd
+      weekStart
     );
 
-    // Calculate summary
-    const workoutsCompleted = workoutSessions.length;
-    const nutritionDaysLogged = nutritionLogs.length;
-
-    const avgCalories =
-      nutritionLogs.length > 0
-        ? Math.round(
-          nutritionLogs.reduce((sum, log) => sum + (log.totalCalories || 0), 0) /
-          nutritionLogs.length
-        )
-        : 0;
-
-    const avgProtein =
-      nutritionLogs.length > 0
-        ? Math.round(
-          nutritionLogs.reduce((sum, log) => sum + (log.totalProteinGrams || 0), 0) /
-          nutritionLogs.length
-        )
-        : 0;
-
-    res.json({
-      data: {
-        weekStart,
-        weekEnd,
-        workoutsCompleted,
-        nutritionDaysLogged,
-        avgCalories,
-        avgProtein,
-      },
-    });
-  } catch (error) {
-    console.error('getWeekSummary error:', error);
-    res.status(500).json({ error: 'Failed to fetch week summary' });
+    res.json({ data: summary });
+  } catch (error: any) {
+    console.error('Week summary error:', error);
+    res.status(500).json({ error: 'Failed to get week summary' });
   }
 }
 

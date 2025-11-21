@@ -1,0 +1,424 @@
+﻿
+[1m[46m RUN [49m[22m [36mv4.0.12 [39m[90mC:/Users/rober/Documents/Coach[39m
+
+[90mstdout[2m | backend/tests/api.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (13) from .env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+
+[90mstdout[2m | backend/tests/api.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+
+[90mstdout[2m | backend/tests/api.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+Γ£à Nutrition tools initialized
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mGET /health[2m > [22m[2mreturns 200 and status ok
+[22m[39m≡ƒô¼ GET /health
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/week[2m > [22m[2mgenerates a weekly meal plan
+[22m[39m≡ƒô¼ POST /api/nutrition/plan/week
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/week[2m > [22m[2mgenerates a weekly meal plan
+[22m[39mΓ£à Database connected at: [35m2025-11-21T00:53:01.610Z[39m
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/week[2m > [22m[2mgenerates a weekly meal plan
+[22m[39m≡ƒñû Using OpenAI with model: gpt-4o-mini
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m≡ƒô¼ POST /api/nutrition/plan/day/regenerate-meal
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m≡ƒöä Regenerating breakfast for 2025-01-01
+   Remaining budget: 2000 kcal, 150g P, 200g C, 65g F
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   Tool iteration 1
+   ≡ƒöº Calling search_generic_food: { query: [32m'egg, whole, cooked'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   ≡ƒöº Calling search_generic_food: { query: [32m'oatmeal, cooked'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   ≡ƒöº Calling search_generic_food: { query: [32m'cottage cheese, low fat'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   ≡ƒöº Calling search_generic_food: { query: [32m'chicken breast, grilled'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   ≡ƒöº Calling search_generic_food: { query: [32m'avocado, raw'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   Tool iteration 2
+   ≡ƒöº Calling search_generic_food: { query: [32m'steel cut oats, cooked'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   ≡ƒöº Calling search_generic_food: { query: [32m'cottage cheese, 1% milkfat'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   ≡ƒöº Calling search_generic_food: { query: [32m'grilled chicken breast, skinless'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   Tool iteration 3
+   ≡ƒöº Calling search_generic_food: { query: [32m'oatmeal, instant, cooked'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   ≡ƒöº Calling search_generic_food: { query: [32m'cottage cheese, 2% milkfat'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   ≡ƒöº Calling search_generic_food: { query: [32m'chicken breast, roasted'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   Tool iteration 4
+   ≡ƒöº Calling search_generic_food: { query: [32m'quinoa, cooked'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   ≡ƒöº Calling search_generic_food: { query: [32m'greek yogurt, plain, nonfat'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   ≡ƒöº Calling search_generic_food: { query: [32m'salmon, cooked'[39m }
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   Tool iteration 5
+   ≡ƒöº Calling calculate_recipe_macros: {
+  ingredients: [
+    { foodId: [33m15[39m, grams: [33m400[39m },
+    { foodId: [33m25[39m, grams: [33m200[39m },
+    { foodId: [33m20[39m, grams: [33m300[39m },
+    { foodId: [33m41[39m, grams: [33m200[39m },
+    { foodId: [33m15[39m, grams: [33m200[39m }
+  ]
+}
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   Tool iteration 6
+   ≡ƒöº Calling calculate_recipe_macros: {
+  ingredients: [
+    { foodId: [33m15[39m, grams: [33m400[39m },
+    { foodId: [33m25[39m, grams: [33m200[39m },
+    { foodId: [33m20[39m, grams: [33m300[39m },
+    { foodId: [33m41[39m, grams: [33m200[39m },
+    { foodId: [33m15[39m, grams: [33m200[39m }
+  ]
+}
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   Tool iteration 7
+   ≡ƒöº Calling calculate_recipe_macros: {
+  ingredients: [
+    { foodId: [33m15[39m, grams: [33m400[39m },
+    { foodId: [33m25[39m, grams: [33m200[39m },
+    { foodId: [33m20[39m, grams: [33m300[39m },
+    { foodId: [33m41[39m, grams: [33m200[39m }
+  ]
+}
+   ≡ƒöº Calling calculate_recipe_macros: {
+  ingredients: [
+    { foodId: [33m15[39m, grams: [33m400[39m },
+    { foodId: [33m20[39m, grams: [33m300[39m },
+    { foodId: [33m41[39m, grams: [33m200[39m }
+  ]
+}
+   ≡ƒöº Calling calculate_recipe_macros: {
+  ingredients: [
+    { foodId: [33m25[39m, grams: [33m200[39m },
+    { foodId: [33m20[39m, grams: [33m300[39m },
+    { foodId: [33m15[39m, grams: [33m400[39m }
+  ]
+}
+   ≡ƒöº Calling calculate_recipe_macros: {
+  ingredients: [
+    { foodId: [33m41[39m, grams: [33m200[39m },
+    { foodId: [33m20[39m, grams: [33m300[39m },
+    { foodId: [33m15[39m, grams: [33m400[39m }
+  ]
+}
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   Tool iteration 8
+   ≡ƒöº Calling calculate_recipe_macros: {
+  ingredients: [
+    { foodId: [33m15[39m, grams: [33m400[39m },
+    { foodId: [33m25[39m, grams: [33m200[39m },
+    { foodId: [33m20[39m, grams: [33m300[39m },
+    { foodId: [33m41[39m, grams: [33m200[39m }
+  ]
+}
+   ≡ƒöº Calling calculate_recipe_macros: {
+  ingredients: [
+    { foodId: [33m15[39m, grams: [33m400[39m },
+    { foodId: [33m20[39m, grams: [33m300[39m },
+    { foodId: [33m41[39m, grams: [33m200[39m }
+  ]
+}
+   ≡ƒöº Calling calculate_recipe_macros: {
+  ingredients: [
+    { foodId: [33m25[39m, grams: [33m200[39m },
+    { foodId: [33m20[39m, grams: [33m300[39m },
+    { foodId: [33m15[39m, grams: [33m400[39m }
+  ]
+}
+   ≡ƒöº Calling calculate_recipe_macros: {
+  ingredients: [
+    { foodId: [33m41[39m, grams: [33m200[39m },
+    { foodId: [33m20[39m, grams: [33m300[39m },
+    { foodId: [33m15[39m, grams: [33m400[39m }
+  ]
+}
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   Tool iteration 9
+   ≡ƒöº Calling calculate_recipe_macros: {
+  ingredients: [
+    { foodId: [33m15[39m, grams: [33m400[39m },
+    { foodId: [33m25[39m, grams: [33m200[39m },
+    { foodId: [33m20[39m, grams: [33m300[39m },
+    { foodId: [33m41[39m, grams: [33m200[39m }
+  ]
+}
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/nutrition/plan/day/regenerate-meal[2m > [22m[2mregenerates a specific meal
+[22m[39m   Tool iteration 10
+   ≡ƒöº Calling calculate_recipe_macros: {
+  ingredients: [
+    { foodId: [33m15[39m, grams: [33m400[39m },
+    { foodId: [33m20[39m, grams: [33m300[39m },
+    { foodId: [33m25[39m, grams: [33m200[39m },
+    { foodId: [33m41[39m, grams: [33m200[39m }
+  ]
+}
+
+node.exe : 
+[90mstderr[2m | ba
+ckend/tests/api.test
+.ts[2m > 
+[22m[2mBackend 
+API Integration[2m 
+> [22m[2mPOST /api
+/nutrition/plan/day/
+regenerate-meal[2m 
+> [22m[2mregenerat
+es a specific meal
+At C:\Program Files\
+nodejs\npx.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo  
+            : 
+NotSpecified    : 
+([90mstderr[2m.   
+ ..a specific 
+meal:S    tring) 
+[], RemoteEx    
+ception
+    + 
+FullyQualifiedErr   
+ orId : 
+NativeComman    
+dError
+ 
+[22m[39mΓ¥î Meal 
+regeneration error: 
+Error: LLM returned 
+empty response
+    at RealNutrition
+AiService.regenerate
+Meal (C:/Users/rober
+/Documents/Coach/bac
+kend/RealNutritionAi
+Service.ts:1359:15)
+[90m    at processT
+icksAndRejections (n
+ode:internal/process
+/task_queues:105:5)
+[39m
+    at 
+regenerateMeal (C:/U
+sers/rober/Documents
+/Coach/backend/route
+s.ts:317:46)
+
+[90mstderr[2m | ba
+ckend/tests/api.test
+.ts[2m > 
+[22m[2mBackend 
+API Integration[2m 
+> [22m[2mPOST /api
+/nutrition/plan/day/
+regenerate-meal[2m 
+> [22m[2mregenerat
+es a specific meal
+[22m[39mregenerate
+Meal error: 
+NutritionApiError: 
+Failed to 
+regenerate meal. 
+Please try again.
+    at RealNutrition
+AiService.regenerate
+Meal (C:/Users/rober
+/Documents/Coach/bac
+kend/RealNutritionAi
+Service.ts:1456:13)
+[90m    at processT
+icksAndRejections (n
+ode:internal/process
+/task_queues:105:5)
+[39m
+    at 
+regenerateMeal (C:/U
+sers/rober/Documents
+/Coach/backend/route
+s.ts:317:46) {
+  code: [32m'AI_PLA
+N_FAILED'[39m,
+  retryable: 
+[33mtrue[39m,
+  details: { 
+originalError: 
+[32m'Error: LLM 
+returned empty 
+response'[39m }
+}
+
+[90mstdout[2m | backend/tests/api.test.ts[2m > [22m[2mBackend API Integration[2m > [22m[2mPOST /api/program/week/generate[2m > [22m[2mgenerates a workout week from onboarding state
+[22m[39m≡ƒô¼ POST /api/program/week/generate
+
+ [31mΓ¥»[39m backend/tests/api.test.ts [2m([22m[2m4 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 85636[2mms[22m[39m
+       [32mΓ£ô[39m returns 200 and status ok[32m 18[2mms[22m[39m
+[31m       [31m├ù[31m generates a weekly meal plan[39m[33m 60014[2mms[22m[39m
+[31m       [31m├ù[31m regenerates a specific meal[39m[33m 25596[2mms[22m[39m
+       [32mΓ£ô[39m generates a workout week from onboarding state[32m 5[2mms[22m[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»[39m[1m[41m
+ Failed Tests 2 [49
+m[22m[31mΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/api.test.ts[2m
+ > [22mBackend API 
+Integration[2m > 
+[22mPOST /api/nutri
+tion/plan/week[2m 
+> [22mgenerates a 
+weekly meal plan
+[31m[1mError[22m:
+ Test timed out in 
+60000ms.
+If this is a 
+long-running test, 
+pass a timeout 
+value as the last 
+argument or 
+configure it 
+globally with 
+"testTimeout".[39m
+[36m [2mΓ¥»[22m b
+ackend/tests/api.tes
+t.ts:[2m15:9[22m[
+39m
+    [90m 13| [39m
+    [90m 14| [39m 
+   [34mdescribe[39
+m([32m'POST /api/nu
+trition/plan/week'[
+39m[33m,[39m () 
+[33m=>[39m {
+    [90m 15| [39m 
+       [34mit[39m(
+[32m'generates a 
+weekly meal plan'[3
+9m[33m,[39m 
+[35masync[39m () 
+[33m=>[39m {
+    [90m   | [39m 
+       [31m^[39m
+    [90m 16| [39m 
+           
+[35mconst[39m 
+payload [33m=[39m 
+{
+    [90m 17| [39m 
+               weekS
+tartDate[33m:[39m 
+[32m'2025-01-01'[3
+9m[33m,[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[1/2]ΓÄ»[22m[39m
+
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/api.test.ts[2m
+ > [22mBackend API 
+Integration[2m > 
+[22mPOST /api/nutri
+tion/plan/day/regene
+rate-meal[2m > 
+[22mregenerates a 
+specific meal
+[31m[1mAssertionEr
+ror[22m: expected 
+500 to be 200 // 
+Object.is 
+equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+[36m [2mΓ¥»[22m b
+ackend/tests/api.tes
+t.ts:[2m68:37[22m
+[39m
+    [90m 66| [39m 
+               [33m
+.[39m[34msend[39m
+(payload)[33m;[39m
+    [90m 67| [39m
+    [90m 68| [39m 
+           [34mexpe
+ct[39m(response[33
+m.[39mstatus)[33m.
+[39m[34mtoBe[39m(
+[34m200[39m)[33m;
+[39m
+    [90m   | [39m 
+                    
+               
+[31m^[39m
+    [90m 69| [39m 
+           [34mexpe
+ct[39m(response[33
+m.[39mbody[33m.[3
+9mdata)[33m.[39m[
+34mtoHaveProperty[3
+9m([32m'meals'[39m
+)[33m;[39m
+    [90m 70| [39m 
+           expect(re
+sponse.body.data.mea
+ls[0].items.length).
+toBeGreatΓÇª
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[2/2]ΓÄ»[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 19:53:00
+[2m   Duration [22m 86.57s[2m (transform 136ms, setup 0ms, collect 460ms, tests 85.64s, environment 0ms, prepare 18ms)[22m
+

@@ -1,0 +1,255 @@
+﻿
+[1m[46m RUN [49m[22m [36mv4.0.12 [39m[90mC:/Users/rober/Documents/Coach[39m
+
+ [31mΓ¥»[39m src/features/progress/ProgressDashboardPage.test.tsx [2m([22m[2m5 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[32m 6[2mms[22m[39m
+[31m     [31m├ù[31m shows loading state initially[39m[32m 3[2mms[22m[39m
+[31m     [31m├ù[31m shows empty state when no data[39m[32m 1[2mms[22m[39m
+[31m     [31m├ù[31m displays week summary correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m├ù[31m displays weight trend chart with data[39m[32m 0[2mms[22m[39m
+[31m     [31m├ù[31m shows error state when API fails[39m[32m 0[2mms[22m[39m
+node.exe : 
+At C:\Program 
+Files\nodejs\npx.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo      
+        : NotS    
+pecified: (:Str    ing) 
+[], Remote    Exception
+    + FullyQualifie    
+dErrorId : Nati    
+veCommandError
+ 
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»[39m[1m[41m Failed 
+Tests 5 [49m[22m[31mΓ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39
+m
+
+[41m[1m FAIL 
+[22m[49m src/features/
+progress/ProgressDashboa
+rdPage.test.tsx[2m > [
+22mProgressDashboardPage
+[2m > [22mshows 
+loading state initially
+[31m[1mReferenceError
+[22m: document is not 
+defined[39m
+[90m [2mΓ¥»[22m 
+Proxy.render node_module
+s/@testing-library/react
+/dist/pure.js:[2m257:5
+[22m[39m
+[36m [2mΓ¥»[22m src/f
+eatures/progress/Progres
+sDashboardPage.test.tsx:
+[2m21:9[22m[39m
+    [90m 19| [39m     
+   vi.mocked(progressApi
+.fetchTrends).mockImplem
+entation(() => neΓÇª
+    [90m 20| [39m
+    [90m 21| [39m     
+   [34mrender[39m([33
+m<[39m[33mProgressDash
+boardPage[39m [33m/[3
+9m[33m>[39m)[33m;[39
+m
+    [90m   | [39m     
+   [31m^[39m
+    [90m 22| [39m
+    [90m 23| [39m     
+   [34mexpect[39m(scre
+en[33m.[39m[34mgetByT
+ext[39m([36m/loading p
+rogress/i[39m))[33m.[
+39m[34mtoBeDefined[39m
+()[33m;[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»[1/5]ΓÄ»[22m[
+39m
+
+[41m[1m FAIL 
+[22m[49m src/features/
+progress/ProgressDashboa
+rdPage.test.tsx[2m > [
+22mProgressDashboardPage
+[2m > [22mshows empty 
+state when no data
+[31m[1mReferenceError
+[22m: document is not 
+defined[39m
+[90m [2mΓ¥»[22m 
+Proxy.render node_module
+s/@testing-library/react
+/dist/pure.js:[2m257:5
+[22m[39m
+[36m [2mΓ¥»[22m src/f
+eatures/progress/Progres
+sDashboardPage.test.tsx:
+[2m41:9[22m[39m
+    [90m 39| [39m     
+   })[33m;[39m
+    [90m 40| [39m
+    [90m 41| [39m     
+   [34mrender[39m([33
+m<[39m[33mProgressDash
+boardPage[39m [33m/[3
+9m[33m>[39m)[33m;[39
+m
+    [90m   | [39m     
+   [31m^[39m
+    [90m 42| [39m
+    [90m 43| [39m     
+   [35mawait[39m 
+[34mwaitFor[39m(() 
+[33m=>[39m {
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»[2/5]ΓÄ»[22m[
+39m
+
+[41m[1m FAIL 
+[22m[49m src/features/
+progress/ProgressDashboa
+rdPage.test.tsx[2m > [
+22mProgressDashboardPage
+[2m > [22mdisplays 
+week summary correctly
+[31m[1mReferenceError
+[22m: document is not 
+defined[39m
+[90m [2mΓ¥»[22m 
+Proxy.render node_module
+s/@testing-library/react
+/dist/pure.js:[2m257:5
+[22m[39m
+[36m [2mΓ¥»[22m src/f
+eatures/progress/Progres
+sDashboardPage.test.tsx:
+[2m63:9[22m[39m
+    [90m 61| [39m     
+   })[33m;[39m
+    [90m 62| [39m
+    [90m 63| [39m     
+   [34mrender[39m([33
+m<[39m[33mProgressDash
+boardPage[39m [33m/[3
+9m[33m>[39m)[33m;[39
+m
+    [90m   | [39m     
+   [31m^[39m
+    [90m 64| [39m
+    [90m 65| [39m     
+   [35mawait[39m 
+[34mwaitFor[39m(() 
+[33m=>[39m {
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»[3/5]ΓÄ»[22m[
+39m
+
+[41m[1m FAIL 
+[22m[49m src/features/
+progress/ProgressDashboa
+rdPage.test.tsx[2m > [
+22mProgressDashboardPage
+[2m > [22mdisplays 
+weight trend chart with 
+data
+[31m[1mReferenceError
+[22m: document is not 
+defined[39m
+[90m [2mΓ¥»[22m 
+Proxy.render node_module
+s/@testing-library/react
+/dist/pure.js:[2m257:5
+[22m[39m
+[36m [2mΓ¥»[22m src/f
+eatures/progress/Progres
+sDashboardPage.test.tsx:
+[2m92:9[22m[39m
+    [90m 90| [39m     
+   })[33m;[39m
+    [90m 91| [39m
+    [90m 92| [39m     
+   [34mrender[39m([33
+m<[39m[33mProgressDash
+boardPage[39m [33m/[3
+9m[33m>[39m)[33m;[39
+m
+    [90m   | [39m     
+   [31m^[39m
+    [90m 93| [39m
+    [90m 94| [39m     
+   [35mawait[39m 
+[34mwaitFor[39m(() 
+[33m=>[39m {
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»[4/5]ΓÄ»[22m[
+39m
+
+[41m[1m FAIL 
+[22m[49m src/features/
+progress/ProgressDashboa
+rdPage.test.tsx[2m > [
+22mProgressDashboardPage
+[2m > [22mshows error 
+state when API fails
+[31m[1mReferenceError
+[22m: document is not 
+defined[39m
+[90m [2mΓ¥»[22m 
+Proxy.render node_module
+s/@testing-library/react
+/dist/pure.js:[2m257:5
+[22m[39m
+[36m [2mΓ¥»[22m src/f
+eatures/progress/Progres
+sDashboardPage.test.tsx:
+[2m107:9[22m[39m
+    [90m105| [39m     
+   vi.mocked(progressApi
+.fetchTrends).mockReject
+edValue(new ErrorΓÇª
+    [90m106| [39m
+    [90m107| [39m     
+   [34mrender[39m([33
+m<[39m[33mProgressDash
+boardPage[39m [33m/[3
+9m[33m>[39m)[33m;[39
+m
+    [90m   | [39m     
+   [31m^[39m
+    [90m108| [39m
+    [90m109| [39m     
+   [35mawait[39m 
+[34mwaitFor[39m(() 
+[33m=>[39m {
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»[5/5]ΓÄ»[22m[
+39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m5 failed[39m[22m[90m (5)[39m
+[2m   Start at [22m 21:14:37
+[2m   Duration [22m 618ms[2m (transform 66ms, setup 0ms, collect 234ms, tests 6ms, environment 0ms, prepare 11ms)[22m
+

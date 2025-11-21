@@ -13,7 +13,10 @@
     "test:correctness": "tsx backend/test-correctness.ts",
     "test:robustness": "tsx backend/test-robustness.ts",
     "test:quota": "tsx backend/test-quota.ts",
-    "test:meal-planning": "tsx backend/test-meal-planning.ts"
+    "test:meal-planning": "tsx backend/test-meal-planning.ts",
+    "test": "vitest",
+    "db:migrate": "node backend/run-migration.js",
+    "db:seed": "tsx backend/scripts/seed-sample-data.ts"
   },
   "dependencies": {
     "@tensorflow-models/pose-detection": "^2.1.3",

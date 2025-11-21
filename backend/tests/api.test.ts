@@ -1,12 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
-
-const API_URL = 'http://localhost:3001';
+import { app } from '../server.js';
 
 describe('Backend API Integration', () => {
     describe('GET /health', () => {
         it('returns 200 and status ok', async () => {
-            const response = await request(API_URL).get('/health');
+            const response = await request(app).get('/health');
             expect(response.status).toBe(200);
             expect(response.body.status).toBe('ok');
         });
@@ -30,7 +29,7 @@ describe('Backend API Integration', () => {
                 planProfile: 'standard',
             };
 
-            const response = await request(API_URL)
+            const response = await request(app)
                 .post('/api/nutrition/plan/week')
                 .send(payload);
 
@@ -62,7 +61,7 @@ describe('Backend API Integration', () => {
                 userId: 'test-user-integration',
             };
 
-            const response = await request(API_URL)
+            const response = await request(app)
                 .post('/api/nutrition/plan/day/regenerate-meal')
                 .send(payload);
 
@@ -84,7 +83,7 @@ describe('Backend API Integration', () => {
                 }
             };
 
-            const response = await request(API_URL)
+            const response = await request(app)
                 .post('/api/program/week/generate')
                 .send(payload);
 

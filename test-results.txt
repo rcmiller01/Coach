@@ -1,0 +1,2042 @@
+﻿
+[1m[46m RUN [49m[22m [36mv4.0.12 [39m[90mC:/Users/rober/Documents/Coach[39m
+
+ [32mΓ£ô[39m backend/tests/programGenerator.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+[90mstdout[2m | backend/tests/nutritionService.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (13) from .env -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mgenerates a meal plan with correct system prompt payload
+[22m[39m≡ƒñû Using OpenAI with model: gpt-4o-mini
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mgenerates a meal plan with correct system prompt payload
+[22m[39mΓ£à Generated meal plan for 2025-01-01 in 0ms
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39m≡ƒôî Reusing 1 locked meal(s) for 2025-01-01
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39mΓ£à Generated meal plan for 2025-01-01 in 0ms
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39m≡ƒôî Reusing 1 locked meal(s) for 2025-01-02
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39mΓ£à Generated meal plan for 2025-01-02 in 0ms
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39m≡ƒôî Reusing 1 locked meal(s) for 2025-01-03
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39mΓ£à Generated meal plan for 2025-01-03 in 1ms
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39m≡ƒôî Reusing 1 locked meal(s) for 2025-01-04
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39mΓ£à Generated meal plan for 2025-01-04 in 0ms
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39m≡ƒôî Reusing 1 locked meal(s) for 2025-01-05
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39mΓ£à Generated meal plan for 2025-01-05 in 1ms
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39m≡ƒôî Reusing 1 locked meal(s) for 2025-01-06
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39mΓ£à Generated meal plan for 2025-01-06 in 0ms
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39m≡ƒôî Reusing 1 locked meal(s) for 2025-01-07
+
+[90mstdout[2m | backend/tests/nutritionService.test.ts[2m > [22m[2mRealNutritionAiService[2m > [22m[2mreuses locked meals during week generation
+[22m[39mΓ£à Generated meal plan for 2025-01-07 in 0ms
+
+ [32mΓ£ô[39m backend/tests/nutritionService.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [31mΓ¥»[39m backend/tests/api.test.ts [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 29[2mms[22m[39m
+[31m       [31m├ù[31m returns 200 and status ok[39m[32m 21[2mms[22m[39m
+[31m       [31m├ù[31m generates a weekly meal plan[39m[32m 3[2mms[22m[39m
+[31m       [31m├ù[31m regenerates a specific meal[39m[32m 2[2mms[22m[39m
+[31m       [31m├ù[31m generates a workout week from onboarding state[39m[32m 2[2mms[22m[39m
+ [32mΓ£ô[39m src/features/workout/Minimal.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32mΓ£ô[39m src/features/workout/WorkoutSessionView.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+node.exe : 
+[90mstderr[2m | src/
+features/nutrition/Nut
+ritionPage.test.tsx[2
+m > [22m[2mNutrition
+Page[2m > 
+[22m[2mrenders 
+preference inputs
+At C:\Program Files\no
+dejs\npx.ps1:29 char:3
++   & $NODE_EXE 
+$NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: ([90mstder   
+ r[2m...eference     
+inputs:String) []    
+, RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+[22m[39mAn update 
+to NutritionPage 
+inside a test was not 
+wrapped in act(...).
+
+When testing, code 
+that causes React 
+state updates should 
+be wrapped into 
+act(...):
+
+act(() => {
+  /* fire events that 
+update state */
+});
+/* assert on the 
+output */
+
+This ensures that 
+you're testing the 
+behavior the user 
+would see in the 
+browser. Learn more 
+at https://react.dev/l
+ink/wrap-tests-with-ac
+t
+An update to 
+NutritionPage inside 
+a test was not 
+wrapped in act(...).
+
+When testing, code 
+that causes React 
+state updates should 
+be wrapped into 
+act(...):
+
+act(() => {
+  /* fire events that 
+update state */
+});
+/* assert on the 
+output */
+
+This ensures that 
+you're testing the 
+behavior the user 
+would see in the 
+browser. Learn more 
+at https://react.dev/l
+ink/wrap-tests-with-ac
+t
+
+[90mstderr[2m | src/
+features/nutrition/Nut
+ritionPage.test.tsx[2
+m > [22m[2mNutrition
+Page[2m > 
+[22m[2mupdates 
+preferences state 
+when inputs change
+[22m[39mAn update 
+to NutritionPage 
+inside a test was not 
+wrapped in act(...).
+
+When testing, code 
+that causes React 
+state updates should 
+be wrapped into 
+act(...):
+
+act(() => {
+  /* fire events that 
+update state */
+});
+/* assert on the 
+output */
+
+This ensures that 
+you're testing the 
+behavior the user 
+would see in the 
+browser. Learn more 
+at https://react.dev/l
+ink/wrap-tests-with-ac
+t
+An update to 
+NutritionPage inside 
+a test was not 
+wrapped in act(...).
+
+When testing, code 
+that causes React 
+state updates should 
+be wrapped into 
+act(...):
+
+act(() => {
+  /* fire events that 
+update state */
+});
+/* assert on the 
+output */
+
+This ensures that 
+you're testing the 
+behavior the user 
+would see in the 
+browser. Learn more 
+at https://react.dev/l
+ink/wrap-tests-with-ac
+t
+
+ [31mΓ¥»[39m src/features/nutrition/NutritionPage.test.tsx [2m([22m[2m3 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 222[2mms[22m[39m
+[31m     [31m├ù[31m renders preference inputs[39m[32m 80[2mms[22m[39m
+[31m     [31m├ù[31m updates preferences state when inputs change[39m[32m 117[2mms[22m[39m
+[31m     [31m├ù[31m shows generate button[39m[32m 24[2mms[22m[39m
+[90mstderr[2m | src/
+features/nutrition/Nut
+ritionPage.test.tsx[2
+m > [22m[2mNutrition
+Page[2m > 
+[22m[2mshows 
+generate button
+[22m[39mAn update 
+to NutritionPage 
+inside a test was not 
+wrapped in act(...).
+
+When testing, code 
+that causes React 
+state updates should 
+be wrapped into 
+act(...):
+
+act(() => {
+  /* fire events that 
+update state */
+});
+/* assert on the 
+output */
+
+This ensures that 
+you're testing the 
+behavior the user 
+would see in the 
+browser. Learn more 
+at https://react.dev/l
+ink/wrap-tests-with-ac
+t
+An update to 
+NutritionPage inside 
+a test was not 
+wrapped in act(...).
+
+When testing, code 
+that causes React 
+state updates should 
+be wrapped into 
+act(...):
+
+act(() => {
+  /* fire events that 
+update state */
+});
+/* assert on the 
+output */
+
+This ensures that 
+you're testing the 
+behavior the user 
+would see in the 
+browser. Learn more 
+at https://react.dev/l
+ink/wrap-tests-with-ac
+t
+
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»[39m[1m[41m 
+Failed Tests 7 [49m[
+22m[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»[39m
+
+[41m[1m FAIL 
+[22m[49m backend/tes
+ts/api.test.ts[2m > 
+[22mBackend API 
+Integration[2m > 
+[22mGET /health[2m 
+> [22mreturns 200 
+and status ok
+[41m[1m FAIL 
+[22m[49m backend/tes
+ts/api.test.ts[2m > 
+[22mBackend API 
+Integration[2m > 
+[22mPOST /api/nutriti
+on/plan/week[2m > 
+[22mgenerates a 
+weekly meal plan
+[41m[1m FAIL 
+[22m[49m backend/tes
+ts/api.test.ts[2m > 
+[22mBackend API 
+Integration[2m > 
+[22mPOST /api/nutriti
+on/plan/day/regenerate
+-meal[2m > 
+[22mregenerates a 
+specific meal
+[41m[1m FAIL 
+[22m[49m backend/tes
+ts/api.test.ts[2m > 
+[22mBackend API 
+Integration[2m > 
+[22mPOST /api/program
+/week/generate[2m > 
+[22mgenerates a 
+workout week from 
+onboarding state
+{
+  stack: 
+'AggregateError: \n' +
+    '    at internalCo
+nnectMultiple 
+(node:net:1139:18)\n' 
++
+    '    at 
+afterConnectMultiple 
+(node:net:1712:7)',
+  errors: [
+    {
+      stack: 'Error: 
+connect ECONNREFUSED 
+::1:3001\n' +
+        '    at 
+createConnectionError 
+(node:net:1675:14)\n' 
++
+        '    at 
+afterConnectMultiple 
+(node:net:1705:16)',
+      message: 
+'connect ECONNREFUSED 
+::1:3001',
+      errno: -4078,
+      code: 
+'ECONNREFUSED',
+      syscall: 
+'connect',
+      address: '::1',
+      port: 3001,
+      constructor: 
+'Function<Error>',
+      name: 'Error',
+      toString: 
+'Function<toString>'
+    },
+    {
+      stack: 'Error: 
+connect ECONNREFUSED 
+127.0.0.1:3001\n' +
+        '    at 
+createConnectionError 
+(node:net:1675:14)\n' 
++
+        '    at 
+afterConnectMultiple 
+(node:net:1705:16)',
+      message: 
+'connect ECONNREFUSED 
+127.0.0.1:3001',
+      errno: -4078,
+      code: 
+'ECONNREFUSED',
+      syscall: 
+'connect',
+      address: 
+'127.0.0.1',
+      port: 3001,
+      constructor: 
+'Function<Error>',
+      name: 'Error',
+      toString: 
+'Function<toString>'
+    }
+  ],
+  code: 
+'ECONNREFUSED',
+  response: undefined,
+  constructor: 'Functi
+on<AggregateError>',
+  name: 
+'AggregateError',
+  message: '',
+  toString: 
+'Function<toString>',
+  stacks: []
+}
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[1/7]ΓÄ
+»[22m[39m
+
+[41m[1m FAIL 
+[22m[49m src/feature
+s/nutrition/NutritionP
+age.test.tsx[2m > [2
+2mNutritionPage[2m > 
+[22mrenders 
+preference inputs
+[31m[1mTestingLibrar
+yElementError[22m[39
+m: Unable to find an 
+element with the 
+placeholder text of: 
+/e.g. peanuts, 
+shellfish/i
+
+Ignored nodes: 
+comments, script, 
+style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=
+[32m"min-h-screen 
+bg-slate-950"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39
+m=[32m"max-w-md 
+mx-auto px-3 pt-3 
+pb-24 flex flex-col 
+gap-3"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[
+39m=[32m"bg-slate-900
+ rounded-lg p-4 
+border 
+border-slate-800"[39m
+        [36m>[39m
+          
+[36m<div[39m
+            [33mclass
+[39m=[32m"flex 
+items-center 
+justify-between 
+mb-3"[39m
+          [36m>[39m
+            
+[36m<h2[39m
+              [33mcla
+ss[39m=[32m"text-lg 
+font-semibold 
+text-slate-100"[39m
+            
+[36m>[39m
+              
+[0mDaily Targets[0m
+            
+[36m</h2>[39m
+            
+[36m<div[39m
+              [33mcla
+ss[39m=[32m"flex 
+items-center 
+gap-2"[39m
+            
+[36m>[39m
+              
+[36m<label[39m
+                [33mc
+lass[39m=[32m"text-x
+s text-slate-400"[39m
+                [33mf
+or[39m=[32m"planProf
+ile"[39m
+              
+[36m>[39m
+                
+[0mProfile:[0m
+              
+[36m</label>[39m
+              
+[36m<select[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-1 text-xs 
+bg-slate-800 border 
+border-slate-700 
+text-slate-200 
+rounded 
+hover:bg-slate-750 tra
+nsition-colors"[39m
+                [33mi
+d[39m=[32m"planProfi
+le"[39m
+              
+[36m>[39m
+                
+[36m<option[39m
+                  [33
+mvalue[39m=[32m"stan
+dard"[39m
+                
+[36m>[39m
+                  
+[0mStandard[0m
+                
+[36m</option>[39m
+                
+[36m<option[39m
+                  [33
+mvalue[39m=[32m"glp1
+"[39m
+                
+[36m>[39m
+                  
+[0mGLP-1 
+Medication[0m
+                
+[36m</option>[39m
+              
+[36m</select>[39m
+            
+[36m</div>[39m
+          
+[36m</div>[39m
+          
+[36m<div[39m
+            [33mclass
+[39m=[32m"mb-3"[39m
+          [36m>[39m
+            
+[36m<label[39m
+              [33mcla
+ss[39m=[32m"block 
+text-sm font-medium 
+text-slate-300 
+mb-1.5"[39m
+              [33mfor
+[39m=[32m"dietType"
+[39m
+            
+[36m>[39m
+              
+[0mDiet Type[0m
+            
+[36m</label>[39m
+            
+[36m<select[39m
+              [33mcla
+ss[39m=[32m"w-full 
+px-3 py-2 
+bg-slate-800 border 
+border-slate-700 
+text-slate-200 
+rounded-lg 
+hover:bg-slate-750 tra
+nsition-colors"[39m
+              [33mid
+[39m=[32m"dietType"[
+39m
+            
+[36m>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"none"
+[39m
+              
+[36m>[39m
+                
+[0mNo 
+Restrictions[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"vegeta
+rian"[39m
+              
+[36m>[39m
+                
+[0mVegetarian[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"vegan"
+[39m
+              
+[36m>[39m
+                
+[0mVegan[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"pescat
+arian"[39m
+              
+[36m>[39m
+                
+[0mPescatarian[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"keto"
+[39m
+              
+[36m>[39m
+                
+[0mKeto[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"paleo"
+[39m
+              
+[36m>[39m
+                
+[0mPaleo[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"low_ca
+rb"[39m
+              
+[36m>[39m
+                
+[0mLow Carb[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"medite
+rranean"[39m
+              
+[36m>[39m
+                
+[0mMediterranean[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"halal"
+[39m
+              
+[36m>[39m
+                
+[0mHalal[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"kosher
+"[39m
+              
+[36m>[39m
+                
+[0mKosher[0m
+              
+[36m</option>[39m
+            
+[36m</select>[39m
+          
+[36m</div>[39m
+          
+[36m<div[39m
+            [33mclass
+[39m=[32m"mb-3"[39m
+          [36m>[39m
+            
+[36m<label[39m
+              [33mcla
+ss[39m=[32m"block 
+text-sm font-medium 
+text-slate-300 
+mb-1.5"[39m
+              [33mfor
+[39m=[32m"avoidIngre
+dients"[39m
+            
+[36m>[39m
+              
+[0mAvoid 
+Ingredients[0m
+            
+[36m</label>[39m
+            
+[36m<div[39m
+              [33mcla
+ss[39m=[32m"flex 
+flex-wrap gap-1.5 
+mb-2"[39m
+            
+[36m/>[39m
+            
+[36m<input[39m
+              [33mcla
+ss[39m=[32m"w-full 
+px-3 py-2 
+bg-slate-800 border 
+border-slate-700 
+text-slate-200 
+rounded-lg 
+placeholder-slate-500 
+focus:outline-none 
+focus:ring-2 focus:rin
+g-blue-500"[39m
+              [33mid
+[39m=[32m"avoidIngred
+ients"[39m
+              [33mpla
+ceholder[39m=[32m"e.
+g., dairy, nuts, 
+shellfish (press 
+Enter)"[39m
+              [33mtyp
+e[39m=[32m"text"[39
+m
+            
+[36m/>[39m
+            
+[36m<div[39m
+              [33mcla
+ss[39m=[32m"mt-1.5 
+flex flex-wrap 
+gap-1.5"[39m
+            
+[36m>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0mdairy[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0msoy[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0mnuts[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0mshellfish[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0mgluten[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+         ...
+[90m [2mΓ¥»[22m Obj
+ect.getElementError no
+de_modules/@testing-li
+brary/dom/dist/config.
+js:[2m37:19[22m[39m
+[90m [2mΓ¥»[22m nod
+e_modules/@testing-lib
+rary/dom/dist/query-he
+lpers.js:[2m76:38[22
+m[39m
+[90m [2mΓ¥»[22m nod
+e_modules/@testing-lib
+rary/dom/dist/query-he
+lpers.js:[2m52:17[22
+m[39m
+[90m [2mΓ¥»[22m nod
+e_modules/@testing-lib
+rary/dom/dist/query-he
+lpers.js:[2m95:19[22
+m[39m
+[36m [2mΓ¥»[22m src
+/features/nutrition/Nu
+tritionPage.test.tsx:
+[2m25:23[22m[39m
+    [90m 23| [39m
+    [90m 24| [39m   
+     [34mexpect[39m(
+screen[33m.[39m[34m
+getByText[39m([36m/D
+iet Type/i[39m))[33m
+.[39m[34mtoBeDefined
+[39m()[33m;[39m
+    [90m 25| [39m   
+     expect(screen.get
+ByPlaceholderText(/e.g
+. peanuts, 
+shellfish/i)ΓÇª
+    [90m   | [39m   
+                   
+[31m^[39m
+    [90m 26| [39m   
+ })[33m;[39m
+    [90m 27| [39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[2/7]ΓÄ
+»[22m[39m
+
+[41m[1m FAIL 
+[22m[49m src/feature
+s/nutrition/NutritionP
+age.test.tsx[2m > [2
+2mNutritionPage[2m > 
+[22mupdates 
+preferences state 
+when inputs change
+[31m[1mTestingLibrar
+yElementError[22m[39
+m: Found multiple 
+elements with the 
+role "combobox"
+
+Here are the matching 
+elements:
+
+Ignored nodes: 
+comments, script, 
+style
+[36m<select[39m
+  [33mclass[39m=[32
+m"px-2 py-1 text-xs 
+bg-slate-800 border 
+border-slate-700 
+text-slate-200 
+rounded 
+hover:bg-slate-750 tra
+nsition-colors"[39m
+  [33mid[39m=[32m"p
+lanProfile"[39m
+[36m>[39m
+  [36m<option[39m
+    [33mvalue[39m=[
+32m"standard"[39m
+  [36m>[39m
+    [0mStandard[0m
+  [36m</option>[39m
+  [36m<option[39m
+    [33mvalue[39m=[
+32m"glp1"[39m
+  [36m>[39m
+    [0mGLP-1 
+Medication[0m
+  [36m</option>[39m
+[36m</select>[39m
+
+Ignored nodes: 
+comments, script, 
+style
+[36m<select[39m
+  [33mclass[39m=[32
+m"w-full px-3 py-2 
+bg-slate-800 border 
+border-slate-700 
+text-slate-200 
+rounded-lg 
+hover:bg-slate-750 tra
+nsition-colors"[39m
+  [33mid[39m=[32m"d
+ietType"[39m
+[36m>[39m
+  [36m<option[39m
+    [33mvalue[39m=[
+32m"none"[39m
+  [36m>[39m
+    [0mNo 
+Restrictions[0m
+  [36m</option>[39m
+  [36m<option[39m
+    [33mvalue[39m=[
+32m"vegetarian"[39m
+  [36m>[39m
+    [0mVegetarian[0m
+  [36m</option>[39m
+  [36m<option[39m
+    [33mvalue[39m=[
+32m"vegan"[39m
+  [36m>[39m
+    [0mVegan[0m
+  [36m</option>[39m
+  [36m<option[39m
+    [33mvalue[39m=[
+32m"pescatarian"[39m
+  [36m>[39m
+    
+[0mPescatarian[0m
+  [36m</option>[39m
+  [36m<option[39m
+    [33mvalue[39m=[
+32m"keto"[39m
+  [36m>[39m
+    [0mKeto[0m
+  [36m</option>[39m
+  [36m<option[39m
+    [33mvalue[39m=[
+32m"paleo"[39m
+  [36m>[39m
+    [0mPaleo[0m
+  [36m</option>[39m
+  [36m<option[39m
+    [33mvalue[39m=[
+32m"low_carb"[39m
+  [36m>[39m
+    [0mLow Carb[0m
+  [36m</option>[39m
+  [36m<option[39m
+    [33mvalue[39m=[
+32m"mediterranean"[39
+m
+  [36m>[39m
+    
+[0mMediterranean[0m
+  [36m</option>[39m
+  [36m<option[39m
+    [33mvalue[39m=[
+32m"halal"[39m
+  [36m>[39m
+    [0mHalal[0m
+  [36m</option>[39m
+  [36m<option[39m
+    [33mvalue[39m=[
+32m"kosher"[39m
+  [36m>[39m
+    [0mKosher[0m
+  [36m</option>[39m
+[36m</select>[39m
+
+(If this is 
+intentional, then use 
+the `*AllBy*` variant 
+of the query (like 
+`queryAllByText`, 
+`getAllByText`, or 
+`findAllByText`)).
+
+Ignored nodes: 
+comments, script, 
+style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=
+[32m"min-h-screen 
+bg-slate-950"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39
+m=[32m"max-w-md 
+mx-auto px-3 pt-3 
+pb-24 flex flex-col 
+gap-3"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[
+39m=[32m"bg-slate-900
+ rounded-lg p-4 
+border 
+border-slate-800"[39m
+        [36m>[39m
+          
+[36m<div[39m
+            [33mclass
+[39m=[32m"flex 
+items-center 
+justify-between 
+mb-3"[39m
+          [36m>[39m
+            
+[36m<h2[39m
+              [33mcla
+ss[39m=[32m"text-lg 
+font-semibold 
+text-slate-100"[39m
+            
+[36m>[39m
+              
+[0mDaily Targets[0m
+            
+[36m</h2>[39m
+            
+[36m<div[39m
+              [33mcla
+ss[39m=[32m"flex 
+items-center 
+gap-2"[39m
+            
+[36m>[39m
+              
+[36m<label[39m
+                [33mc
+lass[39m=[32m"text-x
+s text-slate-400"[39m
+                [33mf
+or[39m=[32m"planProf
+ile"[39m
+              
+[36m>[39m
+                
+[0mProfile:[0m
+              
+[36m</label>[39m
+              
+[36m<select[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-1 text-xs 
+bg-slate-800 border 
+border-slate-700 
+text-slate-200 
+rounded 
+hover:bg-slate-750 tra
+nsition-colors"[39m
+                [33mi
+d[39m=[32m"planProfi
+le"[39m
+              
+[36m>[39m
+                
+[36m<option[39m
+                  [33
+mvalue[39m=[32m"stan
+dard"[39m
+                
+[36m>[39m
+                  
+[0mStandard[0m
+                
+[36m</option>[39m
+                
+[36m<option[39m
+                  [33
+mvalue[39m=[32m"glp1
+"[39m
+                
+[36m>[39m
+                  
+[0mGLP-1 
+Medication[0m
+                
+[36m</option>[39m
+              
+[36m</select>[39m
+            
+[36m</div>[39m
+          
+[36m</div>[39m
+          
+[36m<div[39m
+            [33mclass
+[39m=[32m"mb-3"[39m
+          [36m>[39m
+            
+[36m<label[39m
+              [33mcla
+ss[39m=[32m"block 
+text-sm font-medium 
+text-slate-300 
+mb-1.5"[39m
+              [33mfor
+[39m=[32m"dietType"
+[39m
+            
+[36m>[39m
+              
+[0mDiet Type[0m
+            
+[36m</label>[39m
+            
+[36m<select[39m
+              [33mcla
+ss[39m=[32m"w-full 
+px-3 py-2 
+bg-slate-800 border 
+border-slate-700 
+text-slate-200 
+rounded-lg 
+hover:bg-slate-750 tra
+nsition-colors"[39m
+              [33mid
+[39m=[32m"dietType"[
+39m
+            
+[36m>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"none"
+[39m
+              
+[36m>[39m
+                
+[0mNo 
+Restrictions[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"vegeta
+rian"[39m
+              
+[36m>[39m
+                
+[0mVegetarian[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"vegan"
+[39m
+              
+[36m>[39m
+                
+[0mVegan[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"pescat
+arian"[39m
+              
+[36m>[39m
+                
+[0mPescatarian[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"keto"
+[39m
+              
+[36m>[39m
+                
+[0mKeto[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"paleo"
+[39m
+              
+[36m>[39m
+                
+[0mPaleo[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"low_ca
+rb"[39m
+              
+[36m>[39m
+                
+[0mLow Carb[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"medite
+rranean"[39m
+              
+[36m>[39m
+                
+[0mMediterranean[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"halal"
+[39m
+              
+[36m>[39m
+                
+[0mHalal[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"kosher
+"[39m
+              
+[36m>[39m
+                
+[0mKosher[0m
+              
+[36m</option>[39m
+            
+[36m</select>[39m
+          
+[36m</div>[39m
+          
+[36m<div[39m
+            [33mclass
+[39m=[32m"mb-3"[39m
+          [36m>[39m
+            
+[36m<label[39m
+              [33mcla
+ss[39m=[32m"block 
+text-sm font-medium 
+text-slate-300 
+mb-1.5"[39m
+              [33mfor
+[39m=[32m"avoidIngre
+dients"[39m
+            
+[36m>[39m
+              
+[0mAvoid 
+Ingredients[0m
+            
+[36m</label>[39m
+            
+[36m<div[39m
+              [33mcla
+ss[39m=[32m"flex 
+flex-wrap gap-1.5 
+mb-2"[39m
+            
+[36m/>[39m
+            
+[36m<input[39m
+              [33mcla
+ss[39m=[32m"w-full 
+px-3 py-2 
+bg-slate-800 border 
+border-slate-700 
+text-slate-200 
+rounded-lg 
+placeholder-slate-500 
+focus:outline-none 
+focus:ring-2 focus:rin
+g-blue-500"[39m
+              [33mid
+[39m=[32m"avoidIngred
+ients"[39m
+              [33mpla
+ceholder[39m=[32m"e.
+g., dairy, nuts, 
+shellfish (press 
+Enter)"[39m
+              [33mtyp
+e[39m=[32m"text"[39
+m
+            
+[36m/>[39m
+            
+[36m<div[39m
+              [33mcla
+ss[39m=[32m"mt-1.5 
+flex flex-wrap 
+gap-1.5"[39m
+            
+[36m>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0mdairy[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0msoy[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0mnuts[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0mshellfish[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0mgluten[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+         ...
+[90m [2mΓ¥»[22m Obj
+ect.getElementError no
+de_modules/@testing-li
+brary/dom/dist/config.
+js:[2m37:19[22m[39m
+[90m [2mΓ¥»[22m 
+getElementError node_m
+odules/@testing-librar
+y/dom/dist/query-helpe
+rs.js:[2m20:35[22m[
+39m
+[90m [2mΓ¥»[22m get
+MultipleElementsFoundE
+rror node_modules/@tes
+ting-library/dom/dist/
+query-helpers.js:[2m2
+3:10[22m[39m
+[90m [2mΓ¥»[22m nod
+e_modules/@testing-lib
+rary/dom/dist/query-he
+lpers.js:[2m55:13[22
+m[39m
+[90m [2mΓ¥»[22m nod
+e_modules/@testing-lib
+rary/dom/dist/query-he
+lpers.js:[2m95:19[22
+m[39m
+[36m [2mΓ¥»[22m src
+/features/nutrition/Nu
+tritionPage.test.tsx:
+[2m31:35[22m[39m
+    [90m 29| [39m   
+     [34mrender[39m(
+[33m<[39m[33mNutrit
+ionPage[39m [33mtarg
+ets[39m[33m=[39m[3
+3m{[39mmockTargets[3
+3m}[39m [33m/[39m[
+33m>[39m)[33m;[39m
+    [90m 30| [39m
+    [90m 31| [39m   
+     [35mconst[39m 
+dietSelect 
+[33m=[39m screen[33
+m.[39m[34mgetByRole
+[39m([32m'combobox'[
+39m)[33m;[39m
+    [90m   | [39m   
+                      
+         [31m^[39m
+    [90m 32| [39m   
+     fireEvent.change(
+dietSelect, { target: 
+{ value: 'vegetarian' 
+}ΓÇª
+    [90m 33| [39m   
+     
+expect((dietSelect as 
+HTMLSelectElement).val
+ue).toBe('vegetariΓÇª
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[3/7]ΓÄ
+»[22m[39m
+
+[41m[1m FAIL 
+[22m[49m src/feature
+s/nutrition/NutritionP
+age.test.tsx[2m > [2
+2mNutritionPage[2m > 
+[22mshows generate 
+button
+[31m[1mTestingLibrar
+yElementError[22m[39
+m: Unable to find an 
+element with the 
+text: /Generate Week 
+Plan/i. This could be 
+because the text is 
+broken up by multiple 
+elements. In this 
+case, you can provide 
+a function for your 
+text matcher to make 
+your matcher more 
+flexible.
+
+Ignored nodes: 
+comments, script, 
+style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=
+[32m"min-h-screen 
+bg-slate-950"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39
+m=[32m"max-w-md 
+mx-auto px-3 pt-3 
+pb-24 flex flex-col 
+gap-3"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[
+39m=[32m"bg-slate-900
+ rounded-lg p-4 
+border 
+border-slate-800"[39m
+        [36m>[39m
+          
+[36m<div[39m
+            [33mclass
+[39m=[32m"flex 
+items-center 
+justify-between 
+mb-3"[39m
+          [36m>[39m
+            
+[36m<h2[39m
+              [33mcla
+ss[39m=[32m"text-lg 
+font-semibold 
+text-slate-100"[39m
+            
+[36m>[39m
+              
+[0mDaily Targets[0m
+            
+[36m</h2>[39m
+            
+[36m<div[39m
+              [33mcla
+ss[39m=[32m"flex 
+items-center 
+gap-2"[39m
+            
+[36m>[39m
+              
+[36m<label[39m
+                [33mc
+lass[39m=[32m"text-x
+s text-slate-400"[39m
+                [33mf
+or[39m=[32m"planProf
+ile"[39m
+              
+[36m>[39m
+                
+[0mProfile:[0m
+              
+[36m</label>[39m
+              
+[36m<select[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-1 text-xs 
+bg-slate-800 border 
+border-slate-700 
+text-slate-200 
+rounded 
+hover:bg-slate-750 tra
+nsition-colors"[39m
+                [33mi
+d[39m=[32m"planProfi
+le"[39m
+              
+[36m>[39m
+                
+[36m<option[39m
+                  [33
+mvalue[39m=[32m"stan
+dard"[39m
+                
+[36m>[39m
+                  
+[0mStandard[0m
+                
+[36m</option>[39m
+                
+[36m<option[39m
+                  [33
+mvalue[39m=[32m"glp1
+"[39m
+                
+[36m>[39m
+                  
+[0mGLP-1 
+Medication[0m
+                
+[36m</option>[39m
+              
+[36m</select>[39m
+            
+[36m</div>[39m
+          
+[36m</div>[39m
+          
+[36m<div[39m
+            [33mclass
+[39m=[32m"mb-3"[39m
+          [36m>[39m
+            
+[36m<label[39m
+              [33mcla
+ss[39m=[32m"block 
+text-sm font-medium 
+text-slate-300 
+mb-1.5"[39m
+              [33mfor
+[39m=[32m"dietType"
+[39m
+            
+[36m>[39m
+              
+[0mDiet Type[0m
+            
+[36m</label>[39m
+            
+[36m<select[39m
+              [33mcla
+ss[39m=[32m"w-full 
+px-3 py-2 
+bg-slate-800 border 
+border-slate-700 
+text-slate-200 
+rounded-lg 
+hover:bg-slate-750 tra
+nsition-colors"[39m
+              [33mid
+[39m=[32m"dietType"[
+39m
+            
+[36m>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"none"
+[39m
+              
+[36m>[39m
+                
+[0mNo 
+Restrictions[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"vegeta
+rian"[39m
+              
+[36m>[39m
+                
+[0mVegetarian[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"vegan"
+[39m
+              
+[36m>[39m
+                
+[0mVegan[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"pescat
+arian"[39m
+              
+[36m>[39m
+                
+[0mPescatarian[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"keto"
+[39m
+              
+[36m>[39m
+                
+[0mKeto[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"paleo"
+[39m
+              
+[36m>[39m
+                
+[0mPaleo[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"low_ca
+rb"[39m
+              
+[36m>[39m
+                
+[0mLow Carb[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"medite
+rranean"[39m
+              
+[36m>[39m
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (6)[39m
+[2m      Tests [22m [1m[31m7 failed[39m[22m[2m | [22m[1m[32m11 passed[39m[22m[90m (18)[39m
+[2m   Start at [22m 19:22:55
+[2m   Duration [22m 1.46s[2m (transform 434ms, setup 0ms, collect 1.21s, tests 333ms, environment 2.38s, prepare 95ms)[22m
+
+                
+[0mMediterranean[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"halal"
+[39m
+              
+[36m>[39m
+                
+[0mHalal[0m
+              
+[36m</option>[39m
+              
+[36m<option[39m
+                [33mv
+alue[39m=[32m"kosher
+"[39m
+              
+[36m>[39m
+                
+[0mKosher[0m
+              
+[36m</option>[39m
+            
+[36m</select>[39m
+          
+[36m</div>[39m
+          
+[36m<div[39m
+            [33mclass
+[39m=[32m"mb-3"[39m
+          [36m>[39m
+            
+[36m<label[39m
+              [33mcla
+ss[39m=[32m"block 
+text-sm font-medium 
+text-slate-300 
+mb-1.5"[39m
+              [33mfor
+[39m=[32m"avoidIngre
+dients"[39m
+            
+[36m>[39m
+              
+[0mAvoid 
+Ingredients[0m
+            
+[36m</label>[39m
+            
+[36m<div[39m
+              [33mcla
+ss[39m=[32m"flex 
+flex-wrap gap-1.5 
+mb-2"[39m
+            
+[36m/>[39m
+            
+[36m<input[39m
+              [33mcla
+ss[39m=[32m"w-full 
+px-3 py-2 
+bg-slate-800 border 
+border-slate-700 
+text-slate-200 
+rounded-lg 
+placeholder-slate-500 
+focus:outline-none 
+focus:ring-2 focus:rin
+g-blue-500"[39m
+              [33mid
+[39m=[32m"avoidIngred
+ients"[39m
+              [33mpla
+ceholder[39m=[32m"e.
+g., dairy, nuts, 
+shellfish (press 
+Enter)"[39m
+              [33mtyp
+e[39m=[32m"text"[39
+m
+            
+[36m/>[39m
+            
+[36m<div[39m
+              [33mcla
+ss[39m=[32m"mt-1.5 
+flex flex-wrap 
+gap-1.5"[39m
+            
+[36m>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0mdairy[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0msoy[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0mnuts[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0mshellfish[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+                [33mc
+lass[39m=[32m"px-2 
+py-0.5 text-xs 
+bg-slate-800 
+hover:bg-slate-700 
+text-slate-400 
+hover:text-slate-200 
+rounded border 
+border-slate-700 trans
+ition-colors"[39m
+              
+[36m>[39m
+                [0m+ 
+[0m
+                
+[0mgluten[0m
+              
+[36m</button>[39m
+              
+[36m<button[39m
+         ...
+[90m [2mΓ¥»[22m Obj
+ect.getElementError no
+de_modules/@testing-li
+brary/dom/dist/config.
+js:[2m37:19[22m[39m
+[90m [2mΓ¥»[22m nod
+e_modules/@testing-lib
+rary/dom/dist/query-he
+lpers.js:[2m76:38[22
+m[39m
+[90m [2mΓ¥»[22m nod
+e_modules/@testing-lib
+rary/dom/dist/query-he
+lpers.js:[2m52:17[22
+m[39m
+[90m [2mΓ¥»[22m nod
+e_modules/@testing-lib
+rary/dom/dist/query-he
+lpers.js:[2m95:19[22
+m[39m
+[36m [2mΓ¥»[22m src
+/features/nutrition/Nu
+tritionPage.test.tsx:
+[2m42:36[22m[39m
+    [90m 40| [39m   
+ [34mit[39m([32m'sh
+ows generate button'[
+39m[33m,[39m () 
+[33m=>[39m {
+    [90m 41| [39m   
+     [34mrender[39m(
+[33m<[39m[33mNutrit
+ionPage[39m [33mtarg
+ets[39m[33m=[39m[3
+3m{[39mmockTargets[3
+3m}[39m [33m/[39m[
+33m>[39m)[33m;[39m
+    [90m 42| [39m   
+     [35mconst[39m 
+generateBtn 
+[33m=[39m screen[33
+m.[39m[34mgetByText
+[39m([36m/Generate 
+Week Plan/i[39m)[33m
+;[39m
+    [90m   | [39m   
+                      
+          [31m^[39m
+    [90m 43| [39m   
+     [34mexpect[39m(
+generateBtn)[33m.[39
+m[34mtoBeDefined[39m
+()[33m;[39m
+    [90m 44| [39m   
+ })[33m;[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[4/7]ΓÄ
+»[22m[39m
+
