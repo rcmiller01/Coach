@@ -85,6 +85,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Initialize repositories
+routes.initializeRepositories(pool);
+
 // Mount nutrition API routes
 app.get('/api/nutrition/plan', routes.getNutritionPlan);
 app.post('/api/nutrition/plan/week', routes.generateWeeklyPlan);
@@ -96,6 +99,13 @@ app.get('/api/meals/log/:date', routes.getDayLog);
 app.put('/api/meals/log/:date', routes.saveDayLog);
 app.post('/api/nutrition/parse-food', routes.parseFood);
 app.post('/api/program/week/generate', routes.generateWorkoutProgram);
+
+// Mount progress tracking routes
+app.post('/api/logs/workout-session', routes.logWorkoutSession);
+app.post('/api/logs/nutrition-day', routes.logNutritionDay);
+app.post('/api/logs/weight', routes.logWeight);
+app.get('/api/progress/week-summary', routes.getWeekSummary);
+app.get('/api/progress/trends', routes.getTrends);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -127,23 +137,31 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// Start server
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`🍎 Parse food: POST http://localhost:${PORT}/api/nutrition/parse-food`);
-});
+// Export app for testing
+export { app };
 
-// Keep-alive to prevent process exit
-setInterval(() => {
-  console.log('💓 Backend alive...', new Date().toLocaleTimeString());
-}, 5000);
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  pool.end(() => {
-    console.log('Database pool closed');
-    process.exit(0);
+// Only start server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  // Start server
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/health`);
+    console.log(`🍎 Parse food: POST http://localhost:${PORT}/api/nutrition/parse-food`);
   });
-});
+
+  // Keep-alive to prevent process exit
+  setInterval(() => {
+    console.log('💓 Backend alive...', new Date().toLocaleTimeString());
+  }, 5000);
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received: closing HTTP server');
+    server.close(() => {
+      pool.end(() => {
+        console.log('Database pool closed');
+        process.exit(0);
+      });
+    });
+  });
+}

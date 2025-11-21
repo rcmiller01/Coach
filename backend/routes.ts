@@ -39,6 +39,10 @@ import { StubNutritionAiService } from './NutritionAiService';
 import { RealNutritionAiService } from './RealNutritionAiService';
 import { generateProgramWeekFromOnboarding } from '../src/features/program/programGenerator';
 import type { OnboardingState } from '../src/features/onboarding/types';
+import { WorkoutRepository } from './db/repositories/WorkoutRepository';
+import { NutritionLogRepository } from './db/repositories/NutritionLogRepository';
+import { WeightRepository } from './db/repositories/WeightRepository';
+import { Pool } from 'pg';
 
 // In-memory storage for development (replace with real database)
 const weeklyPlansStore: Map<string, WeeklyPlan> = new Map();
@@ -52,6 +56,21 @@ const nutritionAiService = USE_REAL_AI
 
 // Placeholder user ID (in real app, extract from auth token)
 const STUB_USER_ID = 'user-123';
+
+// Repository instances (initialized by server)
+let workoutRepo: WorkoutRepository;
+let nutritionLogRepo: NutritionLogRepository;
+let weightRepo: WeightRepository;
+
+/**
+ * Initialize repositories with database pool
+ * Called from server.ts after pool is created
+ */
+export function initializeRepositories(pool: Pool) {
+  workoutRepo = new WorkoutRepository(pool);
+  nutritionLogRepo = new NutritionLogRepository(pool);
+  weightRepo = new WeightRepository(pool);
+}
 
 // ============================================================================
 // NUTRITION PLAN ENDPOINTS
@@ -501,6 +520,204 @@ export async function generateWorkoutProgram(req: Request, res: Response) {
   } catch (error) {
     console.error('generateWorkoutProgram error:', error);
     res.status(500).json({ error: 'Failed to generate workout program' });
+  }
+}
+
+// ============================================================================
+// PROGRESS TRACKING ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/logs/workout-session
+ * Log a workout session with exercises and sets
+ * Body: { date, exercises: [{ name, sets: [{ reps, weight, rpe }] }], notes }
+ */
+export async function logWorkoutSession(req: Request, res: Response) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { date, exercises, notes } = req.body as any;
+
+    if (!date || !exercises || !Array.isArray(exercises)) {
+      return res.status(400).json({ error: 'date and exercises array are required' });
+    }
+
+    // Convert exercises to sets format
+    const sets = exercises.flatMap((exercise: any, exerciseIdx: number) =>
+      (exercise.sets || []).map((set: any, setIdx: number) => ({
+        exerciseName: exercise.name,
+        setNumber: setIdx + 1,
+        reps: set.reps,
+        weightLbs: set.weight,
+        rpe: set.rpe,
+        notes: set.notes,
+      }))
+    );
+
+    const session = await workoutRepo.logWorkoutSession({
+      userId: STUB_USER_ID,
+      date,
+      sets,
+      notes,
+    });
+
+    res.status(201).json({ data: session });
+  } catch (error) {
+    console.error('logWorkoutSession error:', error);
+    res.status(500).json({ error: 'Failed to log workout session' });
+  }
+}
+
+/**
+ * POST /api/logs/nutrition-day
+ * Log nutrition for a day with meals
+ * Body: { date, meals: [{ type, items: [...] }] }
+ */
+export async function logNutritionDay(req: Request, res: Response) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { date, meals } = req.body as any;
+
+    if (!date || !meals || !Array.isArray(meals)) {
+      return res.status(400).json({ error: 'date and meals array are required' });
+    }
+
+    const log = await nutritionLogRepo.logNutritionDay({
+      userId: STUB_USER_ID,
+      date,
+      meals,
+    });
+
+    res.status(201).json({ data: log });
+  } catch (error) {
+    console.error('logNutritionDay error:', error);
+    res.status(500).json({ error: 'Failed to log nutrition day' });
+  }
+}
+
+/**
+ * POST /api/logs/weight
+ * Log weight for a specific date
+ * Body: { date, weightLbs }
+ */
+export async function logWeight(req: Request, res: Response) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { date, weightLbs } = req.body as any;
+
+    if (!date || weightLbs === undefined) {
+      return res.status(400).json({ error: 'date and weightLbs are required' });
+    }
+
+    const entry = await weightRepo.logWeight(STUB_USER_ID, date, weightLbs);
+
+    res.status(201).json({ data: entry });
+  } catch (error) {
+    console.error('logWeight error:', error);
+    res.status(500).json({ error: 'Failed to log weight' });
+  }
+}
+
+/**
+ * GET /api/progress/week-summary?weekStart=YYYY-MM-DD
+ * Get progress summary for a week
+ */
+export async function getWeekSummary(req: Request, res: Response) {
+  try {
+    const weekStart = req.query.weekStart as string;
+
+    if (!weekStart) {
+      return res.status(400).json({ error: 'weekStart query parameter required' });
+    }
+
+    // Calculate week end (6 days after start)
+    const startDate = new Date(weekStart);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6);
+    const weekEnd = endDate.toISOString().split('T')[0];
+
+    // Fetch data for the week
+    const workoutSessions = await workoutRepo.getWorkoutSessionsByDateRange(
+      STUB_USER_ID,
+      weekStart,
+      weekEnd
+    );
+    const nutritionLogs = await nutritionLogRepo.getNutritionLogsByDateRange(
+      STUB_USER_ID,
+      weekStart,
+      weekEnd
+    );
+
+    // Calculate summary
+    const workoutsCompleted = workoutSessions.length;
+    const nutritionDaysLogged = nutritionLogs.length;
+
+    const avgCalories =
+      nutritionLogs.length > 0
+        ? Math.round(
+          nutritionLogs.reduce((sum, log) => sum + (log.totalCalories || 0), 0) /
+          nutritionLogs.length
+        )
+        : 0;
+
+    const avgProtein =
+      nutritionLogs.length > 0
+        ? Math.round(
+          nutritionLogs.reduce((sum, log) => sum + (log.totalProteinGrams || 0), 0) /
+          nutritionLogs.length
+        )
+        : 0;
+
+    res.json({
+      data: {
+        weekStart,
+        weekEnd,
+        workoutsCompleted,
+        nutritionDaysLogged,
+        avgCalories,
+        avgProtein,
+      },
+    });
+  } catch (error) {
+    console.error('getWeekSummary error:', error);
+    res.status(500).json({ error: 'Failed to fetch week summary' });
+  }
+}
+
+/**
+ * GET /api/progress/trends?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+ * Get progress trends (weight tracking)
+ */
+export async function getTrends(req: Request, res: Response) {
+  try {
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'startDate and endDate query parameters required' });
+    }
+
+    const weightLogs = await weightRepo.getWeightLogsByDateRange(STUB_USER_ID, startDate, endDate);
+
+    // Calculate trend
+    let trend: 'increasing' | 'decreasing' | 'stable' = 'stable';
+    if (weightLogs.length >= 2) {
+      const firstWeight = weightLogs[0].weightLbs;
+      const lastWeight = weightLogs[weightLogs.length - 1].weightLbs;
+      const diff = lastWeight - firstWeight;
+
+      if (diff > 1) trend = 'increasing';
+      else if (diff < -1) trend = 'decreasing';
+    }
+
+    res.json({
+      data: {
+        weights: weightLogs.map(log => ({ date: log.date, weight: log.weightLbs })),
+        trend,
+      },
+    });
+  } catch (error) {
+    console.error('getTrends error:', error);
+    res.status(500).json({ error: 'Failed to fetch trends' });
   }
 }
 
