@@ -11,7 +11,7 @@ export function generateInitialProgram(
 ): ProgramMultiWeek {
   const blockGoal = mapPrimaryGoalToBlockGoal(onboarding.primaryGoal);
   const firstWeek = generateProgramWeekFromOnboarding(onboarding, blockGoal);
-  
+
   // Create initial training block with goal from onboarding
   const initialBlock: TrainingBlock = {
     id: `block-0-${Date.now()}`,
@@ -38,9 +38,9 @@ export function generateProgramWeekFromOnboarding(
 ): ProgramWeek {
   // Determine sessions per week
   const sessionsPerWeek =
-    onboarding.sessionsPerWeek && 
-    onboarding.sessionsPerWeek >= 2 && 
-    onboarding.sessionsPerWeek <= 6
+    onboarding.sessionsPerWeek &&
+      onboarding.sessionsPerWeek >= 2 &&
+      onboarding.sessionsPerWeek <= 6
       ? onboarding.sessionsPerWeek
       : 3;
 
@@ -87,7 +87,7 @@ export function generateProgramWeekFromOnboarding(
       dayOfWeek,
       focus,
       description,
-      exercises: pickExercisesForDay(focus, onboarding.equipment || [], blockGoal),
+      exercises: pickExercisesForDay(focus, onboarding.equipment || [], blockGoal, onboarding.planProfile),
     };
   });
 
@@ -99,9 +99,9 @@ export function generateProgramWeekFromOnboarding(
     improve_endurance: 'Endurance and stamina',
     stay_fit: 'General fitness and health',
   };
-  
-  const weekFocus = onboarding.primaryGoal 
-    ? goalDescriptions[onboarding.primaryGoal] 
+
+  const weekFocus = onboarding.primaryGoal
+    ? goalDescriptions[onboarding.primaryGoal]
     : 'Strength and muscle';
 
   return {
@@ -119,13 +119,14 @@ export function generateProgramWeekFromOnboarding(
 function pickExercisesForDay(
   focus: 'upper' | 'lower' | 'full',
   equipment: string[],
-  blockGoal: BlockGoal
+  blockGoal: BlockGoal,
+  planProfile: 'standard' | 'glp1' = 'standard'
 ): ProgramExercise[] {
   const hasBarbell = equipment.includes('barbell');
   const hasDumbbells = equipment.includes('dumbbell');
-  
-  // Determine sets and reps based on block goal
-  const { compoundSets, compoundReps, accessorySets, accessoryReps } = getSetsRepsForGoal(blockGoal);
+
+  // Determine sets and reps based on block goal and profile
+  const { compoundSets, compoundReps, accessorySets, accessoryReps } = getSetsRepsForGoal(blockGoal, planProfile);
 
   const exercises: ProgramExercise[] = [];
   let exerciseCounter = 0;
@@ -134,14 +135,14 @@ function pickExercisesForDay(
     // Add lower body exercises (compounds)
     if (hasBarbell) {
       exercises.push({
-        id: `ex-${exerciseCounter++}`,
+        id: 'barbell-back-squat',
         name: 'Barbell Back Squat',
         sets: compoundSets,
         reps: compoundReps,
         notes: 'Keep chest up, knees tracking over toes',
       });
       exercises.push({
-        id: `ex-${exerciseCounter++}`,
+        id: 'deadlift',
         name: 'Conventional Deadlift',
         sets: compoundSets,
         reps: compoundReps,
@@ -184,21 +185,21 @@ function pickExercisesForDay(
     // Add upper body exercises (compounds)
     if (hasBarbell) {
       exercises.push({
-        id: `ex-${exerciseCounter++}`,
+        id: 'barbell-bench-press',
         name: 'Barbell Bench Press',
         sets: compoundSets,
         reps: compoundReps,
         notes: 'Lower to chest, press explosively',
       });
       exercises.push({
-        id: `ex-${exerciseCounter++}`,
+        id: 'barbell-row',
         name: 'Barbell Row',
         sets: compoundSets,
         reps: compoundReps,
         notes: 'Pull to lower chest, squeeze shoulder blades',
       });
       exercises.push({
-        id: `ex-${exerciseCounter++}`,
+        id: 'overhead-press',
         name: 'Overhead Press',
         sets: compoundSets,
         reps: compoundReps,
@@ -277,45 +278,74 @@ function pickExercisesForDay(
 
 /**
  * Determine sets and reps based on block goal (training focus).
+ * Adjusts volume for GLP-1 / reduced recovery profiles.
  */
-function getSetsRepsForGoal(blockGoal: BlockGoal): {
+function getSetsRepsForGoal(
+  blockGoal: BlockGoal,
+  planProfile: 'standard' | 'glp1' = 'standard'
+): {
   compoundSets: number;
   compoundReps: string;
   accessorySets: number;
   accessoryReps: string;
 } {
+  // Base volume
+  let volume = {
+    compoundSets: 3,
+    compoundReps: '6-10',
+    accessorySets: 3,
+    accessoryReps: '8-12',
+  };
+
   switch (blockGoal) {
     case 'strength':
-      return {
+      volume = {
         compoundSets: 4,
         compoundReps: '3-5',
         accessorySets: 3,
         accessoryReps: '6-8',
       };
-    
+      break;
+
     case 'hypertrophy':
-      return {
+      volume = {
         compoundSets: 4,
         compoundReps: '6-10',
         accessorySets: 3,
         accessoryReps: '8-12',
       };
-    
+      break;
+
     case 'return_to_training':
-      return {
+      volume = {
         compoundSets: 2,
         compoundReps: '8-10',
         accessorySets: 2,
         accessoryReps: '10-12',
       };
-    
+      break;
+
     case 'general':
     default:
-      return {
+      volume = {
         compoundSets: 3,
         compoundReps: '6-10',
         accessorySets: 3,
         accessoryReps: '8-12',
       };
+      break;
   }
+
+  // Apply GLP-1 / Reduced Recovery adjustments
+  // Reduce volume by ~30-50% to manage fatigue
+  if (planProfile === 'glp1') {
+    return {
+      compoundSets: Math.max(2, volume.compoundSets - 1), // Reduce sets, min 2
+      compoundReps: volume.compoundReps, // Keep intensity/reps similar
+      accessorySets: Math.max(2, volume.accessorySets - 1),
+      accessoryReps: volume.accessoryReps,
+    };
+  }
+
+  return volume;
 }

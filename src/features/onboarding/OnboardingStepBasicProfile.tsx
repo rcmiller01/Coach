@@ -6,6 +6,7 @@ interface OnboardingStepBasicProfileProps {
   heightFeet: number | null;
   heightInches: number | null;
   weightLbs: number | null;
+  gender: 'male' | 'female' | 'other' | null;
   trainingExperience: TrainingExperience | null;
   city?: string;
   zipCode?: string;
@@ -19,6 +20,7 @@ const OnboardingStepBasicProfile: React.FC<OnboardingStepBasicProfileProps> = ({
   heightFeet,
   heightInches,
   weightLbs,
+  gender,
   trainingExperience,
   city,
   zipCode,
@@ -26,11 +28,13 @@ const OnboardingStepBasicProfile: React.FC<OnboardingStepBasicProfileProps> = ({
   onNext,
   onBack,
 }) => {
-  const isValid = 
+  const isValid =
     age !== null && age >= 13 && age <= 90 &&
     heightFeet !== null && heightFeet >= 3 && heightFeet <= 8 &&
     heightInches !== null && heightInches >= 0 && heightInches <= 11 &&
     weightLbs !== null && weightLbs > 0 &&
+    weightLbs !== null && weightLbs > 0 &&
+    gender !== null &&
     trainingExperience !== null;
 
   return (
@@ -112,6 +116,28 @@ const OnboardingStepBasicProfile: React.FC<OnboardingStepBasicProfileProps> = ({
           />
         </div>
 
+        {/* Gender */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Gender
+          </label>
+          <div className="flex gap-4">
+            {['male', 'female', 'other'].map((option) => (
+              <label key={option} className="flex items-center">
+                <input
+                  type="radio"
+                  name="gender"
+                  value={option}
+                  checked={gender === option}
+                  onChange={(e) => onChange('gender', e.target.value)}
+                  className="mr-2"
+                />
+                <span className="capitalize">{option}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
         {/* Training Experience */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -125,11 +151,10 @@ const OnboardingStepBasicProfile: React.FC<OnboardingStepBasicProfileProps> = ({
             ].map((option) => (
               <label
                 key={option.value}
-                className={`flex items-start p-4 border rounded-lg cursor-pointer transition-colors ${
-                  trainingExperience === option.value
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
+                className={`flex items-start p-4 border rounded-lg cursor-pointer transition-colors ${trainingExperience === option.value
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400'
+                  }`}
               >
                 <input
                   type="radio"
@@ -165,7 +190,7 @@ const OnboardingStepBasicProfile: React.FC<OnboardingStepBasicProfileProps> = ({
                 type="text"
                 id="city"
                 value={city ?? ''}
-                onChange={(e) => onChange('city', e.target.value || undefined)}
+                onChange={(e) => onChange('city', e.target.value || null)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="e.g., Austin"
               />
@@ -178,7 +203,7 @@ const OnboardingStepBasicProfile: React.FC<OnboardingStepBasicProfileProps> = ({
                 type="text"
                 id="zipCode"
                 value={zipCode ?? ''}
-                onChange={(e) => onChange('zipCode', e.target.value || undefined)}
+                onChange={(e) => onChange('zipCode', e.target.value || null)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="e.g., 78701"
                 maxLength={10}
@@ -199,11 +224,10 @@ const OnboardingStepBasicProfile: React.FC<OnboardingStepBasicProfileProps> = ({
         <button
           onClick={onNext}
           disabled={!isValid}
-          className={`flex-1 py-3 rounded-lg font-semibold transition-colors ${
-            isValid
-              ? 'bg-blue-600 hover:bg-blue-700 text-white'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
+          className={`flex-1 py-3 rounded-lg font-semibold transition-colors ${isValid
+            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
         >
           Next
         </button>

@@ -53,6 +53,7 @@ export interface OnboardingState {
   heightFeet: number | null;
   heightInches: number | null;
   weightLbs: number | null;
+  gender: 'male' | 'female' | 'other' | null;
   trainingExperience: TrainingExperience | null;
   primaryGoal: PrimaryGoal | null;
   motivation: {
@@ -67,6 +68,8 @@ export interface OnboardingState {
   // Optional location info for AI-assisted nutrition (restaurant context, etc.)
   city?: string;
   zipCode?: string;
+  // Medical/Lifestyle profile
+  planProfile?: 'standard' | 'glp1';
 }
 
 export const initialOnboardingState: OnboardingState = {
@@ -74,6 +77,7 @@ export const initialOnboardingState: OnboardingState = {
   heightFeet: null,
   heightInches: null,
   weightLbs: null,
+  gender: null,
   trainingExperience: null,
   primaryGoal: null,
   motivation: {
@@ -87,4 +91,5 @@ export const initialOnboardingState: OnboardingState = {
   preferredTimeOfDay: null,
   city: undefined,
   zipCode: undefined,
+  planProfile: 'standard',
 };

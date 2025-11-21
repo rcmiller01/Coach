@@ -37,6 +37,8 @@ import type {
 import { NutritionApiError } from '../src/features/nutrition/nutritionTypes';
 import { StubNutritionAiService } from './NutritionAiService';
 import { RealNutritionAiService } from './RealNutritionAiService';
+import { generateProgramWeekFromOnboarding } from '../src/features/program/programGenerator';
+import type { OnboardingState } from '../src/features/onboarding/types';
 
 // In-memory storage for development (replace with real database)
 const weeklyPlansStore: Map<string, WeeklyPlan> = new Map();
@@ -44,8 +46,8 @@ const dayLogsStore: Map<string, DayLog> = new Map();
 
 // Service instance - use real or stub based on environment
 const USE_REAL_AI = process.env.USE_REAL_AI === 'true';
-const nutritionAiService = USE_REAL_AI 
-  ? new RealNutritionAiService() 
+const nutritionAiService = USE_REAL_AI
+  ? new RealNutritionAiService()
   : new StubNutritionAiService();
 
 // Placeholder user ID (in real app, extract from auth token)
@@ -114,7 +116,7 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
     res.json({ data: plan });
   } catch (error) {
     console.error('generateWeeklyPlan error:', error);
-    
+
     if (error instanceof NutritionApiError) {
       const errorResponse: ApiErrorResponse = {
         error: {
@@ -124,16 +126,16 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
           details: error.details,
         },
       };
-      
+
       const statusCode =
         error.code === 'AI_QUOTA_EXCEEDED' ? 429 :
-        error.code === 'AI_TIMEOUT' ? 504 :
-        error.code === 'VALIDATION_ERROR' ? 400 :
-        500;
-      
+          error.code === 'AI_TIMEOUT' ? 504 :
+            error.code === 'VALIDATION_ERROR' ? 400 :
+              500;
+
       return res.status(statusCode).json(errorResponse);
     }
-    
+
     const errorResponse: ApiErrorResponse = {
       error: {
         code: 'UNKNOWN_ERROR',
@@ -187,7 +189,7 @@ export async function generateDailyPlan(req: Request, res: Response) {
     res.json({ data: dayPlan });
   } catch (error) {
     console.error('generateDailyPlan error:', error);
-    
+
     if (error instanceof NutritionApiError) {
       const errorResponse: ApiErrorResponse = {
         error: {
@@ -197,16 +199,16 @@ export async function generateDailyPlan(req: Request, res: Response) {
           details: error.details,
         },
       };
-      
+
       const statusCode =
         error.code === 'AI_QUOTA_EXCEEDED' ? 429 :
-        error.code === 'AI_TIMEOUT' ? 504 :
-        error.code === 'VALIDATION_ERROR' ? 400 :
-        500;
-      
+          error.code === 'AI_TIMEOUT' ? 504 :
+            error.code === 'VALIDATION_ERROR' ? 400 :
+              500;
+
       return res.status(statusCode).json(errorResponse);
     }
-    
+
     const errorResponse: ApiErrorResponse = {
       error: {
         code: 'UNKNOWN_ERROR',
@@ -321,7 +323,7 @@ export async function regenerateMeal(req: Request, res: Response) {
     const weekStart = getWeekStart(new Date(request.date));
     const weeklyPlan = weeklyPlansStore.get(weekStart);
     if (weeklyPlan) {
-      const updatedDays = weeklyPlan.days.map(d => 
+      const updatedDays = weeklyPlan.days.map(d =>
         d.date === request.date ? response.updatedDayPlan : d
       );
       weeklyPlansStore.set(weekStart, { ...weeklyPlan, days: updatedDays });
@@ -330,7 +332,7 @@ export async function regenerateMeal(req: Request, res: Response) {
     res.json({ data: response.updatedDayPlan });
   } catch (error) {
     console.error('regenerateMeal error:', error);
-    
+
     if (error instanceof NutritionApiError) {
       const errorResponse: ApiErrorResponse = {
         error: {
@@ -340,16 +342,16 @@ export async function regenerateMeal(req: Request, res: Response) {
           details: error.details,
         },
       };
-      
+
       const statusCode =
         error.code === 'AI_QUOTA_EXCEEDED' ? 429 :
-        error.code === 'AI_TIMEOUT' ? 504 :
-        error.code === 'VALIDATION_ERROR' ? 400 :
-        500;
-      
+          error.code === 'AI_TIMEOUT' ? 504 :
+            error.code === 'VALIDATION_ERROR' ? 400 :
+              500;
+
       return res.status(statusCode).json(errorResponse);
     }
-    
+
     const errorResponse: ApiErrorResponse = {
       error: {
         code: 'UNKNOWN_ERROR',
@@ -415,7 +417,7 @@ export async function saveDayLog(req: Request, res: Response) {
 export async function parseFood(req: Request, res: Response) {
   console.log('📥 parseFood route hit');
   console.log('Request body:', JSON.stringify(req.body));
-  
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { text, city, zipCode, locale } = req.body as any;
@@ -444,7 +446,7 @@ export async function parseFood(req: Request, res: Response) {
     res.json({ data: foodItem });
   } catch (error) {
     console.error('parseFood error:', error);
-    
+
     // Handle typed errors
     if (error instanceof NutritionApiError) {
       const errorResponse: ApiErrorResponse = {
@@ -455,18 +457,18 @@ export async function parseFood(req: Request, res: Response) {
           details: error.details,
         },
       };
-      
+
       // Map error codes to HTTP status codes
-      const statusCode = 
+      const statusCode =
         error.code === 'AI_QUOTA_EXCEEDED' ? 429 :
-        error.code === 'AI_TIMEOUT' ? 504 :
-        error.code === 'VALIDATION_ERROR' ? 400 :
-        error.code === 'NOT_FOUND' ? 404 :
-        500;
-      
+          error.code === 'AI_TIMEOUT' ? 504 :
+            error.code === 'VALIDATION_ERROR' ? 400 :
+              error.code === 'NOT_FOUND' ? 404 :
+                500;
+
       return res.status(statusCode).json(errorResponse);
     }
-    
+
     // Unhandled errors
     const errorResponse: ApiErrorResponse = {
       error: {
@@ -476,6 +478,29 @@ export async function parseFood(req: Request, res: Response) {
       },
     };
     res.status(500).json(errorResponse);
+  }
+}
+
+/**
+ * POST /api/program/week/generate
+ * Generate workout program week from onboarding state
+ * Body: { onboardingState: OnboardingState }
+ */
+export async function generateWorkoutProgram(req: Request, res: Response) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { onboardingState } = req.body as any;
+
+    if (!onboardingState) {
+      return res.status(400).json({ error: 'onboardingState is required' });
+    }
+
+    const programWeek = generateProgramWeekFromOnboarding(onboardingState);
+
+    res.json({ data: programWeek });
+  } catch (error) {
+    console.error('generateWorkoutProgram error:', error);
+    res.status(500).json({ error: 'Failed to generate workout program' });
   }
 }
 

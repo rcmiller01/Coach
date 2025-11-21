@@ -31,9 +31,9 @@ interface WorkoutSessionViewProps {
   previousWeekLoads?: ActualExerciseLoad[]; // Last week's actual loads for comparison
 }
 
-const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({ 
-  programDay, 
-  onExit, 
+const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
+  programDay,
+  onExit,
   onViewExercise,
   onSubstituteExercise,
   defaultFormCheckEnabled,
@@ -47,12 +47,12 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
   // Initialize session state once on mount using lazy initializer
   const [session, setSession] = useState<WorkoutSessionState>(() => {
     const sets: WorkoutSetState[] = [];
-    
+
     programDay.exercises.forEach((exercise) => {
       // Find load suggestion for this exercise
       const suggestion = loadSuggestions.find((s) => s.exerciseId === exercise.id);
       const targetLoadKg = suggestion?.suggestedLoadKg ?? undefined;
-      
+
       for (let i = 0; i < exercise.sets; i++) {
         sets.push({
           id: `${exercise.id}-set-${i}`,
@@ -84,17 +84,17 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
   );
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [liveAngles, setLiveAngles] = useState<DerivedAngle[]>([]);
-  
+
   // Rep counting state
   const [repCountingEnabled, setRepCountingEnabled] = useState(false);
   const [currentRepCount, setCurrentRepCount] = useState(0);
   const repCounterRef = useRef<RepCounter | null>(null);
-  
+
   // Focus mode: single-exercise workflow
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [betweenExerciseRest, setBetweenExerciseRest] = useState(false);
   const [restTimeRemaining, setRestTimeRemaining] = useState(0);
-  
+
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
@@ -116,7 +116,7 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
     const startDetection = async () => {
       try {
         await loadPoseModel();
-        
+
         const detectLoop = async () => {
           if (!isActive || !videoElementRef.current) {
             return;
@@ -125,13 +125,13 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
           try {
             // Estimate pose from video
             const keypoints = await estimatePose(videoElementRef.current);
-            
+
             // Calculate angles from keypoints
             const angles = calculateAngles(keypoints);
-            
+
             // Update state
             setLiveAngles(angles);
-            
+
             // Rep counting logic
             if (repCountingEnabled && repCounterRef.current && angles.length > 0) {
               const repDetected = repCounterRef.current.update(angles);
@@ -175,28 +175,28 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
 
     setSession((prev) => {
       if (!prev) return prev;
-      
+
       const updatedSets = prev.sets.map((set) =>
         set.id === setId ? { ...set, ...updates } : set
       );
-      
+
       // Check if this update marked a set as completed
       const updatedSet = updatedSets.find((s) => s.id === setId);
       if (updatedSet && updates.status === 'completed') {
         setLastCompletedSet(updatedSet);
         setRestTimerActive(true);
-        
+
         // Check if this was the last set of the current exercise
         const currentExercise = programDay.exercises[currentExerciseIndex];
         const currentExerciseSets = updatedSets.filter(s => s.exerciseId === currentExercise.id);
         const allCurrentSetsComplete = currentExerciseSets.every(s => s.status === 'completed' || s.status === 'skipped');
-        
+
         if (allCurrentSetsComplete) {
           // Exercise complete - trigger transition
           handleExerciseCompleted();
         }
       }
-      
+
       return {
         ...prev,
         sets: updatedSets,
@@ -210,7 +210,7 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
       // Start between-exercise rest
       setBetweenExerciseRest(true);
       setRestTimeRemaining(restTimeBetweenExercises); // Use setting value
-      
+
       // Reset rep counter
       if (repCounterRef.current) {
         repCounterRef.current.reset();
@@ -226,7 +226,7 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
     setBetweenExerciseRest(false);
     setRestTimeRemaining(0);
     setCurrentExerciseIndex(prev => prev + 1);
-    
+
     // Initialize rep counter for new exercise
     if (repCountingEnabled) {
       const nextExercise = programDay.exercises[currentExerciseIndex + 1];
@@ -288,7 +288,7 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
 
     // Save to localStorage
     appendHistoryEntry(historyEntry);
-    
+
     // Return to week view after a brief delay
     setTimeout(() => {
       onExit();
@@ -351,8 +351,8 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
   // Main workout view - mobile-first layout
   return (
     <div className="min-h-screen bg-slate-950">
-      <div className="max-w-md mx-auto px-3 pt-3 pb-24 flex flex-col gap-3">
-        
+      <div className="max-w-md mx-auto px-3 pt-3 pb-40 flex flex-col gap-3">
+
         {/* Session HUD */}
         <SessionHud
           currentExerciseIndex={currentExerciseIndex}
@@ -391,7 +391,7 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
           currentRepCount={currentRepCount}
           onToggleRepCounting={(enabled) => {
             setRepCountingEnabled(enabled);
-            
+
             if (enabled && currentExercise) {
               const pattern = detectExercisePattern(currentExercise.name);
               repCounterRef.current = new RepCounter(pattern);
@@ -437,22 +437,20 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
           <button
             onClick={() => setCurrentExerciseIndex(prev => Math.max(0, prev - 1))}
             disabled={currentExerciseIndex === 0}
-            className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
-              currentExerciseIndex === 0
+            className={`flex-1 py-3 rounded-lg font-medium transition-colors ${currentExerciseIndex === 0
                 ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
                 : 'bg-slate-800 text-white active:bg-slate-700'
-            }`}
+              }`}
           >
             ← Previous
           </button>
           <button
             onClick={() => setCurrentExerciseIndex(prev => Math.min(programDay.exercises.length - 1, prev + 1))}
             disabled={currentExerciseIndex === programDay.exercises.length - 1}
-            className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
-              currentExerciseIndex === programDay.exercises.length - 1
+            className={`flex-1 py-3 rounded-lg font-medium transition-colors ${currentExerciseIndex === programDay.exercises.length - 1
                 ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
                 : 'bg-slate-800 text-white active:bg-slate-700'
-            }`}
+              }`}
           >
             Next →
           </button>
@@ -472,13 +470,13 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
       {(() => {
         // Find the next pending set in the current exercise
         const pendingSet = currentExerciseSets.find(s => s.status === 'pending');
-        
+
         if (!pendingSet) return null; // All sets complete for this exercise
-        
+
         // Calculate which set number this is (1-indexed)
         const setNumber = pendingSet.setIndex + 1;
         const totalSetsForExercise = currentExerciseSets.length;
-        
+
         const handleMarkComplete = () => {
           // Mark as completed with target reps if no specific reps were entered
           const updates: Partial<WorkoutSetState> = {
@@ -488,11 +486,11 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
           };
           handleUpdateSet(pendingSet.id, updates);
         };
-        
+
         const handleSkip = () => {
           handleUpdateSet(pendingSet.id, { status: 'skipped' });
         };
-        
+
         return (
           <SessionControlBar
             currentSet={{

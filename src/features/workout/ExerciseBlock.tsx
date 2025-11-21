@@ -11,12 +11,12 @@ interface ExerciseBlockProps {
   previousWeekLoad?: ActualExerciseLoad; // Last week's actual performance for this exercise
 }
 
-const ExerciseBlock: React.FC<ExerciseBlockProps> = ({ 
-  exercise, 
-  sets, 
-  onUpdateSet, 
+const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
+  exercise,
+  sets,
+  onUpdateSet,
   onViewExercise,
-  previousWeekLoad 
+  previousWeekLoad
 }) => {
   // Check if any set has a suggested load
   const suggestedLoadKg = sets[0]?.targetLoadKg;
@@ -37,7 +37,7 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
             <p className="text-sm text-gray-600">
               Target: {exercise.sets} sets × {exercise.reps} reps
             </p>
-            
+
             {/* Last vs Today comparison */}
             {lastWeekLoadLbs && suggestedLoadLbs && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
@@ -54,7 +54,7 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
                 </div>
               </div>
             )}
-            
+
             {suggestedLoadLbs && !lastWeekLoadLbs && (
               <p className="text-sm text-green-700 font-medium mt-1">
                 Suggested load: {suggestedLoadLbs} lbs
@@ -80,13 +80,12 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
         {sets.map((set) => (
           <div
             key={set.id}
-            className={`border rounded-lg p-3 ${
-              set.status === 'completed'
+            className={`border rounded-lg p-3 ${set.status === 'completed'
                 ? 'bg-green-50 border-green-300'
                 : set.status === 'skipped'
-                ? 'bg-gray-100 border-gray-300'
-                : 'bg-white border-gray-300'
-            }`}
+                  ? 'bg-gray-100 border-gray-300'
+                  : 'bg-white border-gray-300'
+              }`}
           >
             <div className="flex items-start justify-between mb-3">
               <div>
@@ -127,6 +126,7 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="e.g., 8"
+                      data-testid={`reps-input-${set.id}`}
                     />
                   </div>
 
@@ -147,6 +147,7 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="e.g., 60"
+                      data-testid={`load-input-${set.id}`}
                     />
                   </div>
 
@@ -163,6 +164,7 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
                         })
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      data-testid={`rpe-input-${set.id}`}
                     >
                       <option value="">Select RPE</option>
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rpe) => (

@@ -6,9 +6,6 @@
  * - LLM calls for meal plan generation
  * - MCP nutrition server for food database lookup
  * - Parsing user text input into structured food data
- * 
- * TODO: Implement real LLM + MCP integration
- * TODO: Add abuse protection (rate limiting, quota checks)
  */
 
 import type {
@@ -25,7 +22,6 @@ import type {
 
 /**
  * User quota tracking (stub)
- * TODO: Implement persistent storage and actual limits
  */
 export interface UserAiQuota {
   userId: string;
@@ -35,30 +31,11 @@ export interface UserAiQuota {
 }
 
 export interface NutritionAiService {
-  /**
-   * Check if user has AI quota remaining for a specific action.
-   * Throws error if quota exceeded.
-   * 
-   * @param userId - User identifier
-   * @param action - Type of AI action to check
-   */
   checkUserAiQuota(
     userId: string,
     action: 'generatePlan' | 'parseFood'
   ): Promise<UserAiQuota>;
 
-  /**
-   * Generate a full week meal plan using AI.
-   * 
-   * @param args - Generation parameters
-   * @returns WeeklyPlan with 7 days of meals
-   * 
-   * TODO: Implement LLM prompt engineering:
-   * - Include user targets (calories, macros)
-   * - Consider location for restaurant options
-   * - Respect dietary preferences/restrictions
-   * - Balance variety across the week
-   */
   generateMealPlanForWeek(args: {
     weekStartDate: string;
     targets: NutritionTargets;
@@ -66,17 +43,9 @@ export interface NutritionAiService {
     userId: string;
     planProfile?: PlanProfile;
     preferences?: DietaryPreferences;
-    previousWeek?: WeeklyPlan; // Reuse locked meals from previous week
+    previousWeek?: WeeklyPlan;
   }): Promise<WeeklyPlan>;
 
-  /**
-   * Generate a single day meal plan using AI.
-   * 
-   * @param args - Generation parameters
-   * @returns DayPlan with breakfast, lunch, dinner, snacks
-   * 
-   * TODO: Same as generateMealPlanForWeek but for one day
-   */
   generateMealPlanForDay(args: {
     date: string;
     targets: NutritionTargets;
@@ -86,29 +55,8 @@ export interface NutritionAiService {
     preferences?: DietaryPreferences;
   }): Promise<DayPlan>;
 
-  /**
-   * Regenerate a single meal within an existing day plan.
-   * Preserves all other meals and re-validates daily constraints.
-   * 
-   * @param request - Meal regeneration parameters
-   * @returns Updated DayPlan with regenerated meal
-   */
   regenerateMeal(request: RegenerateMealRequest & { userId: string }): Promise<RegenerateMealResponse>;
 
-  /**
-   * Parse free-text food description into structured data.
-   * Uses AI to interpret portion sizes, cooking methods, etc.
-   * Queries nutrition database (via MCP) for macro values.
-   * 
-   * @param args - Parsing parameters
-   * @returns LoggedFoodItem with calories, macros, explanation, sources, confidence
-   * 
-   * TODO: Implement multi-step process:
-   * 1. LLM parses text into structured query
-   * 2. MCP nutrition server looks up food in database
-   * 3. LLM generates explanation and confidence score
-   * 4. Return combined result
-   */
   parseFood(args: {
     text: string;
     userContext: UserContext;
@@ -118,15 +66,12 @@ export interface NutritionAiService {
 
 /**
  * Stub implementation using dummy data.
- * Replace with real implementation when backend is ready.
  */
 export class StubNutritionAiService implements NutritionAiService {
   async checkUserAiQuota(
     userId: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     action: 'generatePlan' | 'parseFood'
   ): Promise<UserAiQuota> {
-    // Stub: Always allow for now
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -144,7 +89,6 @@ export class StubNutritionAiService implements NutritionAiService {
     userContext: UserContext;
     userId: string;
   }): Promise<WeeklyPlan> {
-    // Stub: Return dummy 7-day plan
     const days: DayPlan[] = [];
     const startDate = new Date(args.weekStartDate);
 
@@ -220,7 +164,6 @@ export class StubNutritionAiService implements NutritionAiService {
     userContext: UserContext;
     userId: string;
   }): Promise<DayPlan> {
-    // Stub: Return dummy plan for one day
     return {
       date: args.date,
       meals: [
@@ -281,7 +224,6 @@ export class StubNutritionAiService implements NutritionAiService {
     userContext: UserContext;
     userId: string;
   }): Promise<LoggedFoodItem> {
-    // Stub: Return plausible dummy result
     return {
       id: `parsed-${Date.now()}`,
       name: args.text,
@@ -293,13 +235,41 @@ export class StubNutritionAiService implements NutritionAiService {
       fatsGrams: 12,
       sourceType: 'search',
       aiExplanation: {
-        reasoning: `Based on your description "${args.text}", I estimated typical nutrition values for this food. The values are derived from similar items in the USDA database.`,
+        reasoning: `Based on your description "${args.text}", I estimated typical nutrition values.`,
         sources: [
           { label: 'USDA FoodData Central', url: 'https://fdc.nal.usda.gov/' },
-          { label: 'Internal food database' },
         ],
         confidence: 'medium',
       },
+    };
+  }
+
+  async regenerateMeal(request: RegenerateMealRequest & { userId: string }): Promise<RegenerateMealResponse> {
+    const newMeal = {
+      id: `meal-${Date.now()}`,
+      type: request.dayPlan.meals[request.mealIndex].type,
+      items: [
+        {
+          id: `food-regen-${Date.now()}`,
+          name: 'Regenerated Meal Option',
+          quantity: 1,
+          unit: 'serving',
+          calories: 500,
+          proteinGrams: 30,
+          carbsGrams: 50,
+          fatsGrams: 20,
+        },
+      ],
+    };
+
+    const updatedDayPlan = {
+      ...request.dayPlan,
+      meals: request.dayPlan.meals.map((m, i) => (i === request.mealIndex ? newMeal : m)),
+    };
+
+    return {
+      updatedDayPlan,
+      regeneratedMeal: newMeal,
     };
   }
 }
