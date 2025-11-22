@@ -10,11 +10,21 @@ export interface ProgramExercise {
   notes?: string;
 }
 
+export interface WarmupStep {
+  id: string;
+  exerciseId: string;
+  name: string;
+  durationSeconds: number;
+  order: number;
+  alternatives?: string[]; // List of exerciseIds that can be swapped in
+}
+
 export interface ProgramDay {
   id: string;
   dayOfWeek: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
   focus: ProgramDayFocus;
   description?: string;
+  warmup: WarmupStep[];
   exercises: ProgramExercise[];
 }
 

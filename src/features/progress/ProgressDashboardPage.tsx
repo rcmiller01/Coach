@@ -109,6 +109,19 @@ export default function ProgressDashboardPage() {
                                     )}
                                 </div>
 
+                                {/* Warmup Adherence */}
+                                {weekSummary?.workouts.warmupCompletedSessions !== undefined && weekSummary.workouts.sessionsCompleted > 0 && (
+                                    <div className="bg-slate-800 rounded-lg p-4">
+                                        <div className="text-slate-400 text-sm mb-1">Warmups Completed</div>
+                                        <div className="text-3xl font-bold text-cyan-400">
+                                            {weekSummary.workouts.warmupCompletedSessions}/{weekSummary.workouts.sessionsCompleted}
+                                        </div>
+                                        <div className="text-xs text-slate-500 mt-1">
+                                            {Math.round((weekSummary.workouts.warmupCompletedSessions / weekSummary.workouts.sessionsCompleted) * 100)}% adherence
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="bg-slate-800 rounded-lg p-4">
                                     <div className="text-slate-400 text-sm mb-1">Days Logged</div>
                                     <div className="text-3xl font-bold text-green-400">{weekSummary?.nutrition.daysLogged || 0}</div>

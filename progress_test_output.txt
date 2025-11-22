@@ -1,0 +1,166 @@
+﻿
+[1m[46m RUN [49m[22m [36mv4.0.12 [39m[90mC:/Users/rober/Documents/Coach[39m
+
+[90mstdout[2m | backend/tests/progress-smoke.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (13) from .env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+
+[90mstdout[2m | backend/tests/progress-smoke.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+
+node.exe : 
+[90mstderr[2m | backen
+d/tests/progress-smoke.t
+est.ts[2m > 
+[22m[2mProgress 
+Tracking Smoke 
+Tests[2m > 
+[22m[2mshould 
+generate insights when 
+enough data is logged
+At C:\Program 
+Files\nodejs\npx.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo      
+        : NotSpecified  
+  : ([90mstderr[2m.   
+ .. data is logged:S    
+tring) [], RemoteEx    
+ception
+    + FullyQualifiedErr 
+   orId : NativeComman  
+  dError
+ 
+[22m[39mlogWorkoutSess
+ion error: error: 
+column "is_warmup" of 
+relation 
+"workout_set_logs" does 
+not exist
+    at [90mC:\Users\rob
+er\Documents\Coach\[39m
+node_modules\[4mpg[24m
+\lib\client.js:545:17
+[90m    at processTicks
+AndRejections (node:inte
+rnal/process/task_queues
+:105:5)[39m
+    at WorkoutRepository
+.logWorkoutSession (C:/U
+sers/rober/Documents/Coa
+ch/backend/db/repositori
+es/WorkoutRepository.ts:
+78:35)
+    at 
+logWorkoutSession (C:/Us
+ers/rober/Documents/Coac
+h/backend/routes.ts:560:
+21) {
+  length: [33m139[39m,
+  severity: 
+[32m'ERROR'[39m,
+  code: 
+[32m'42703'[39m,
+  detail: 
+[90mundefined[39m,
+  hint: 
+[90mundefined[39m,
+  position: 
+[32m'112'[39m,
+  internalPosition: 
+[90mundefined[39m,
+  internalQuery: 
+[90mundefined[39m,
+  where: 
+[90mundefined[39m,
+  schema: 
+[90mundefined[39m,
+  table: 
+[90mundefined[39m,
+  column: 
+[90mundefined[39m,
+  dataType: 
+[90mundefined[39m,
+  constraint: 
+[90mundefined[39m,
+  file: [32m'parse_targ
+et.c'[39m,
+  line: 
+[32m'1070'[39m,
+  routine: [32m'checkIn
+sertTargets'[39m
+}
+
+ [31m├ù[39m backend/tests/progress-smoke.test.ts[2m > [22mProgress Tracking Smoke Tests[2m > [22mshould generate insights when enough data is logged[32m 27[2mms[22m[39m
+[31m   ΓåÆ expected 500 to be 201 // Object.is equality[39m
+ [32mΓ£ô[39m backend/tests/progress-smoke.test.ts[2m > [22mProgress Tracking Smoke Tests[2m > [22mshould handle empty week gracefully[32m 32[2mms[22m[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»[39m[1m[41m Failed 
+Tests 1 [49m[22m[31mΓ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39
+m
+
+[41m[1m FAIL 
+[22m[49m backend/tests
+/progress-smoke.test.ts
+[2m > [22mProgress 
+Tracking Smoke 
+Tests[2m > [22mshould 
+generate insights when 
+enough data is logged
+[31m[1mAssertionError
+[22m: expected 500 to 
+be 201 // Object.is 
+equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 201[39m
+[31m+ 500[39m
+
+[36m [2mΓ¥»[22m backe
+nd/tests/progress-smoke.
+test.ts:[2m56:32[22m[
+39m
+    [90m 54| [39m     
+           [33m.[39m[
+34mpost[39m([32m'/api/
+logs/workout-session'[3
+9m)
+    [90m 55| [39m     
+           [33m.[39m[
+34msend[39m({ [33m...
+[39mw[33m,[39m 
+notes[33m:[39m 
+[32m'Test 
+workout'[39m 
+})[33m;[39m
+    [90m 56| [39m     
+       [34mexpect[39m(
+res[33m.[39mstatus)[3
+3m.[39m[34mtoBe[39m(
+[34m201[39m)[33m;[39m
+    [90m   | [39m     
+                        
+  [31m^[39m
+    [90m 57| [39m     
+   }
+    [90m 58| [39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»[1/1]ΓÄ»[22m[
+39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
+[2m   Start at [22m 21:20:33
+[2m   Duration [22m 802ms[2m (transform 150ms, setup 0ms, collect 398ms, tests 98ms, environment 0ms, prepare 11ms)[22m
+

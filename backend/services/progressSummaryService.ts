@@ -61,7 +61,8 @@ export class ProgressSummaryService {
         };
 
         // Generate insights
-        summary.insights = generateInsights(summary);
+        const insightObjects = generateInsights(summary);
+        summary.insights = insightObjects.map(i => i.message);
 
         return summary;
     }
@@ -87,15 +88,29 @@ export class ProgressSummaryService {
     private computeWorkoutMetrics(sessions: any[]) {
         const sessionsCompleted = sessions.length;
         let setsCompleted = 0;
+        let warmupSetsCompleted = 0;
+        let sessionsWithWarmup = 0;
 
         for (const session of sessions) {
-            setsCompleted += session.sets?.length || 0;
+            if (!session.sets) continue;
+
+            // Count working sets (exclude warmups from volume metrics)
+            const workingSets = session.sets.filter((s: any) => !s.isWarmup);
+            setsCompleted += workingSets.length;
+
+            // Track warmup adherence separately
+            const warmupSets = session.sets.filter((s: any) => s.isWarmup);
+            if (warmupSets.length > 0) {
+                sessionsWithWarmup++;
+                warmupSetsCompleted += warmupSets.length;
+            }
         }
 
         return {
             sessionsCompleted,
             setsCompleted: setsCompleted > 0 ? setsCompleted : undefined,
             completionRate: undefined, // Can be enhanced if we track planned sets
+            warmupCompletedSessions: sessionsCompleted > 0 ? sessionsWithWarmup : undefined,
         };
     }
 

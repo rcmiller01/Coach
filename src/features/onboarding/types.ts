@@ -63,6 +63,7 @@ export interface OnboardingState {
   trainingEnvironment: TrainingEnvironment | null;
   equipment: string[];
   sessionsPerWeek: number | null;
+  minutesPerSession: number | null;
   preferredDays: string[]; // ['monday', 'wednesday']
   preferredTimeOfDay: TimeOfDay | null;
   // Optional location info for AI-assisted nutrition (restaurant context, etc.)
@@ -87,6 +88,7 @@ export const initialOnboardingState: OnboardingState = {
   trainingEnvironment: null,
   equipment: [],
   sessionsPerWeek: null,
+  minutesPerSession: null,
   preferredDays: [],
   preferredTimeOfDay: null,
   city: undefined,

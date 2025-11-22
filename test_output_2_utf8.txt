@@ -1,0 +1,96 @@
+﻿
+[1m[46m RUN [49m[22m [36mv4.0.12 [39m[90mC:/Users/rober/Documents/Coach[39m
+
+ [31mΓ¥»[39m backend/tests/warmupService.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 10[2mms[22m[39m
+       [32mΓ£ô[39m should return 5 minutes for sessions < 30 mins[32m 1[2mms[22m[39m
+[31m       [31m├ù[31m should return 8 minutes for sessions 30-45 mins[39m[32m 5[2mms[22m[39m
+       [32mΓ£ô[39m should return 10 minutes for sessions 45-60 mins[32m 0[2mms[22m[39m
+       [32mΓ£ô[39m should return 12 minutes for sessions > 60 mins[32m 0[2mms[22m[39m
+       [32mΓ£ô[39m should generate a warmup sequence within budget[32m 1[2mms[22m[39m
+       [32mΓ£ô[39m should include RAMP phases[32m 0[2mms[22m[39m
+       [32mΓ£ô[39m should filter out exercises based on equipment[32m 0[2mms[22m[39m
+       [32mΓ£ô[39m should filter out exercises based on injuries[32m 0[2mms[22m[39m
+node.exe : 
+At C:\Program 
+Files\nodejs\npx.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo      
+        : NotSpecified  
+  : (:String) [], Rem   
+ oteException
+    + FullyQualifiedErr 
+   orId : NativeComman  
+  dError
+ 
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»[39m[1m[41m Failed 
+Tests 1 [49m[22m[31mΓ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39
+m
+
+[41m[1m FAIL 
+[22m[49m backend/tests
+/warmupService.test.ts[
+2m > 
+[22mwarmupService[2m 
+> [22mcalculateWarmupBu
+dget[2m > [22mshould 
+return 8 minutes for 
+sessions 30-45 mins
+[31m[1mAssertionError
+[22m: expected 5 to be 
+8 // Object.is 
+equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 8[39m
+[31m+ 5[39m
+
+[36m [2mΓ¥»[22m backe
+nd/tests/warmupService.t
+est.ts:[2m14:47[22m[3
+9m
+    [90m 12| [39m
+    [90m 13| [39m     
+   [34mit[39m([32m'sh
+ould return 8 minutes 
+for sessions 30-45 
+mins'[39m[33m,[39m 
+() [33m=>[39m {
+    [90m 14| [39m     
+       [34mexpect[39m(
+[34mcalculateWarmupBudg
+et[39m([34m30[39m))[
+33m.[39m[34mtoBe[39m(
+[34m8[39m)[33m;[39m
+    [90m   | [39m     
+                        
+                 
+[31m^[39m
+    [90m 15| [39m     
+       [34mexpect[39m(
+[34mcalculateWarmupBudg
+et[39m([34m45[39m))[
+33m.[39m[34mtoBe[39m(
+[34m8[39m)[33m;[39m
+    [90m 16| [39m     
+   })[33m;[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»[1/1]ΓÄ»[22m[
+39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (8)[39m
+[2m   Start at [22m 19:49:36
+[2m   Duration [22m 332ms[2m (transform 31ms, setup 0ms, collect 44ms, tests 10ms, environment 0ms, prepare 12ms)[22m
+

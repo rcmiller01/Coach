@@ -2,6 +2,8 @@ import type { OnboardingState } from '../onboarding/types';
 import { mapPrimaryGoalToBlockGoal } from '../onboarding/types';
 import type { ProgramWeek, ProgramDay, ProgramExercise, ProgramMultiWeek, TrainingBlock, BlockGoal } from './types';
 
+import { calculateWarmupBudget, buildWarmupForSession } from './warmupService';
+
 /**
  * Generate initial multi-week program from onboarding state.
  * Creates first week and initial training block.
@@ -65,6 +67,16 @@ export function generateProgramWeekFromOnboarding(
   // Decide day focus pattern
   const dayFocusPattern = sessionsPerWeek <= 3 ? 'full' : 'split';
 
+
+
+  // ... (keep existing imports)
+
+  // Inside generateProgramWeekFromOnboarding:
+
+  // Calculate warmup budget based on session duration (default to 45 mins if not set)
+  const sessionMinutes = onboarding.minutesPerSession || 45;
+  const warmupMinutes = calculateWarmupBudget(sessionMinutes);
+
   // Generate program days
   const days: ProgramDay[] = trainingDays.map((day, index) => {
     const dayOfWeek = day as ProgramDay['dayOfWeek'];
@@ -84,13 +96,19 @@ export function generateProgramWeekFromOnboarding(
       }
     }
 
-    return {
+    const programDay: ProgramDay = {
       id: `week1-${dayOfWeek}-${index}`,
       dayOfWeek,
       focus,
       description,
+      warmup: [], // Placeholder, populated below
       exercises: pickExercisesForDay(focus, onboarding.equipment || [], goal, onboarding.planProfile),
     };
+
+    // Generate warmup
+    programDay.warmup = buildWarmupForSession(onboarding, programDay, warmupMinutes);
+
+    return programDay;
   });
 
   // Generate week-level focus description

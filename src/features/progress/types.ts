@@ -23,6 +23,7 @@ export interface ProgressSummary {
         setsCompleted?: number;
         setsPlanned?: number;
         completionRate?: number; // 0-1 across sets or sessions
+        warmupCompletedSessions?: number; // Number of sessions where warmups were completed
     };
 
     // Nutrition metrics with deltas

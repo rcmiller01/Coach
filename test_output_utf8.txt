@@ -1,0 +1,572 @@
+﻿
+[1m[46m RUN [49m[22m [36mv4.0.12 [39m[90mC:/Users/rober/Documents/Coach[39m
+
+ [31mΓ¥»[39m backend/tests/warmupService.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m8 failed[39m[2m)[22m[32m 9[2mms[22m[39m
+[31m       [31m├ù[31m should return 5 minutes for sessions < 30 mins[39m[32m 4[2mms[22m[39m
+[31m       [31m├ù[31m should return 8 minutes for sessions 30-45 mins[39m[32m 1[2mms[22m[39m
+[31m       [31m├ù[31m should return 10 minutes for sessions 45-60 mins[39m[32m 1[2mms[22m[39m
+[31m       [31m├ù[31m should return 12 minutes for sessions > 60 mins[39m[32m 0[2mms[22m[39m
+[31m       [31m├ù[31m should generate a warmup sequence within budget[39m[32m 1[2mms[22m[39m
+[31m       [31m├ù[31m should include RAMP phases[39m[32m 0[2mms[22m[39m
+[31m       [31m├ù[31m should filter out exercises based on equipment[39m[32m 0[2mms[22m[39m
+[31m       [31m├ù[31m should filter out exercises based on injuries[39m[32m 0[2mms[22m[39m
+node.exe : 
+At C:\Program Files\
+nodejs\npx.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo  
+            : 
+NotSpecified    : 
+(:String) [], Rem   
+ oteException
+    + 
+FullyQualifiedErr   
+ orId : 
+NativeComman    
+dError
+ 
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»[39m[1m[41m
+ Failed Tests 8 [49
+m[22m[31mΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/warmupService.t
+est.ts[2m > [22mwa
+rmupService[2m > [
+22mcalculateWarmupBu
+dget[2m > 
+[22mshould return 
+5 minutes for 
+sessions < 30 mins
+[31m[1mAssertionEr
+ror[22m: expected 
+6 to be 5 // 
+Object.is 
+equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 5[39m
+[31m+ 6[39m
+
+[36m [2mΓ¥»[22m b
+ackend/tests/warmupS
+ervice.test.ts:[2m9
+:47[22m[39m
+    [90m  7| [39m 
+   [34mdescribe[39
+m([32m'calculateWar
+mupBudget'[39m[33m
+,[39m () 
+[33m=>[39m {
+    [90m  8| [39m 
+       [34mit[39m(
+[32m'should return 
+5 minutes for 
+sessions < 30 mins'
+[39m[33m,[39m () 
+[33m=>[39m {
+    [90m  9| [39m 
+           [34mexpe
+ct[39m([34mcalcula
+teWarmupBudget[39m(
+[34m20[39m))[33m.
+[39m[34mtoBe[39m(
+[34m5[39m)[33m;[
+39m
+    [90m   | [39m 
+                    
+                    
+     [31m^[39m
+    [90m 10| [39m 
+           [34mexpe
+ct[39m([34mcalcula
+teWarmupBudget[39m(
+[34m29[39m))[33m.
+[39m[34mtoBe[39m(
+[34m5[39m)[33m;[
+39m
+    [90m 11| [39m 
+       })[33m;[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[1/8]ΓÄ»[22m[39m
+
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/warmupService.t
+est.ts[2m > [22mwa
+rmupService[2m > [
+22mcalculateWarmupBu
+dget[2m > 
+[22mshould return 
+8 minutes for 
+sessions 30-45 mins
+[31m[1mAssertionEr
+ror[22m: expected 
+9 to be 8 // 
+Object.is 
+equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 8[39m
+[31m+ 9[39m
+
+[36m [2mΓ¥»[22m b
+ackend/tests/warmupS
+ervice.test.ts:[2m1
+5:47[22m[39m
+    [90m 13| [39m 
+       [34mit[39m(
+[32m'should return 
+8 minutes for 
+sessions 30-45 mins'
+[39m[33m,[39m () 
+[33m=>[39m {
+    [90m 14| [39m 
+           [34mexpe
+ct[39m([34mcalcula
+teWarmupBudget[39m(
+[34m30[39m))[33m.
+[39m[34mtoBe[39m(
+[34m8[39m)[33m;[
+39m
+    [90m 15| [39m 
+           [34mexpe
+ct[39m([34mcalcula
+teWarmupBudget[39m(
+[34m45[39m))[33m.
+[39m[34mtoBe[39m(
+[34m8[39m)[33m;[
+39m
+    [90m   | [39m 
+                    
+                    
+     [31m^[39m
+    [90m 16| [39m 
+       })[33m;[39m
+    [90m 17| [39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[2/8]ΓÄ»[22m[39m
+
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/warmupService.t
+est.ts[2m > [22mwa
+rmupService[2m > [
+22mcalculateWarmupBu
+dget[2m > 
+[22mshould return 
+10 minutes for 
+sessions 45-60 mins
+[31m[1mAssertionEr
+ror[22m: expected 
+12 to be 10 // 
+Object.is 
+equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 10[39m
+[31m+ 12[39m
+
+[36m [2mΓ¥»[22m b
+ackend/tests/warmupS
+ervice.test.ts:[2m2
+0:47[22m[39m
+    [90m 18| [39m 
+       [34mit[39m(
+[32m'should return 
+10 minutes for 
+sessions 45-60 mins'
+[39m[33m,[39m () 
+[33m=>[39m {
+    [90m 19| [39m 
+           [34mexpe
+ct[39m([34mcalcula
+teWarmupBudget[39m(
+[34m46[39m))[33m.
+[39m[34mtoBe[39m(
+[34m10[39m)[33m;
+[39m
+    [90m 20| [39m 
+           [34mexpe
+ct[39m([34mcalcula
+teWarmupBudget[39m(
+[34m60[39m))[33m.
+[39m[34mtoBe[39m(
+[34m10[39m)[33m;
+[39m
+    [90m   | [39m 
+                    
+                    
+     [31m^[39m
+    [90m 21| [39m 
+       })[33m;[39m
+    [90m 22| [39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[3/8]ΓÄ»[22m[39m
+
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/warmupService.t
+est.ts[2m > [22mwa
+rmupService[2m > [
+22mcalculateWarmupBu
+dget[2m > 
+[22mshould return 
+12 minutes for 
+sessions > 60 mins
+[31m[1mAssertionEr
+ror[22m: expected 
+13 to be 12 // 
+Object.is 
+equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 12[39m
+[31m+ 13[39m
+
+[36m [2mΓ¥»[22m b
+ackend/tests/warmupS
+ervice.test.ts:[2m2
+4:47[22m[39m
+    [90m 22| [39m
+    [90m 23| [39m 
+       [34mit[39m(
+[32m'should return 
+12 minutes for 
+sessions > 60 mins'
+[39m[33m,[39m () 
+[33m=>[39m {
+    [90m 24| [39m 
+           [34mexpe
+ct[39m([34mcalcula
+teWarmupBudget[39m(
+[34m61[39m))[33m.
+[39m[34mtoBe[39m(
+[34m12[39m)[33m;
+[39m
+    [90m   | [39m 
+                    
+                    
+     [31m^[39m
+    [90m 25| [39m 
+           [34mexpe
+ct[39m([34mcalcula
+teWarmupBudget[39m(
+[34m90[39m))[33m.
+[39m[34mtoBe[39m(
+[34m12[39m)[33m;
+[39m
+    [90m 26| [39m 
+       })[33m;[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[4/8]ΓÄ»[22m[39m
+
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/warmupService.t
+est.ts[2m > [22mwa
+rmupService[2m > [
+22mbuildWarmupForSes
+sion[2m > 
+[22mshould 
+generate a warmup 
+sequence within 
+budget
+[31m[1mTypeError[
+22m: Cannot read 
+properties of 
+undefined (reading 
+'some')[39m
+[36m [2mΓ¥»[22m 
+hasJointIssue src/fe
+atures/program/warmu
+pService.ts:[2m123:
+19[22m[39m
+    [90m121| [39m
+    [90m122| [39m
+[35mfunction[39m [
+34mhasJointIssue[39
+m(issues[33m:[39m 
+[33mJointIssue[39m
+[][33m,[39m 
+area[33m:[39m 
+string)[33m:[39m 
+boolean {
+    [90m123| [39m 
+   [35mreturn[39m 
+issues[33m.[39m[3
+4msome[39m(i 
+[33m=>[39m 
+i[33m.[39marea 
+[33m===[39m 
+area)[33m;[39m
+    [90m   | [39m 
+                 
+[31m^[39m
+    [90m124| [39m}
+    [90m125| [39m
+[90m [2mΓ¥»[22m s
+rc/features/program/
+warmupService.ts:[2
+m112:60[22m[39m
+[90m [2mΓ¥»[22m 
+filterExercises src/
+features/program/war
+mupService.ts:[2m10
+1:20[22m[39m
+[90m [2mΓ¥»[22m b
+uildWarmupForSession
+ src/features/progra
+m/warmupService.ts:
+[2m23:32[22m[39m
+[90m [2mΓ¥»[22m b
+ackend/tests/warmupS
+ervice.test.ts:[2m5
+6:28[22m[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[5/8]ΓÄ»[22m[39m
+
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/warmupService.t
+est.ts[2m > [22mwa
+rmupService[2m > [
+22mbuildWarmupForSes
+sion[2m > 
+[22mshould include 
+RAMP phases
+[31m[1mTypeError[
+22m: Cannot read 
+properties of 
+undefined (reading 
+'some')[39m
+[36m [2mΓ¥»[22m 
+hasJointIssue src/fe
+atures/program/warmu
+pService.ts:[2m123:
+19[22m[39m
+    [90m121| [39m
+    [90m122| [39m
+[35mfunction[39m [
+34mhasJointIssue[39
+m(issues[33m:[39m 
+[33mJointIssue[39m
+[][33m,[39m 
+area[33m:[39m 
+string)[33m:[39m 
+boolean {
+    [90m123| [39m 
+   [35mreturn[39m 
+issues[33m.[39m[3
+4msome[39m(i 
+[33m=>[39m 
+i[33m.[39marea 
+[33m===[39m 
+area)[33m;[39m
+    [90m   | [39m 
+                 
+[31m^[39m
+    [90m124| [39m}
+    [90m125| [39m
+[90m [2mΓ¥»[22m s
+rc/features/program/
+warmupService.ts:[2
+m112:60[22m[39m
+[90m [2mΓ¥»[22m 
+filterExercises src/
+features/program/war
+mupService.ts:[2m10
+1:20[22m[39m
+[90m [2mΓ¥»[22m b
+uildWarmupForSession
+ src/features/progra
+m/warmupService.ts:
+[2m23:32[22m[39m
+[90m [2mΓ¥»[22m b
+ackend/tests/warmupS
+ervice.test.ts:[2m6
+5:28[22m[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[6/8]ΓÄ»[22m[39m
+
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/warmupService.t
+est.ts[2m > [22mwa
+rmupService[2m > [
+22mbuildWarmupForSes
+sion[2m > 
+[22mshould filter 
+out exercises based 
+on equipment
+[31m[1mTypeError[
+22m: Cannot read 
+properties of 
+undefined (reading 
+'some')[39m
+[36m [2mΓ¥»[22m 
+hasJointIssue src/fe
+atures/program/warmu
+pService.ts:[2m123:
+19[22m[39m
+    [90m121| [39m
+    [90m122| [39m
+[35mfunction[39m [
+34mhasJointIssue[39
+m(issues[33m:[39m 
+[33mJointIssue[39m
+[][33m,[39m 
+area[33m:[39m 
+string)[33m:[39m 
+boolean {
+    [90m123| [39m 
+   [35mreturn[39m 
+issues[33m.[39m[3
+4msome[39m(i 
+[33m=>[39m 
+i[33m.[39marea 
+[33m===[39m 
+area)[33m;[39m
+    [90m   | [39m 
+                 
+[31m^[39m
+    [90m124| [39m}
+    [90m125| [39m
+[90m [2mΓ¥»[22m s
+rc/features/program/
+warmupService.ts:[2
+m112:60[22m[39m
+[90m [2mΓ¥»[22m 
+filterExercises src/
+features/program/war
+mupService.ts:[2m10
+1:20[22m[39m
+[90m [2mΓ¥»[22m b
+uildWarmupForSession
+ src/features/progra
+m/warmupService.ts:
+[2m23:32[22m[39m
+[90m [2mΓ¥»[22m b
+ackend/tests/warmupS
+ervice.test.ts:[2m7
+3:28[22m[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[7/8]ΓÄ»[22m[39m
+
+[41m[1m FAIL 
+[22m[49m backend/t
+ests/warmupService.t
+est.ts[2m > [22mwa
+rmupService[2m > [
+22mbuildWarmupForSes
+sion[2m > 
+[22mshould filter 
+out exercises based 
+on injuries
+[31m[1mTypeError[
+22m: Cannot read 
+properties of 
+undefined (reading 
+'some')[39m
+[36m [2mΓ¥»[22m 
+hasJointIssue src/fe
+atures/program/warmu
+pService.ts:[2m123:
+19[22m[39m
+    [90m121| [39m
+    [90m122| [39m
+[35mfunction[39m [
+34mhasJointIssue[39
+m(issues[33m:[39m 
+[33mJointIssue[39m
+[][33m,[39m 
+area[33m:[39m 
+string)[33m:[39m 
+boolean {
+    [90m123| [39m 
+   [35mreturn[39m 
+issues[33m.[39m[3
+4msome[39m(i 
+[33m=>[39m 
+i[33m.[39marea 
+[33m===[39m 
+area)[33m;[39m
+    [90m   | [39m 
+                 
+[31m^[39m
+    [90m124| [39m}
+    [90m125| [39m
+[90m [2mΓ¥»[22m s
+rc/features/program/
+warmupService.ts:[2
+m112:60[22m[39m
+[90m [2mΓ¥»[22m 
+filterExercises src/
+features/program/war
+mupService.ts:[2m10
+1:20[22m[39m
+[90m [2mΓ¥»[22m b
+uildWarmupForSession
+ src/features/progra
+m/warmupService.ts:
+[2m23:32[22m[39m
+[90m [2mΓ¥»[22m b
+ackend/tests/warmupS
+ervice.test.ts:[2m8
+3:28[22m[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[8/8]ΓÄ»[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m8 failed[39m[22m[90m (8)[39m
+[2m   Start at [22m 19:47:15
+[2m   Duration [22m 328ms[2m (transform 35ms, setup 0ms, collect 48ms, tests 9ms, environment 0ms, prepare 11ms)[22m
+

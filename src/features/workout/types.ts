@@ -14,6 +14,9 @@ export interface WorkoutSetState {
   performedLoadKg?: number;
   rpe?: number; // Rate of Perceived Exertion (1-10)
   status: SetStatus;
+  isWarmup?: boolean;
+  durationSeconds?: number;
+  exerciseName?: string; // For warmups or substitutions
 }
 
 // Overall workout session state

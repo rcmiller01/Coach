@@ -553,6 +553,7 @@ export async function logWorkoutSession(req: Request, res: Response) {
         weightLbs: set.weight,
         rpe: set.rpe,
         notes: set.notes,
+        isWarmup: set.isWarmup,
       }))
     );
 

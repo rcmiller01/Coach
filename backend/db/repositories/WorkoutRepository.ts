@@ -8,6 +8,7 @@ export interface WorkoutSetInput {
     weightLbs?: number;
     rpe?: number;
     notes?: string;
+    isWarmup?: boolean;
 }
 
 export interface WorkoutSessionInput {
@@ -28,6 +29,7 @@ export interface WorkoutSet {
     weightLbs?: number;
     rpe?: number;
     notes?: string;
+    isWarmup: boolean;
 }
 
 export interface WorkoutSession {
@@ -75,12 +77,15 @@ export class WorkoutRepository {
             for (const set of input.sets) {
                 const setResult = await client.query(
                     `INSERT INTO workout_set_logs 
-           (session_id, exercise_name, set_number, reps, weight_lbs, rpe, notes)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           (session_id, exercise_name, set_number, reps, weight_lbs, rpe, notes, is_warmup)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            RETURNING *`,
-                    [session.id, set.exerciseName, set.setNumber, set.reps, set.weightLbs, set.rpe, set.notes]
+                    [session.id, set.exerciseName, set.setNumber, set.reps, set.weightLbs, set.rpe, set.notes, set.isWarmup || false]
                 );
-                sets.push(setResult.rows[0]);
+                sets.push({
+                    ...setResult.rows[0],
+                    isWarmup: setResult.rows[0].is_warmup, // Map snake_case to camelCase
+                });
             }
 
             await client.query('COMMIT');
@@ -142,6 +147,7 @@ export class WorkoutRepository {
                     weightLbs: parseFloat(s.weight_lbs),
                     rpe: parseFloat(s.rpe),
                     notes: s.notes,
+                    isWarmup: s.is_warmup,
                 })),
             });
         }

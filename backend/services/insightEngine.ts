@@ -10,6 +10,13 @@ import { ProgressSummary, INSIGHT_THRESHOLDS } from '../../src/features/progress
 // Maximum insights to return (keeps UI readable)
 const MAX_INSIGHTS = 5;
 
+export type InsightCategory = 'workout' | 'nutrition' | 'weight' | 'combination';
+
+export interface Insight {
+    category: InsightCategory;
+    message: string;
+}
+
 /**
  * Generate insights from a progress summary
  * 
@@ -17,10 +24,10 @@ const MAX_INSIGHTS = 5;
  * Order: workout consistency → nutrition quality → weight trends → combination
  * 
  * @param summary - The computed weekly progress summary
- * @returns Array of human-readable insight strings (max 5)
+ * @returns Array of Insight objects (max 5)
  */
-export function generateInsights(summary: ProgressSummary): string[] {
-    const insights: string[] = [];
+export function generateInsights(summary: ProgressSummary): Insight[] {
+    const insights: Insight[] = [];
 
     // Generate insights in priority order
     insights.push(...generateWorkoutInsights(summary));
@@ -35,9 +42,9 @@ export function generateInsights(summary: ProgressSummary): string[] {
 /**
  * Workout-related insights
  */
-function generateWorkoutInsights(summary: ProgressSummary): string[] {
-    const insights: string[] = [];
-    const { sessionsCompleted, sessionsPlanned, completionRate } = summary.workouts;
+function generateWorkoutInsights(summary: ProgressSummary): Insight[] {
+    const insights: Insight[] = [];
+    const { sessionsCompleted, sessionsPlanned, completionRate, warmupCompletedSessions } = summary.workouts;
 
     // Gate: Skip if explicitly no workouts planned
     if (sessionsPlanned === 0) {
@@ -46,8 +53,30 @@ function generateWorkoutInsights(summary: ProgressSummary): string[] {
 
     // No sessions logged
     if (sessionsCompleted === 0) {
-        insights.push("No workouts logged yet - let's get started!");
+        insights.push({
+            category: 'workout',
+            message: "No workouts logged yet - let's get started!"
+        });
         return insights;
+    }
+
+    // Warmup adherence insights (high priority if warmups exist)
+    if (warmupCompletedSessions !== undefined && sessionsCompleted > 0) {
+        const warmupRate = warmupCompletedSessions / sessionsCompleted;
+
+        if (warmupRate >= 0.9) {
+            // Excellent warmup adherence
+            insights.push({
+                category: 'workout',
+                message: "Nice: you're consistently doing your warmup. That's exactly what long-term knees and shoulders like."
+            });
+        } else if (warmupRate < 0.5 && sessionsCompleted >= 2) {
+            // Poor warmup adherence
+            insights.push({
+                category: 'workout',
+                message: "You're getting your sessions in, but often skipping warmups. A few extra minutes of prep will help your joints and performance."
+            });
+        }
     }
 
     // High consistency with good completion
@@ -57,9 +86,10 @@ function generateWorkoutInsights(summary: ProgressSummary): string[] {
         completionRate >= INSIGHT_THRESHOLDS.MIN_COMPLETION_RATE_STRONG
     ) {
         const rate = Math.round(completionRate * 100);
-        insights.push(
-            `💪 Great consistency! You hit ${sessionsCompleted} workouts with ${rate}% completion.`
-        );
+        insights.push({
+            category: 'workout',
+            message: `💪 Great consistency! You hit ${sessionsCompleted} workouts with ${rate}% completion.`
+        });
         return insights;
     }
 
@@ -69,13 +99,19 @@ function generateWorkoutInsights(summary: ProgressSummary): string[] {
         completionRate !== undefined &&
         completionRate < INSIGHT_THRESHOLDS.MIN_COMPLETION_RATE_WEAK
     ) {
-        insights.push("You're showing up; next step is finishing more of what you start.");
+        insights.push({
+            category: 'workout',
+            message: "You're showing up; next step is finishing more of what you start."
+        });
         return insights;
     }
 
     // Below minimum sessions
     if (sessionsCompleted < INSIGHT_THRESHOLDS.MIN_SESSIONS_FOR_CONSISTENCY) {
-        insights.push("Keep building momentum - aim for at least 3 workouts per week.");
+        insights.push({
+            category: 'workout',
+            message: "Keep building momentum - aim for at least 3 workouts per week."
+        });
     }
 
     return insights;
@@ -85,8 +121,8 @@ function generateWorkoutInsights(summary: ProgressSummary): string[] {
  * Nutrition-related insights
  * Guards against insufficient data before making claims
  */
-function generateNutritionInsights(summary: ProgressSummary): string[] {
-    const insights: string[] = [];
+function generateNutritionInsights(summary: ProgressSummary): Insight[] {
+    const insights: Insight[] = [];
     const {
         daysLogged,
         avgCaloriesTarget,
@@ -97,13 +133,19 @@ function generateNutritionInsights(summary: ProgressSummary): string[] {
 
     // Gate: Need minimum days before giving quality feedback
     if (daysLogged < INSIGHT_THRESHOLDS.MIN_DAYS_FOR_PATTERNS) {
-        insights.push("Try logging at least 5 days to see meaningful patterns.");
+        insights.push({
+            category: 'nutrition',
+            message: "Try logging at least 5 days to see meaningful patterns."
+        });
         return insights; // Only return this message, no quality feedback
     }
 
     // Logging frequency feedback (only if we have enough data)
     if (daysLogged >= INSIGHT_THRESHOLDS.GOOD_LOGGING_DAYS) {
-        insights.push(`📊 Excellent tracking! You logged ${daysLogged} days.`);
+        insights.push({
+            category: 'nutrition',
+            message: `📊 Excellent tracking! You logged ${daysLogged} days.`
+        });
     }
 
     // Calorie adherence (requires target and enough logging days)
@@ -111,15 +153,27 @@ function generateNutritionInsights(summary: ProgressSummary): string[] {
         const absDelta = Math.abs(avgCaloriesDelta);
 
         if (absDelta <= INSIGHT_THRESHOLDS.CALORIE_DELTA_PERFECT) {
-            insights.push("🎯 You're hitting your calorie goals consistently.");
+            insights.push({
+                category: 'nutrition',
+                message: "🎯 You're hitting your calorie goals consistently."
+            });
         } else if (absDelta <= INSIGHT_THRESHOLDS.CALORIE_DELTA_GOOD) {
             if (avgCaloriesDelta > 0) {
-                insights.push("Slightly above target - consider portion adjustments.");
+                insights.push({
+                    category: 'nutrition',
+                    message: "Slightly above target - consider portion adjustments."
+                });
             } else {
-                insights.push("Slightly under target - you have room for more nutrition.");
+                insights.push({
+                    category: 'nutrition',
+                    message: "Slightly under target - you have room for more nutrition."
+                });
             }
         } else if (avgCaloriesDelta > INSIGHT_THRESHOLDS.CALORIE_DELTA_GOOD) {
-            insights.push("Consider adjusting portions to get closer to your target.");
+            insights.push({
+                category: 'nutrition',
+                message: "Consider adjusting portions to get closer to your target."
+            });
         }
     }
 
@@ -129,7 +183,10 @@ function generateNutritionInsights(summary: ProgressSummary): string[] {
         avgProteinDelta !== undefined &&
         avgProteinDelta < INSIGHT_THRESHOLDS.PROTEIN_DELTA_CONCERN
     ) {
-        insights.push("You're a bit under your protein target; 10-20g more per day would help.");
+        insights.push({
+            category: 'nutrition',
+            message: "You're a bit under your protein target; 10-20g more per day would help."
+        });
     }
 
     return insights;
@@ -139,13 +196,16 @@ function generateNutritionInsights(summary: ProgressSummary): string[] {
  * Weight trend insights
  * Only makes claims if enough data points exist
  */
-function generateWeightInsights(summary: ProgressSummary): string[] {
-    const insights: string[] = [];
+function generateWeightInsights(summary: ProgressSummary): Insight[] {
+    const insights: Insight[] = [];
     const { hasEnoughData, changePerWeek, trend } = summary.weight;
 
     // Gate: Need enough data for reliable trends
     if (!hasEnoughData) {
-        insights.push("Log a few more weigh-ins to establish trends.");
+        insights.push({
+            category: 'weight',
+            message: "Log a few more weigh-ins to establish trends."
+        });
         return insights;
     }
 
@@ -155,13 +215,22 @@ function generateWeightInsights(summary: ProgressSummary): string[] {
         Math.abs(changePerWeek) > INSIGHT_THRESHOLDS.WEIGHT_SIGNIFICANT_CHANGE
     ) {
         if (trend === 'decreasing') {
-            insights.push("📉 Weight trending down - keep up the great work!");
+            insights.push({
+                category: 'weight',
+                message: "📉 Weight trending down - keep up the great work!"
+            });
         } else if (trend === 'increasing') {
-            insights.push("📈 Weight trending up slightly.");
+            insights.push({
+                category: 'weight',
+                message: "📈 Weight trending up slightly."
+            });
         }
     } else {
         // Weight is stable
-        insights.push("⚖️ Weight holding steady.");
+        insights.push({
+            category: 'weight',
+            message: "⚖️ Weight holding steady."
+        });
     }
 
     return insights;
@@ -170,8 +239,8 @@ function generateWeightInsights(summary: ProgressSummary): string[] {
 /**
  * Combination insights (high engagement across multiple areas)
  */
-function generateCombinationInsights(summary: ProgressSummary): string[] {
-    const insights: string[] = [];
+function generateCombinationInsights(summary: ProgressSummary): Insight[] {
+    const insights: Insight[] = [];
 
     const { sessionsCompleted } = summary.workouts;
     const { daysLogged, avgCaloriesDelta } = summary.nutrition;
@@ -184,7 +253,10 @@ function generateCombinationInsights(summary: ProgressSummary): string[] {
         Math.abs(avgCaloriesDelta) <= INSIGHT_THRESHOLDS.HIGH_ENGAGEMENT_CALORIE_DELTA;
 
     if (highWorkouts && highLogging && goodAdherence) {
-        insights.push("🔥 You're crushing it this week! Great consistency across workouts and nutrition.");
+        insights.push({
+            category: 'combination',
+            message: "🔥 You're crushing it this week! Great consistency across workouts and nutrition."
+        });
     }
 
     return insights;

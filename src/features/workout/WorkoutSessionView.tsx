@@ -16,6 +16,7 @@ import FormCheckSection from './mobile/FormCheckSection';
 import ExerciseFocusCard from './mobile/ExerciseFocusCard';
 import BetweenExerciseRest from './mobile/BetweenExerciseRest';
 import { SessionControlBar } from './mobile/SessionControlBar';
+import { WarmupView } from './WarmupView';
 
 interface WorkoutSessionViewProps {
   programDay: ProgramDay;
@@ -48,9 +49,25 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
   const [session, setSession] = useState<WorkoutSessionState>(() => {
     const sets: WorkoutSetState[] = [];
 
+    // Initialize warmup sets
+    if (programDay.warmup && programDay.warmup.length > 0) {
+      programDay.warmup.forEach((step, index) => {
+        sets.push({
+          id: step.id,
+          exerciseId: step.exerciseId,
+          exerciseName: step.name,
+          setIndex: index,
+          targetReps: '0',
+          durationSeconds: step.durationSeconds,
+          isWarmup: true,
+          status: 'pending',
+        });
+      });
+    }
+
     programDay.exercises.forEach((exercise) => {
       // Find load suggestion for this exercise
-      const suggestion = loadSuggestions.find((s) => s.exerciseId === exercise.id);
+      const suggestion = loadSuggestions?.find((s) => s.exerciseId === exercise.id);
       const targetLoadKg = suggestion?.suggestedLoadKg ?? undefined;
 
       for (let i = 0; i < exercise.sets; i++) {
@@ -94,6 +111,12 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [betweenExerciseRest, setBetweenExerciseRest] = useState(false);
   const [restTimeRemaining, setRestTimeRemaining] = useState(0);
+
+
+  // Warmup phase state
+  const [isWarmupPhase, setIsWarmupPhase] = useState(() =>
+    programDay.warmup && programDay.warmup.length > 0
+  );
 
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -238,6 +261,35 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
     }
   };
 
+  const handleWarmupComplete = () => {
+    setIsWarmupPhase(false);
+    // Reset any warmup-specific state if needed
+  };
+
+  const handleSwapWarmup = (stepId: string, newExerciseId: string) => {
+    // Placeholder for swap logic
+    // In a real app, we'd look up the new exercise details and update the session state
+    console.log('Swap warmup step', stepId, 'to', newExerciseId);
+
+    // Update the set in session state
+    setSession(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        sets: prev.sets.map(s => {
+          if (s.id === stepId) {
+            return {
+              ...s,
+              exerciseId: newExerciseId,
+              exerciseName: 'Alternative Exercise', // We'd need to look this up
+            };
+          }
+          return s;
+        })
+      };
+    });
+  };
+
   // Between-exercise rest timer
   useEffect(() => {
     if (!betweenExerciseRest || restTimeRemaining <= 0) return;
@@ -303,15 +355,7 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
     );
   }
 
-  const dayLabels: Record<string, string> = {
-    monday: 'Monday',
-    tuesday: 'Tuesday',
-    wednesday: 'Wednesday',
-    thursday: 'Thursday',
-    friday: 'Friday',
-    saturday: 'Saturday',
-    sunday: 'Sunday',
-  };
+
 
   const focusLabels: Record<string, string> = {
     upper: 'Upper Body',
@@ -327,11 +371,23 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
   const currentExerciseSets = session.sets.filter((s) => s.exerciseId === currentExercise?.id);
 
   // Find load suggestion for current exercise
-  const currentLoadSuggestion = loadSuggestions.find((s) => s.exerciseId === currentExercise?.id);
+  const currentLoadSuggestion = loadSuggestions?.find((s) => s.exerciseId === currentExercise?.id);
 
   // Show completed session summary
   if (session.status === 'completed') {
     return <SessionSummary session={session} programDay={programDay} onFinish={onExit} />;
+  }
+
+  // Warmup Phase
+  if (isWarmupPhase) {
+    return (
+      <WarmupView
+        sets={session.sets.filter(s => s.isWarmup)}
+        onUpdateSet={handleUpdateSet}
+        onComplete={handleWarmupComplete}
+        onSwap={handleSwapWarmup}
+      />
+    );
   }
 
   // Between-exercise rest overlay (full screen)
@@ -438,8 +494,8 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
             onClick={() => setCurrentExerciseIndex(prev => Math.max(0, prev - 1))}
             disabled={currentExerciseIndex === 0}
             className={`flex-1 py-3 rounded-lg font-medium transition-colors ${currentExerciseIndex === 0
-                ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                : 'bg-slate-800 text-white active:bg-slate-700'
+              ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+              : 'bg-slate-800 text-white active:bg-slate-700'
               }`}
           >
             ← Previous
@@ -448,8 +504,8 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
             onClick={() => setCurrentExerciseIndex(prev => Math.min(programDay.exercises.length - 1, prev + 1))}
             disabled={currentExerciseIndex === programDay.exercises.length - 1}
             className={`flex-1 py-3 rounded-lg font-medium transition-colors ${currentExerciseIndex === programDay.exercises.length - 1
-                ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                : 'bg-slate-800 text-white active:bg-slate-700'
+              ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+              : 'bg-slate-800 text-white active:bg-slate-700'
               }`}
           >
             Next →

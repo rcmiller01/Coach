@@ -13,6 +13,7 @@ export interface WeekSummary {
         sessionsCompleted: number;
         sessionsPlanned?: number;
         completionRate?: number;
+        warmupCompletedSessions?: number;
     };
 
     nutrition: {
