@@ -1,0 +1,32 @@
+src/features/meals/FoodSearchPanel.tsx(126,13): error TS2322: Type 'boolean | null' is not assignable to type 'boolean | undefined'.
+  Type 'null' is not assignable to type 'boolean | undefined'.
+src/features/meals/FoodSearchPanel.tsx(130,13): error TS2322: Type 'boolean | null' is not assignable to type 'boolean | undefined'.
+  Type 'null' is not assignable to type 'boolean | undefined'.
+src/features/meals/MealPlanView.tsx(105,19): error TS2322: Type '{ onFoodSelected: (newFood: FoodItem) => void; autoFocus: boolean; }' is not assignable to type 'IntrinsicAttributes & FoodSearchEntryProps'.
+  Property 'onFoodSelected' does not exist on type 'IntrinsicAttributes & FoodSearchEntryProps'.
+src/features/nutrition/MealPlanEditor.tsx(73,33): error TS2554: Expected 4-5 arguments, but got 1.
+src/features/nutrition/MealPlanEditor.tsx(138,41): error TS2554: Expected 1 arguments, but got 2.
+src/features/nutrition/NutritionPage.tsx(56,16): error TS2345: Argument of type '"Failed to load meal plan"' is not assignable to parameter of type 'SetStateAction<{ message: string; code?: string | undefined; retryable?: boolean | undefined; } | null>'.
+src/features/nutrition/NutritionPage.tsx(75,11): error TS2353: Object literal may only specify known properties, and 'planProfile' does not exist in type 'DietaryPreferences'.
+src/features/nutrition/NutritionPage.tsx(100,11): error TS2353: Object literal may only specify known properties, and 'planProfile' does not exist in type 'DietaryPreferences'.
+src/features/nutrition/NutritionPage.tsx(213,16): error TS18048: 'preferences.avoidIngredients' is possibly 'undefined'.
+src/features/nutrition/NutritionPage.tsx(222,41): error TS18048: 'prev.avoidIngredients' is possibly 'undefined'.
+src/features/nutrition/NutritionPage.tsx(241,33): error TS18048: 'preferences.avoidIngredients' is possibly 'undefined'.
+src/features/nutrition/NutritionPage.tsx(244,45): error TS2488: Type 'string[] | undefined' must have a '[Symbol.iterator]()' method that returns an iterator.
+src/features/nutrition/NutritionPage.tsx(256,26): error TS18048: 'preferences.avoidIngredients' is possibly 'undefined'.
+src/features/nutrition/NutritionPage.tsx(278,18): error TS18048: 'preferences.dislikedFoods' is possibly 'undefined'.
+src/features/nutrition/NutritionPage.tsx(287,40): error TS18048: 'prev.dislikedFoods' is possibly 'undefined'.
+src/features/nutrition/NutritionPage.tsx(305,35): error TS18048: 'preferences.dislikedFoods' is possibly 'undefined'.
+src/features/nutrition/NutritionPage.tsx(347,50): error TS18048: 'preferences.avoidIngredients' is possibly 'undefined'.
+src/features/nutrition/NutritionPage.tsx(364,20): error TS18048: 'preferences.avoidIngredients' is possibly 'undefined'.
+src/features/nutrition/nutritionTypes.ts(39,5): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
+src/features/nutrition/nutritionTypes.ts(41,5): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
+src/features/nutrition/nutritionTypes.ts(42,5): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
+src/features/onboarding/OnboardingWizard.tsx(101,12): error TS2741: Property 'gender' is missing in type '{ age: number | null; heightFeet: number | null; heightInches: number | null; weightLbs: number | null; trainingExperience: TrainingExperience | null; city: string | undefined; zipCode: string | undefined; onChange: (field: string, value: unknown) => void; onNext: () => void; onBack: () => void; }' but required in type 'OnboardingStepBasicProfileProps'.
+src/features/program/weekRenewal.ts(100,3): error TS6133: 'nextPhase' is declared but its value is never read.
+src/features/progress/ProgressDashboardPage.tsx(191,65): error TS6133: 'idx' is declared but its value is never read.
+src/features/workout/poseCoaching.ts(16,3): error TS6133: 'angles' is declared but its value is never read.
+src/features/workout/WorkoutSessionView.tsx(4,1): error TS6133: 'getSetHint' is declared but its value is never read.
+src/features/workout/WorkoutSessionView.tsx(46,3): error TS6133: 'previousWeekLoads' is declared but its value is never read.
+src/features/workout/WorkoutSessionView.tsx(95,10): error TS6133: 'lastCompletedSet' is declared but its value is never read.
+src/features/workout/WorkoutSessionView.tsx(96,10): error TS6133: 'restTimerActive' is declared but its value is never read.

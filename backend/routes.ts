@@ -3,28 +3,20 @@
  * 
  * REST API endpoints for meal planning and food logging.
  * Uses NutritionAiService for AI-powered features.
- * 
- * This is a TypeScript pseudo-implementation showing the API structure.
- * In a real backend (Express, Fastify, etc.), you'd wire these to actual route handlers.
- * 
- * Example with Express:
- * ```
- * app.get('/api/nutrition/plan', getNutritionPlan);
- * app.post('/api/nutrition/plan/week', generateWeeklyPlan);
- * // etc.
- * ```
  */
 
-// Stub types for Express Request/Response (replace with real Express types in production)
 interface Request {
   query: Record<string, unknown>;
   params: Record<string, string>;
   body: unknown;
+  headers: Record<string, unknown>; // Added for x-user-id
 }
 interface Response {
   status(code: number): Response;
   json(data: unknown): void;
+  send(data?: unknown): void;
 }
+
 import type {
   WeeklyPlan,
   DayPlan,
@@ -44,6 +36,12 @@ import { NutritionLogRepository } from './db/repositories/NutritionLogRepository
 import { WeightRepository } from './db/repositories/WeightRepository';
 import { Pool } from 'pg';
 import { ProgressSummaryService } from './services/progressSummaryService';
+import { NutritionistProfileRepository } from './db/repositories/NutritionistProfileRepository';
+import { generateNutritionistPlan } from './services/NutritionistEngine';
+import { NutritionistProfile } from '../src/features/nutritionist/types';
+import { UserRepository } from './db/repositories/UserRepository';
+import { SettingsRepository } from './db/repositories/SettingsRepository';
+import { LoggingService } from './services/LoggingService';
 
 // In-memory storage for development (replace with real database)
 const weeklyPlansStore: Map<string, WeeklyPlan> = new Map();
@@ -63,6 +61,10 @@ let workoutRepo: WorkoutRepository;
 let nutritionLogRepo: NutritionLogRepository;
 let weightRepo: WeightRepository;
 let progressSummaryService: ProgressSummaryService;
+let nutritionistRepo: NutritionistProfileRepository;
+let userRepo: UserRepository;
+let settingsRepo: SettingsRepository;
+let loggingService: LoggingService;
 
 /**
  * Initialize repositories with database pool
@@ -73,16 +75,18 @@ export function initializeRepositories(pool: Pool) {
   nutritionLogRepo = new NutritionLogRepository(pool);
   weightRepo = new WeightRepository(pool);
   progressSummaryService = new ProgressSummaryService(pool);
+
+  // Initialize new repos
+  nutritionistRepo = new NutritionistProfileRepository(pool);
+  userRepo = new UserRepository(pool);
+  settingsRepo = new SettingsRepository(pool);
+  loggingService = new LoggingService(pool);
 }
 
 // ============================================================================
 // NUTRITION PLAN ENDPOINTS
 // ============================================================================
 
-/**
- * GET /api/nutrition/plan?weekStart=YYYY-MM-DD
- * Fetch weekly meal plan
- */
 export async function getNutritionPlan(req: Request, res: Response) {
   try {
     const weekStart = req.query.weekStart as string;
@@ -102,11 +106,6 @@ export async function getNutritionPlan(req: Request, res: Response) {
   }
 }
 
-/**
- * POST /api/nutrition/plan/week
- * Generate new weekly meal plan using AI
- * Body: { weekStartDate: string, targets: NutritionTargets, userContext: UserContext }
- */
 export async function generateWeeklyPlan(req: Request, res: Response) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -114,14 +113,7 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
 
     // Validate inputs
     if (!weekStartDate || !targets) {
-      const errorResponse: ApiErrorResponse = {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'weekStartDate and targets are required',
-          retryable: false,
-        },
-      };
-      return res.status(400).json(errorResponse);
+      return res.status(400).json({ error: 'weekStartDate and targets required' });
     }
 
     // Generate plan using real AI service
@@ -138,60 +130,19 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
     res.json({ data: plan });
   } catch (error) {
     console.error('generateWeeklyPlan error:', error);
-
-    if (error instanceof NutritionApiError) {
-      const errorResponse: ApiErrorResponse = {
-        error: {
-          code: error.code,
-          message: error.message,
-          retryable: error.retryable,
-          details: error.details,
-        },
-      };
-
-      const statusCode =
-        error.code === 'AI_QUOTA_EXCEEDED' ? 429 :
-          error.code === 'AI_TIMEOUT' ? 504 :
-            error.code === 'VALIDATION_ERROR' ? 400 :
-              500;
-
-      return res.status(statusCode).json(errorResponse);
-    }
-
-    const errorResponse: ApiErrorResponse = {
-      error: {
-        code: 'UNKNOWN_ERROR',
-        message: 'Failed to generate weekly plan',
-        retryable: false,
-      },
-    };
-    res.status(500).json(errorResponse);
+    res.status(500).json({ error: 'Failed to generate weekly plan' });
   }
 }
 
-/**
- * POST /api/nutrition/plan/day
- * Generate new daily meal plan using AI
- * Body: { date: string, targets: NutritionTargets, userContext: UserContext }
- */
 export async function generateDailyPlan(req: Request, res: Response) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { date, targets, userContext } = req.body as any;
 
-    // Validate inputs
     if (!date || !targets) {
-      const errorResponse: ApiErrorResponse = {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'date and targets are required',
-          retryable: false,
-        },
-      };
-      return res.status(400).json(errorResponse);
+      return res.status(400).json({ error: 'date and targets required' });
     }
 
-    // Generate plan using real AI service
     const dayPlan = await nutritionAiService.generateMealPlanForDay({
       date,
       targets,
@@ -199,7 +150,6 @@ export async function generateDailyPlan(req: Request, res: Response) {
       userId: STUB_USER_ID,
     });
 
-    // Update weekly plan store if exists
     const weekStart = getWeekStart(new Date(date));
     const weeklyPlan = weeklyPlansStore.get(weekStart);
     if (weeklyPlan) {
@@ -211,48 +161,15 @@ export async function generateDailyPlan(req: Request, res: Response) {
     res.json({ data: dayPlan });
   } catch (error) {
     console.error('generateDailyPlan error:', error);
-
-    if (error instanceof NutritionApiError) {
-      const errorResponse: ApiErrorResponse = {
-        error: {
-          code: error.code,
-          message: error.message,
-          retryable: error.retryable,
-          details: error.details,
-        },
-      };
-
-      const statusCode =
-        error.code === 'AI_QUOTA_EXCEEDED' ? 429 :
-          error.code === 'AI_TIMEOUT' ? 504 :
-            error.code === 'VALIDATION_ERROR' ? 400 :
-              500;
-
-      return res.status(statusCode).json(errorResponse);
-    }
-
-    const errorResponse: ApiErrorResponse = {
-      error: {
-        code: 'UNKNOWN_ERROR',
-        message: 'Failed to generate daily plan',
-        retryable: false,
-      },
-    };
-    res.status(500).json(errorResponse);
+    res.status(500).json({ error: 'Failed to generate daily plan' });
   }
 }
 
-/**
- * PUT /api/nutrition/plan/day/:date
- * Update an existing day plan
- * Body: DayPlan
- */
 export async function updateDayPlan(req: Request, res: Response) {
   try {
     const date = req.params.date;
     const dayPlan = req.body as DayPlan;
 
-    // Update in weekly plan store
     const weekStart = getWeekStart(new Date(date));
     const weeklyPlan = weeklyPlansStore.get(weekStart);
     if (weeklyPlan) {
@@ -267,11 +184,6 @@ export async function updateDayPlan(req: Request, res: Response) {
   }
 }
 
-/**
- * POST /api/nutrition/plan/copy
- * Copy meal plan from one day to another
- * Body: { fromDate: string, toDate: string }
- */
 export async function copyDayPlan(req: Request, res: Response) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -285,7 +197,6 @@ export async function copyDayPlan(req: Request, res: Response) {
       return res.status(404).json({ error: 'Source plan not found' });
     }
 
-    // Create copy with new date and IDs
     const copiedPlan: DayPlan = {
       date: toDate,
       meals: sourcePlan.meals.map(meal => ({
@@ -298,7 +209,6 @@ export async function copyDayPlan(req: Request, res: Response) {
       })),
     };
 
-    // Store in destination week
     const toWeekStart = getWeekStart(new Date(toDate));
     const toWeeklyPlan = weeklyPlansStore.get(toWeekStart);
     if (toWeeklyPlan) {
@@ -314,34 +224,19 @@ export async function copyDayPlan(req: Request, res: Response) {
   }
 }
 
-/**
- * POST /api/nutrition/plan/day/regenerate-meal
- * Regenerate a single meal within a day plan
- * Body: RegenerateMealRequest
- */
 export async function regenerateMeal(req: Request, res: Response) {
   try {
     const request = req.body as RegenerateMealRequest;
 
-    // Validate inputs
     if (!request.date || !request.dayPlan || request.mealIndex === undefined || !request.targets) {
-      const errorResponse: ApiErrorResponse = {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'date, dayPlan, mealIndex, and targets are required',
-          retryable: false,
-        },
-      };
-      return res.status(400).json(errorResponse);
+      return res.status(400).json({ error: 'Invalid request' });
     }
 
-    // Regenerate meal using AI service
     const response: RegenerateMealResponse = await nutritionAiService.regenerateMeal({
       ...request,
       userId: STUB_USER_ID,
     });
 
-    // Update in weekly plan store
     const weekStart = getWeekStart(new Date(request.date));
     const weeklyPlan = weeklyPlansStore.get(weekStart);
     if (weeklyPlan) {
@@ -354,34 +249,7 @@ export async function regenerateMeal(req: Request, res: Response) {
     res.json({ data: response.updatedDayPlan });
   } catch (error) {
     console.error('regenerateMeal error:', error);
-
-    if (error instanceof NutritionApiError) {
-      const errorResponse: ApiErrorResponse = {
-        error: {
-          code: error.code,
-          message: error.message,
-          retryable: error.retryable,
-          details: error.details,
-        },
-      };
-
-      const statusCode =
-        error.code === 'AI_QUOTA_EXCEEDED' ? 429 :
-          error.code === 'AI_TIMEOUT' ? 504 :
-            error.code === 'VALIDATION_ERROR' ? 400 :
-              500;
-
-      return res.status(statusCode).json(errorResponse);
-    }
-
-    const errorResponse: ApiErrorResponse = {
-      error: {
-        code: 'UNKNOWN_ERROR',
-        message: 'Failed to regenerate meal',
-        retryable: false,
-      },
-    };
-    res.status(500).json(errorResponse);
+    res.status(500).json({ error: 'Failed to regenerate meal' });
   }
 }
 
@@ -389,10 +257,6 @@ export async function regenerateMeal(req: Request, res: Response) {
 // MEAL LOG ENDPOINTS
 // ============================================================================
 
-/**
- * GET /api/meals/log/:date
- * Fetch food log for a specific date
- */
 export async function getDayLog(req: Request, res: Response) {
   try {
     const date = req.params.date;
@@ -412,11 +276,6 @@ export async function getDayLog(req: Request, res: Response) {
   }
 }
 
-/**
- * PUT /api/meals/log/:date
- * Save/update food log for a specific date
- * Body: DayLog
- */
 export async function saveDayLog(req: Request, res: Response) {
   try {
     const date = req.params.date;
@@ -431,83 +290,28 @@ export async function saveDayLog(req: Request, res: Response) {
   }
 }
 
-/**
- * POST /api/nutrition/parse-food
- * Parse free-text food description using AI
- * Body: { text: string, city?: string, zipCode?: string, locale?: string }
- */
 export async function parseFood(req: Request, res: Response) {
-  console.log('📥 parseFood route hit');
-  console.log('Request body:', JSON.stringify(req.body));
-
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { text, city, zipCode, locale } = req.body as any;
 
     if (!text || typeof text !== 'string') {
-      console.log('❌ Validation failed: text is required');
-      const errorResponse: ApiErrorResponse = {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'text field is required and must be a string',
-          retryable: false,
-        },
-      };
-      return res.status(400).json(errorResponse);
+      return res.status(400).json({ error: 'text required' });
     }
 
-    console.log(`🔍 Calling AI to parse: "${text}"`);
-    // Parse food using AI service
     const foodItem: LoggedFoodItem = await nutritionAiService.parseFood({
       text,
       userContext: { city, zipCode, locale },
       userId: STUB_USER_ID,
     });
 
-    console.log('✅ Food parsed successfully:', foodItem.name);
     res.json({ data: foodItem });
   } catch (error) {
     console.error('parseFood error:', error);
-
-    // Handle typed errors
-    if (error instanceof NutritionApiError) {
-      const errorResponse: ApiErrorResponse = {
-        error: {
-          code: error.code,
-          message: error.message,
-          retryable: error.retryable,
-          details: error.details,
-        },
-      };
-
-      // Map error codes to HTTP status codes
-      const statusCode =
-        error.code === 'AI_QUOTA_EXCEEDED' ? 429 :
-          error.code === 'AI_TIMEOUT' ? 504 :
-            error.code === 'VALIDATION_ERROR' ? 400 :
-              error.code === 'NOT_FOUND' ? 404 :
-                500;
-
-      return res.status(statusCode).json(errorResponse);
-    }
-
-    // Unhandled errors
-    const errorResponse: ApiErrorResponse = {
-      error: {
-        code: 'UNKNOWN_ERROR',
-        message: 'An unexpected error occurred while parsing your food',
-        retryable: false,
-      },
-    };
-    res.status(500).json(errorResponse);
+    res.status(500).json({ error: 'Failed to parse food' });
   }
 }
 
-/**
- * POST /api/program/week/generate
- * Generate workout program week from onboarding state
- * Body: { onboardingState: OnboardingState }
- */
 export async function generateWorkoutProgram(req: Request, res: Response) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -530,11 +334,6 @@ export async function generateWorkoutProgram(req: Request, res: Response) {
 // PROGRESS TRACKING ENDPOINTS
 // ============================================================================
 
-/**
- * POST /api/logs/workout-session
- * Log a workout session with exercises and sets
- * Body: { date, exercises: [{ name, sets: [{ reps, weight, rpe }] }], notes }
- */
 export async function logWorkoutSession(req: Request, res: Response) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -544,7 +343,6 @@ export async function logWorkoutSession(req: Request, res: Response) {
       return res.status(400).json({ error: 'date and exercises array are required' });
     }
 
-    // Convert exercises to sets format
     const sets = exercises.flatMap((exercise: any, exerciseIdx: number) =>
       (exercise.sets || []).map((set: any, setIdx: number) => ({
         exerciseName: exercise.name,
@@ -571,11 +369,6 @@ export async function logWorkoutSession(req: Request, res: Response) {
   }
 }
 
-/**
- * POST /api/logs/nutrition-day
- * Log nutrition for a day with meals
- * Body: { date, meals: [{ type, items: [...] }] }
- */
 export async function logNutritionDay(req: Request, res: Response) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -598,11 +391,6 @@ export async function logNutritionDay(req: Request, res: Response) {
   }
 }
 
-/**
- * POST /api/logs/weight
- * Log weight for a specific date
- * Body: { date, weightLbs }
- */
 export async function logWeight(req: Request, res: Response) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -621,10 +409,6 @@ export async function logWeight(req: Request, res: Response) {
   }
 }
 
-/**
- * GET /api/progress/week-summary?weekStart=YYYY-MM-DD
- * Get progress summary for a week with insights
- */
 export async function getWeekSummary(req: Request, res: Response) {
   try {
     const weekStart = req.query.weekStart as string;
@@ -633,7 +417,6 @@ export async function getWeekSummary(req: Request, res: Response) {
       return res.status(400).json({ error: 'weekStart query parameter required' });
     }
 
-    // Use the progress summary service to compute everything
     const summary = await progressSummaryService.computeWeeklySummary(
       STUB_USER_ID,
       weekStart
@@ -646,10 +429,6 @@ export async function getWeekSummary(req: Request, res: Response) {
   }
 }
 
-/**
- * GET /api/progress/trends?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
- * Get progress trends (weight tracking)
- */
 export async function getTrends(req: Request, res: Response) {
   try {
     const startDate = req.query.startDate as string;
@@ -661,7 +440,6 @@ export async function getTrends(req: Request, res: Response) {
 
     const weightLogs = await weightRepo.getWeightLogsByDateRange(STUB_USER_ID, startDate, endDate);
 
-    // Calculate trend
     let trend: 'increasing' | 'decreasing' | 'stable' = 'stable';
     if (weightLogs.length >= 2) {
       const firstWeight = weightLogs[0].weightLbs;
@@ -685,12 +463,216 @@ export async function getTrends(req: Request, res: Response) {
 }
 
 // ============================================================================
-// HELPER FUNCTIONS
+// AI NUTRITIONIST ENDPOINTS
 // ============================================================================
 
-/**
- * Get Monday of the week for a given date
- */
+export async function getNutritionistProfile(req: Request, res: Response) {
+  try {
+    const profile = await nutritionistRepo.getProfile(STUB_USER_ID);
+
+    if (!profile) {
+      return res.json({ data: null });
+    }
+
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const summary = await progressSummaryService.computeWeeklySummary(STUB_USER_ID, startDate);
+
+    const result = generateNutritionistPlan({ profile, progress: summary });
+
+    res.json({ data: { profile, result } });
+  } catch (error) {
+    console.error('getNutritionistProfile error:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+}
+
+export async function saveNutritionistProfile(req: Request, res: Response) {
+  try {
+    const profile = req.body as NutritionistProfile;
+
+    if (!profile) {
+      return res.status(400).json({ error: 'Profile data required' });
+    }
+
+    const saved = await nutritionistRepo.upsertProfile(STUB_USER_ID, profile);
+    const plan = generateNutritionistPlan({ profile: saved });
+
+    res.json({ data: saved, plan });
+  } catch (error) {
+    console.error('saveNutritionistProfile error:', error);
+    res.status(500).json({ error: 'Failed to save profile' });
+  }
+}
+
+export async function nutritionistCheckIn(req: Request, res: Response) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { period } = req.body as any;
+
+    const profile = await nutritionistRepo.getProfile(STUB_USER_ID);
+    if (!profile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const prevStartDate = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const [summary, prevSummary] = await Promise.all([
+      progressSummaryService.computeWeeklySummary(STUB_USER_ID, startDate),
+      progressSummaryService.computeWeeklySummary(STUB_USER_ID, prevStartDate)
+    ]);
+
+    const result = generateNutritionistPlan({
+      profile,
+      progress: summary,
+      previousProgress: prevSummary
+    });
+
+    if (profile.currentExperiment) {
+      const exp = profile.currentExperiment;
+      profile.pastExperiments = [...(profile.pastExperiments || []), { ...exp, status: 'completed', outcome: 'Evaluated at check-in' }];
+      profile.currentExperiment = undefined;
+      await nutritionistRepo.upsertProfile(STUB_USER_ID, profile);
+    }
+
+    res.json({ data: result });
+  } catch (error) {
+    console.error('nutritionistCheckIn error:', error);
+    res.status(500).json({ error: 'Check-in failed' });
+  }
+}
+
+// ============================================================================
+// ALPHA RELEASE ENDPOINTS
+// ============================================================================
+
+export async function createUser(req: Request, res: Response) {
+  try {
+    const { username } = req.body as any;
+    if (!username) return res.status(400).json({ error: 'Username required' });
+
+    let user = await userRepo.getUserByUsername(username);
+    if (!user) {
+      user = await userRepo.createUser(username);
+      await loggingService.logEvent(user.id, 'user_created', { username });
+    } else {
+      await loggingService.logEvent(user.id, 'user_login', { username });
+    }
+
+    res.json({ data: user });
+  } catch (error) {
+    console.error('createUser error:', error);
+    res.status(500).json({ error: 'Failed to create/fetch user' });
+  }
+}
+
+export async function getSettings(req: Request, res: Response) {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    if (!userId) return res.status(400).json({ error: 'User ID required' });
+
+    const settings = await settingsRepo.getSettings(userId);
+    res.json({ data: settings });
+  } catch (error) {
+    console.error('getSettings error:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+}
+
+export async function saveSettings(req: Request, res: Response) {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    const settings = req.body as any;
+    if (!userId) return res.status(400).json({ error: 'User ID required' });
+
+    const updated = await settingsRepo.upsertSettings(userId, settings);
+    await loggingService.logEvent(userId, 'settings_updated', settings);
+
+    res.json({ data: updated });
+  } catch (error) {
+    console.error('saveSettings error:', error);
+    res.status(500).json({ error: 'Failed to save settings' });
+  }
+}
+
+export async function logFrontendError(req: Request, res: Response) {
+  try {
+    const { userId, route, errorMessage, componentStack } = req.body as any;
+    await loggingService.logError(userId || null, 'frontend_error', errorMessage, { route, componentStack });
+    res.status(200).send();
+  } catch (error) {
+    console.error('logFrontendError error:', error);
+    res.status(500).send();
+  }
+}
+
+export async function getTodaySummary(req: Request, res: Response) {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    if (!userId) return res.status(400).json({ error: 'User ID required' });
+
+    const settings = await settingsRepo.getSettings(userId);
+    const isWorkoutDay = (settings.trainingDays || []).includes(new Date().getDay());
+
+    const profile = await nutritionistRepo.getProfile(userId);
+    let calorieTarget = settings.calorieTarget || 2000;
+    let mealsPerDay = settings.mealsPerDay || 3;
+
+    const summary = {
+      date: new Date().toISOString().split('T')[0],
+      isWorkoutDay,
+      nutrition: {
+        calorieTarget,
+        mealsPerDay
+      },
+      weight: {
+        lastLoggedDate: undefined,
+        lastLoggedWeight: undefined
+      }
+    };
+
+    res.json({ data: summary });
+  } catch (error) {
+    console.error('getTodaySummary error:', error);
+    res.status(500).json({ error: 'Failed to get summary' });
+  }
+}
+
+export async function regenerateWeek(req: Request, res: Response) {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    if (!userId) return res.status(400).json({ error: 'User ID required' });
+
+    await loggingService.logEvent(userId, 'program_regenerated', {});
+
+    res.json({ message: 'Week regenerated successfully' });
+  } catch (error) {
+    console.error('regenerateWeek error:', error);
+    res.status(500).json({ error: 'Failed to regenerate week' });
+  }
+}
+
+export async function reconfigureNutrition(req: Request, res: Response) {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    if (!userId) return res.status(400).json({ error: 'User ID required' });
+
+    const profile = await nutritionistRepo.getProfile(userId);
+    if (!profile) return res.status(404).json({ error: 'Profile not found' });
+
+    const plan = generateNutritionistPlan({ profile });
+
+    await loggingService.logEvent(userId, 'nutrition_reconfigured', {});
+
+    res.json({ data: plan });
+  } catch (error) {
+    console.error('reconfigureNutrition error:', error);
+    res.status(500).json({ error: 'Failed to reconfigure nutrition' });
+  }
+}
+
 function getWeekStart(date: Date): string {
   const d = new Date(date);
   const day = d.getDay();
@@ -698,38 +680,3 @@ function getWeekStart(date: Date): string {
   d.setDate(diff);
   return d.toISOString().split('T')[0];
 }
-
-// ============================================================================
-// TODO: REAL BACKEND SETUP
-// ============================================================================
-
-/*
- * To set up a real backend, you would:
- * 
- * 1. Install dependencies:
- *    npm install express cors dotenv
- *    npm install -D @types/express @types/cors
- * 
- * 2. Create server.ts:
- *    import express from 'express';
- *    import cors from 'cors';
- *    import * as nutritionRoutes from './routes/nutrition';
- *    
- *    const app = express();
- *    app.use(cors());
- *    app.use(express.json());
- *    
- *    app.get('/api/nutrition/plan', nutritionRoutes.getNutritionPlan);
- *    app.post('/api/nutrition/plan/week', nutritionRoutes.generateWeeklyPlan);
- *    // ... register all routes
- *    
- *    app.listen(3001, () => console.log('API listening on port 3001'));
- * 
- * 3. Connect to database (PostgreSQL, MongoDB, etc.)
- * 
- * 4. Implement authentication middleware
- * 
- * 5. Wire up real LLM (OpenAI, Anthropic, etc.)
- * 
- * 6. Connect to MCP nutrition server
- */

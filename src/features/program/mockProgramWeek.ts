@@ -4,12 +4,14 @@ export const mockProgramWeek: ProgramWeek = {
   id: 'week-1',
   weekStartDate: '2025-11-11', // Monday of current week
   focus: 'Building foundational strength with compound movements',
+  trainingPhase: 'build',
   days: [
     {
       id: 'day-1',
       dayOfWeek: 'monday',
       focus: 'lower',
       description: 'Lower body strength and posterior chain',
+      warmup: [],
       exercises: [
         {
           id: 'ex-1',
@@ -39,6 +41,7 @@ export const mockProgramWeek: ProgramWeek = {
       dayOfWeek: 'wednesday',
       focus: 'upper',
       description: 'Upper body push and pull',
+      warmup: [],
       exercises: [
         {
           id: 'ex-4',
@@ -75,6 +78,7 @@ export const mockProgramWeek: ProgramWeek = {
       dayOfWeek: 'friday',
       focus: 'lower',
       description: 'Lower body and deadlift focus',
+      warmup: [],
       exercises: [
         {
           id: 'ex-8',

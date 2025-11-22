@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { ProgramDay, BlockGoal } from '../program/types';
 import type { WorkoutSessionState, WorkoutSetState } from './types';
-import { getSetHint } from './coachingHints';
 import { loadPoseModel, estimatePose } from '../pose/detector/poseDetector';
 import { calculateAngles } from '../pose/detector/angleCalculator';
 import { RepCounter, detectExercisePattern } from './repCounter';
@@ -92,8 +91,8 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
   });
 
   // Track the last completed set for rest timer and coaching hints
-  const [lastCompletedSet, setLastCompletedSet] = useState<WorkoutSetState | null>(null);
-  const [restTimerActive, setRestTimerActive] = useState(false);
+  const [_lastCompletedSet, setLastCompletedSet] = useState<WorkoutSetState | null>(null);
+  const [_restTimerActive, setRestTimerActive] = useState(false);
 
   // Form check (camera + pose) state
   const [formCheckEnabled, setFormCheckEnabled] = useState(
@@ -398,7 +397,7 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
         restTimeRemaining={restTimeRemaining}
         nextExerciseName={nextExercise.name}
         nextExerciseSets={nextExercise.sets}
-        nextExerciseReps={nextExercise.reps}
+        nextExerciseReps={parseInt(nextExercise.reps.split('-')[0])}
         onSkipRest={handleSkipRestAndAdvance}
       />
     );
@@ -484,7 +483,7 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
                 console.log('Substitute exercise:', exerciseId);
               }
             }}
-            targetLoadKg={currentLoadSuggestion?.suggestedLoadKg}
+            targetLoadKg={currentLoadSuggestion?.suggestedLoadKg ?? undefined}
           />
         )}
 
@@ -535,9 +534,12 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
 
         const handleMarkComplete = () => {
           // Mark as completed with target reps if no specific reps were entered
+          // Parse targetReps (e.g., "5" or "5-8") to get a number
+          const targetRepsNumber = parseInt(pendingSet.targetReps.split('-')[0]);
+
           const updates: Partial<WorkoutSetState> = {
             status: 'completed',
-            performedReps: pendingSet.performedReps ?? pendingSet.targetReps,
+            performedReps: pendingSet.performedReps ?? targetRepsNumber,
             performedLoadKg: pendingSet.performedLoadKg ?? pendingSet.targetLoadKg,
           };
           handleUpdateSet(pendingSet.id, updates);

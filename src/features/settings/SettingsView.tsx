@@ -4,7 +4,6 @@ import { ConfirmationModal } from './ConfirmationModal';
 import ReminderSettingsSection from './ReminderSettingsSection';
 import type { MealReminderSettings } from '../nutrition/nutritionTypes';
 import {
-  exportTrainingData,
   downloadBackup,
   copyBackupToClipboard,
   resetProgramData,
@@ -22,7 +21,9 @@ interface SettingsViewProps {
   onUpdateSettings: (settings: CoachSettings) => void;
   onResetProfile: () => void;
   onClearHistory: () => void;
-  onDataReset?: () => void; // Callback to refresh app state after reset
+  onDataReset?: () => void;
+  onRegenerateWeek?: () => Promise<void>;
+  onReconfigureNutrition?: () => Promise<void>;
   // Diagnostic data
   program?: ProgramMultiWeek | null;
   history?: WorkoutHistoryEntry[];
@@ -36,6 +37,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   onResetProfile,
   onClearHistory,
   onDataReset,
+  onRegenerateWeek,
+  onReconfigureNutrition,
   program = null,
   history = [],
   dietTargets = null,
@@ -136,7 +139,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   const handleCopyCurrentBlockJson = async () => {
     if (!program || !program.blocks) return;
     const currentBlock = program.blocks.find(
-      block => 
+      block =>
         program.currentWeekIndex >= block.startWeekIndex &&
         (block.endWeekIndex === null || program.currentWeekIndex <= block.endWeekIndex)
     );
@@ -163,7 +166,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Workout Preferences
           </h2>
-          
+
           {/* Form Check Toggle */}
           <div className="flex items-start mb-6">
             <div className="flex items-center h-5">
@@ -234,7 +237,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Backup & Export
           </h2>
-          
+
           <div className="space-y-4">
             {/* Export Training Data */}
             <div className="border-b border-gray-200 pb-4">
@@ -313,6 +316,42 @@ const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </div>
 
+        {/* Alpha Tools */}
+        <div className="bg-white rounded-lg shadow border border-gray-200 p-6 mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Alpha Tools
+          </h2>
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <button
+                onClick={async () => {
+                  if (window.confirm('Regenerate current week? This will overwrite the current plan.')) {
+                    await onRegenerateWeek?.();
+                    alert('Week regenerated!');
+                  }
+                }}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors"
+              >
+                Regenerate Week
+              </button>
+              <button
+                onClick={async () => {
+                  if (window.confirm('Reconfigure nutrition plan? This will recalculate targets.')) {
+                    await onReconfigureNutrition?.();
+                    alert('Nutrition reconfigured!');
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+              >
+                Reconfigure Nutrition
+              </button>
+            </div>
+            <p className="text-sm text-gray-600">
+              Use these tools if your plan seems stuck or incorrect.
+            </p>
+          </div>
+        </div>
+
         {/* Developer Tools */}
         <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
@@ -326,7 +365,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
               {showDevTools ? 'Hide' : 'Show'}
             </button>
           </div>
-          
+
           {showDevTools && (
             <div className="space-y-4">
               <p className="text-sm text-gray-600 mb-4">
@@ -381,7 +420,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                         currentWeek: program.weeks[program.currentWeekIndex],
                         totalWeeks: program.weeks.length,
                         currentBlock: program.blocks?.find(
-                          block => 
+                          block =>
                             program.currentWeekIndex >= block.startWeekIndex &&
                             (block.endWeekIndex === null || program.currentWeekIndex <= block.endWeekIndex)
                         ),

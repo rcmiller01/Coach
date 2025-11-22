@@ -1,0 +1,59 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.12 [39m[90mC:/Users/rober/Documents/Coach[39m
+
+[90mstdout[2m | backend/tests/simulation-real-week.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (13) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+
+[90mstdout[2m | backend/tests/simulation-real-week.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+[90mstdout[2m | backend/tests/simulation-real-week.test.ts[2m > [22m[2mReal User Week Simulation[2m > [22m[2mshould run a full week simulation
+[22m[39m
+=== STARTING REAL USER SIMULATION ===
+
+1. Generating Program...
+   Generated 3 sessions.
+   Focus: Muscle building and hypertrophy
+
+2. Verifying Warmups...
+   Day monday (full): 8 min warmup
+   Day wednesday (full): 8 min warmup
+   Day friday (full): 8 min warmup
+
+3. Logging Data...
+
+...[90mstdout[2m | backend/tests/simulation-real-week.test.ts[2m > [22m[2mReal User Week Simulation[2m > [22m[2mshould run a full week simulation
+[22m[39m Workouts logged.
+
+.......[90mstdout[2m | backend/tests/simulation-real-week.test.ts[2m > [22m[2mReal User Week Simulation[2m > [22m[2mshould run a full week simulation
+[22m[39m Nutrition logged.
+
+.......[90mstdout[2m | backend/tests/simulation-real-week.test.ts[2m > [22m[2mReal User Week Simulation[2m > [22m[2mshould run a full week simulation
+[22m[39m Weight logged.
+
+4. Verifying Dashboard & Insights...
+
+[90mstdout[2m | backend/tests/simulation-real-week.test.ts[2m > [22m[2mReal User Week Simulation[2m > [22m[2mshould run a full week simulation
+[22m[39m
+--- DASHBOARD SUMMARY ---
+Workouts: 3 / 3
+Warmup Adherence: 3 / 3
+Nutrition Days: 7 / 7
+Weight Trend: stable
+
+--- COACH NOTES (INSIGHTS) ---
+> Nice: you're consistently doing your warmup. That's exactly what long-term knees and shoulders like.
+> 📊 Excellent tracking! You logged 7 days.
+> Slightly above target - consider portion adjustments.
+> ⚖️ Weight holding steady.
+> 🔥 You're crushing it this week! Great consistency across workouts and nutrition.
+----------------------------
+
+
+ [32m✓[39m backend/tests/simulation-real-week.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 188[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m   Start at [22m 14:48:16
+[2m   Duration [22m 1.01s[2m (transform 137ms, setup 0ms, collect 367ms, tests 188ms, environment 0ms, prepare 11ms)[22m
+

@@ -25,12 +25,22 @@ describe('ProgressDashboardPage', () => {
 
     it('shows empty state when no data', async () => {
         vi.mocked(progressApi.fetchWeekSummary).mockResolvedValue({
+            userId: 'test-user',
             weekStart: '2025-01-01',
             weekEnd: '2025-01-07',
-            workoutsCompleted: 0,
-            nutritionDaysLogged: 0,
-            avgCalories: 0,
-            avgProtein: 0,
+            workouts: {
+                sessionsCompleted: 0,
+            },
+            nutrition: {
+                daysLogged: 0,
+                avgCaloriesActual: 0,
+                avgProteinActual: 0,
+            },
+            weight: {
+                hasEnoughData: false,
+                trend: 'unknown',
+            },
+            insights: [],
         });
 
         vi.mocked(progressApi.fetchTrends).mockResolvedValue({
@@ -47,12 +57,24 @@ describe('ProgressDashboardPage', () => {
 
     it('displays week summary correctly', async () => {
         vi.mocked(progressApi.fetchWeekSummary).mockResolvedValue({
+            userId: 'test-user',
             weekStart: '2025-01-01',
             weekEnd: '2025-01-07',
-            workoutsCompleted: 3,
-            nutritionDaysLogged: 5,
-            avgCalories: 2000,
-            avgProtein: 150,
+            workouts: {
+                sessionsCompleted: 3,
+            },
+            nutrition: {
+                daysLogged: 5,
+                avgCaloriesActual: 2000,
+                avgProteinActual: 150,
+            },
+            weight: {
+                hasEnoughData: true,
+                latest: 180,
+                changePerWeek: -0.5,
+                trend: 'decreasing',
+            },
+            insights: ['Good progress this week!'],
         });
 
         vi.mocked(progressApi.fetchTrends).mockResolvedValue({
@@ -72,12 +94,24 @@ describe('ProgressDashboardPage', () => {
 
     it('displays weight trend chart with data', async () => {
         vi.mocked(progressApi.fetchWeekSummary).mockResolvedValue({
+            userId: 'test-user',
             weekStart: '2025-01-01',
             weekEnd: '2025-01-07',
-            workoutsCompleted: 2,
-            nutritionDaysLogged: 3,
-            avgCalories: 1800,
-            avgProtein: 120,
+            workouts: {
+                sessionsCompleted: 2,
+            },
+            nutrition: {
+                daysLogged: 3,
+                avgCaloriesActual: 1800,
+                avgProteinActual: 120,
+            },
+            weight: {
+                hasEnoughData: true,
+                latest: 178,
+                changePerWeek: -1.0,
+                trend: 'decreasing',
+            },
+            insights: ['Weight trending down'],
         });
 
         vi.mocked(progressApi.fetchTrends).mockResolvedValue({

@@ -21,6 +21,17 @@ import type {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const API_BASE = '/api';
 
+// Helper to get headers with auth
+function getHeaders() {
+  const userId = localStorage.getItem('coach_user_id');
+  return {
+    'Content-Type': 'application/json',
+    'X-User-Id': userId || '',
+  };
+}
+
+// ... (update fetch calls to use getHeaders())
+
 // ============================================================================
 // MEAL PLAN ENDPOINTS (Nutrition Page)
 // ============================================================================
@@ -55,15 +66,15 @@ export async function generateMealPlanForWeek(
 ): Promise<WeeklyPlan> {
   const response = await fetch(`${API_BASE}/nutrition/plan/week`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders(),
     body: JSON.stringify({ weekStartDate, targets, userContext }),
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error?.message || error.message || 'Failed to generate weekly plan');
   }
-  
+
   const result = await response.json();
   return result.data;
 }
@@ -181,7 +192,7 @@ export async function regenerateMeal(
 ): Promise<DayPlan> {
   const response = await fetch(`${API_BASE}/nutrition/plan/day/regenerate-meal`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders(),
     body: JSON.stringify({ date, mealIndex, targets, currentPlan, userContext }),
   });
   if (!response.ok) {
@@ -274,15 +285,15 @@ export async function parseFood(
 ): Promise<LoggedFoodItem> {
   const response = await fetch(`${API_BASE}/nutrition/parse-food`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders(),
     body: JSON.stringify({ text, ...userContext }),
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error?.message || error.message || 'Failed to parse food');
   }
-  
+
   const result = await response.json();
   return result.data;
 }

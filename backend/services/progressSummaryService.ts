@@ -173,7 +173,7 @@ export class ProgressSummaryService {
         }
 
         // Sort by date to ensure correct ordering
-        const sortedLogs = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+        const sortedLogs = [...logs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         const latest = sortedLogs[sortedLogs.length - 1].weightLbs;
         const startOfPeriod = sortedLogs[0].weightLbs;

@@ -8,6 +8,7 @@ import { fetchWeekSummary, fetchTrends, type WeekSummary, type TrendsData } from
 export default function ProgressDashboardPage() {
     const [weekSummary, setWeekSummary] = useState<WeekSummary | null>(null);
     const [trends, setTrends] = useState<TrendsData | null>(null);
+    const [nutritionistNotes, setNutritionistNotes] = useState<string[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -34,13 +35,19 @@ export default function ProgressDashboardPage() {
             const endDate = new Date().toISOString().split('T')[0];
 
             // Fetch data in parallel
-            const [summaryData, trendsData] = await Promise.all([
+            // Fetch data in parallel
+            const [summaryData, trendsData, nutritionistData] = await Promise.all([
                 fetchWeekSummary(weekStart),
                 fetchTrends(startDate, endDate),
+                fetch('/api/nutritionist/profile').then(res => res.json()),
             ]);
 
             setWeekSummary(summaryData);
             setTrends(trendsData);
+
+            if (nutritionistData.data && nutritionistData.data.result) {
+                setNutritionistNotes(nutritionistData.data.result.notes);
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load progress data');
         } finally {
@@ -77,6 +84,23 @@ export default function ProgressDashboardPage() {
                     </div>
                 ) : (
                     <div className="space-y-6">
+                        {/* Nutritionist Notes */}
+                        {nutritionistNotes && nutritionistNotes.length > 0 && (
+                            <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 rounded-lg p-6 border border-green-800/30">
+                                <h2 className="text-xl font-semibold text-green-100 mb-4 flex items-center gap-2">
+                                    <span>🥗</span> Nutritionist Notes
+                                </h2>
+                                <ul className="space-y-3">
+                                    {nutritionistNotes.map((note, idx) => (
+                                        <li key={idx} className="flex items-start gap-3 text-slate-300">
+                                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
+                                            <span>{note}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
                         {/* Coach Notes */}
                         {weekSummary?.insights && weekSummary.insights.length > 0 && (
                             <div className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 rounded-lg p-6 border border-blue-800/30">

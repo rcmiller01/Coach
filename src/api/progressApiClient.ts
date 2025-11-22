@@ -47,11 +47,19 @@ export interface TrendsData {
     trend: 'increasing' | 'decreasing' | 'stable';
 }
 
-/**
- * Fetch weekly progress summary
- */
+// Helper to get headers with auth
+function getHeaders() {
+    const userId = localStorage.getItem('coach_user_id');
+    return {
+        'Content-Type': 'application/json',
+        'X-User-Id': userId || '',
+    };
+}
+
 export async function fetchWeekSummary(weekStart: string): Promise<WeekSummary> {
-    const response = await fetch(`${API_BASE_URL}/api/progress/week-summary?weekStart=${weekStart}`);
+    const response = await fetch(`${API_BASE_URL}/api/progress/week-summary?weekStart=${weekStart}`, {
+        headers: getHeaders(),
+    });
 
     if (!response.ok) {
         throw new Error('Failed to fetch week summary');
@@ -61,12 +69,12 @@ export async function fetchWeekSummary(weekStart: string): Promise<WeekSummary> 
     return data.data;
 }
 
-/**
- * Fetch progress trends (weight tracking)
- */
 export async function fetchTrends(startDate: string, endDate: string): Promise<TrendsData> {
     const response = await fetch(
-        `${API_BASE_URL}/api/progress/trends?startDate=${startDate}&endDate=${endDate}`
+        `${API_BASE_URL}/api/progress/trends?startDate=${startDate}&endDate=${endDate}`,
+        {
+            headers: getHeaders(),
+        }
     );
 
     if (!response.ok) {

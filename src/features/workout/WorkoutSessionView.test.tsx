@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import WorkoutSessionView from './WorkoutSessionView';
-import { ProgramDay } from '../program/types';
+import type { ProgramDay } from '../program/types';
 
 // Mocks
 vi.mock('@tensorflow-models/pose-detection', () => ({}));
@@ -57,6 +57,7 @@ describe('WorkoutSessionView', () => {
         dayOfWeek: 'monday',
         focus: 'full',
         description: 'Test Day',
+        warmup: [],
         exercises: [
             {
                 id: 'ex-1',

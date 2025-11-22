@@ -94,7 +94,7 @@ export class NutritionLogRepository {
                     dayLogId: mealRow.day_log_id,
                     mealType: mealRow.meal_type,
                     mealTime: mealRow.meal_time,
-                    foodItems: JSON.parse(mealRow.food_items),
+                    foodItems: mealRow.food_items,
                 });
             }
 
@@ -155,7 +155,7 @@ export class NutritionLogRepository {
                     dayLogId: m.day_log_id,
                     mealType: m.meal_type,
                     mealTime: m.meal_time,
-                    foodItems: JSON.parse(m.food_items),
+                    foodItems: m.food_items,
                 })),
             });
         }

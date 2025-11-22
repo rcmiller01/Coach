@@ -43,6 +43,36 @@ async function runMigration() {
         console.log('  - nutrition_meal_logs');
         console.log('  - weight_log');
 
+        console.log('📦 Reading migration file 002...');
+        const migrationSQL2 = readFileSync(
+            join(__dirname, 'db', 'migrations', '002_add_is_warmup.sql'),
+            'utf8'
+        );
+
+        console.log('🚀 Running migration 002...');
+        await pool.query(migrationSQL2);
+        console.log('✅ Migration 002 completed!');
+
+        console.log('📦 Reading migration file 003...');
+        const migrationSQL3 = readFileSync(
+            join(__dirname, 'db', 'migrations', '003_nutritionist_profile.sql'),
+            'utf8'
+        );
+
+        console.log('🚀 Running migration 003...');
+        await pool.query(migrationSQL3);
+        console.log('✅ Migration 003 completed!');
+
+        console.log('📦 Reading migration file 004...');
+        const migrationSQL4 = readFileSync(
+            join(__dirname, 'db', 'migrations', '004_alpha_foundation.sql'),
+            'utf8'
+        );
+
+        console.log('🚀 Running migration 004...');
+        await pool.query(migrationSQL4);
+        console.log('✅ Migration 004 completed!');
+
     } catch (error) {
         console.error('❌ Migration failed:', error.message);
         throw error;

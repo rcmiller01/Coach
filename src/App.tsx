@@ -1,4 +1,8 @@
 import { useState, useEffect } from 'react'
+import { UserProvider, useUser } from './context/UserContext'
+import { LoginPage } from './pages/LoginPage'
+import { BrowserRouter } from 'react-router-dom'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import ProgramWeekView from './features/program/ProgramWeekView'
 import WorkoutSessionView from './features/workout/WorkoutSessionView'
 import ExerciseDetailView from './features/exercise/ExerciseDetailView'
@@ -10,7 +14,7 @@ import NutritionPage from './features/nutrition/NutritionPage'
 import MealsPage from './features/meals/MealsPage'
 import { TodayHub } from './features/today/TodayHub'
 import { PwaInstallHint } from './features/today/PwaInstallHint'
-import { generateProgramWeekFromOnboarding, generateInitialProgram } from './features/program/programGenerator'
+import { generateInitialProgram } from './features/program/programGenerator'
 import { loadMultiWeekProgram, saveMultiWeekProgram, clearMultiWeekProgram } from './features/program/programStorage'
 import { generateNextWeekAndBlock, ensureBlocksExist } from './features/program/weekRenewal'
 import { saveProfile, loadProfile, clearProfile } from './features/profile/profileStorage'
@@ -25,7 +29,7 @@ import { extractUserStats } from './features/nutrition/userStatsConverter'
 import { loadDietTargets, saveDietTargets } from './features/nutrition/dietStorage'
 import { mapPrimaryGoalToBlockGoal } from './features/onboarding/types'
 import type { NutritionTargets, UserContext } from './features/nutrition/nutritionTypes'
-import type { ProgramDay, ProgramWeek, ProgramMultiWeek } from './features/program/types'
+import type { ProgramDay, ProgramMultiWeek } from './features/program/types'
 import type { OnboardingState } from './features/onboarding/types'
 import type { WorkoutHistoryEntry } from './features/history/types'
 import type { ExerciseLoadSuggestion } from './features/progression/progressionTypes'
@@ -33,7 +37,10 @@ import './App.css'
 
 type MainView = 'today' | 'program' | 'history' | 'settings' | 'nutrition' | 'meals';
 
-function App() {
+function AuthenticatedApp() {
+  const { user, isLoading } = useUser();
+
+  // State for AppContent
   const [mainView, setMainView] = useState<MainView>('today');
   const [activeDay, setActiveDay] = useState<ProgramDay | null>(null);
   const [activeExerciseId, setActiveExerciseId] = useState<string | null>(null);
@@ -50,10 +57,10 @@ function App() {
   // Build UserContext from onboarding data for AI nutrition features
   const userContext: UserContext | undefined = onboardingState
     ? {
-        city: onboardingState.city,
-        zipCode: onboardingState.zipCode,
-        locale: 'en-US',
-      }
+      city: onboardingState.city,
+      zipCode: onboardingState.zipCode,
+      locale: 'en-US',
+    }
     : undefined;
 
   // Load saved profile on mount and generate program
@@ -61,7 +68,7 @@ function App() {
     const savedProfile = loadProfile();
     if (savedProfile) {
       setOnboardingState(savedProfile);
-      
+
       // Try to load existing multi-week program
       const savedMultiWeek = loadMultiWeekProgram();
       if (savedMultiWeek) {
@@ -107,12 +114,37 @@ function App() {
     setHistory(savedHistory);
   }, []);
 
+  // Load settings from backend on mount
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchSettings = async () => {
+      try {
+        const userId = localStorage.getItem('coach_user_id');
+        const response = await fetch('http://localhost:3001/api/settings', {
+          headers: { 'X-User-Id': userId || '' }
+        });
+        if (response.ok) {
+          const { data } = await response.json();
+          if (data && Object.keys(data).length > 0) {
+            setSettings(prev => ({ ...prev, ...data }));
+            saveSettings({ ...settings, ...data });
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch settings:', error);
+      }
+    };
+
+    fetchSettings();
+  }, [user]);
+
   // Compute load suggestions when program week or history changes
   useEffect(() => {
     if (!multiWeekProgram) return;
-    
+
     const currentWeek = multiWeekProgram.weeks[multiWeekProgram.currentWeekIndex];
-    
+
     // Find active block to get current training goal
     const activeBlock = multiWeekProgram.blocks?.find((block) => {
       if (block.endWeekIndex === null) {
@@ -124,16 +156,16 @@ function App() {
       );
     });
     const blockGoal = activeBlock?.goal || 'general';
-    
+
     // Collect all unique exercises from the current week
     const allExercises = currentWeek.days.flatMap((day) =>
       day.exercises.map((ex) => ({ id: ex.id, name: ex.name }))
     );
-    
+
     // Get suggestions for current week (goal-aware and phase-aware)
     const suggestions = getLoadSuggestionsForExercises(
-      history, 
-      allExercises, 
+      history,
+      allExercises,
       currentWeek.trainingPhase || 'build',
       blockGoal
     );
@@ -157,7 +189,7 @@ function App() {
   function handleOnboardingComplete(state: OnboardingState) {
     setOnboardingState(state);
     saveProfile(state);
-    
+
     // Generate initial program with first week and block
     const initialMultiWeek = generateInitialProgram(state);
     setMultiWeekProgram(initialMultiWeek);
@@ -171,7 +203,7 @@ function App() {
 
     // Calculate and save diet targets based on the initial block goal
     const userStats = extractUserStats(state);
-    const initialBlockGoal = mapPrimaryGoalToBlockGoal(state.primaryGoal || 'general');
+    const initialBlockGoal = mapPrimaryGoalToBlockGoal(state.primaryGoal ?? null);
     const diet = calculateDietTargets(userStats, initialBlockGoal);
     setDietTargets(diet);
     saveDietTargets(diet);
@@ -180,9 +212,24 @@ function App() {
   }
 
   // Handle settings update
-  function handleUpdateSettings(next: CoachSettings) {
+  async function handleUpdateSettings(next: CoachSettings) {
     setSettings(next);
     saveSettings(next);
+
+    // Sync to backend
+    try {
+      const userId = localStorage.getItem('coach_user_id');
+      await fetch('http://localhost:3001/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': userId || ''
+        },
+        body: JSON.stringify(next)
+      });
+    } catch (error) {
+      console.error('Failed to save settings to backend:', error);
+    }
   }
 
   // Handle profile reset
@@ -256,7 +303,7 @@ function App() {
 
     setMultiWeekProgram(updatedProgram);
     saveMultiWeekProgram(updatedProgram);
-    
+
     // Update activeDay if it's the current day
     if (activeDay && activeDay.id === dayId) {
       const updatedDay = updatedProgram.weeks[multiWeekProgram.currentWeekIndex].days.find(d => d.id === dayId);
@@ -280,6 +327,45 @@ function App() {
     saveMultiWeekProgram(updatedProgram);
   }
 
+  // Handle regeneration
+  async function handleRegenerateWeek() {
+    try {
+      const userId = localStorage.getItem('coach_user_id');
+      await fetch('http://localhost:3001/api/program/week/regenerate', {
+        method: 'POST',
+        headers: { 'X-User-Id': userId || '' }
+      });
+      // Reload program data
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to regenerate week:', error);
+      alert('Failed to regenerate week. Please try again.');
+    }
+  }
+
+  async function handleReconfigureNutrition() {
+    try {
+      const userId = localStorage.getItem('coach_user_id');
+      await fetch('http://localhost:3001/api/nutrition/plan/reconfigure', {
+        method: 'POST',
+        headers: { 'X-User-Id': userId || '' }
+      });
+      // Reload data
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to reconfigure nutrition:', error);
+      alert('Failed to reconfigure nutrition. Please try again.');
+    }
+  }
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
+
   // Render precedence:
   // 1. If no program yet, show onboarding
   if (!multiWeekProgram) {
@@ -299,7 +385,7 @@ function App() {
   // 3. If a day is active, show the workout session view
   if (activeDay && multiWeekProgram) {
     const currentWeek = multiWeekProgram.weeks[multiWeekProgram.currentWeekIndex];
-    
+
     // Find active block to get current training goal
     const activeBlock = multiWeekProgram.blocks?.find((block) => {
       if (block.endWeekIndex === null) {
@@ -310,7 +396,7 @@ function App() {
         multiWeekProgram.currentWeekIndex <= block.endWeekIndex
       );
     });
-    
+
     // Compute suggestions for this day's exercises
     const daySuggestions = activeDay.exercises.map((ex) => {
       const match = loadSuggestions.find((s) => s.exerciseId === ex.id);
@@ -323,8 +409,8 @@ function App() {
     });
 
     return (
-      <WorkoutSessionView 
-        programDay={activeDay} 
+      <WorkoutSessionView
+        programDay={activeDay}
         onExit={() => setActiveDay(null)}
         onViewExercise={setActiveExerciseId}
         onSubstituteExercise={handleExerciseSubstitution}
@@ -347,64 +433,58 @@ function App() {
 
       {/* Top navigation bar */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex gap-2">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex gap-2 overflow-x-auto">
           <button
             onClick={() => setMainView('today')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              mainView === 'today'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${mainView === 'today'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
           >
             Today
           </button>
           <button
             onClick={() => setMainView('program')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              mainView === 'program'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${mainView === 'program'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
           >
             Program
           </button>
           <button
             onClick={() => setMainView('history')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              mainView === 'history'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${mainView === 'history'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
           >
             History
           </button>
           <button
             onClick={() => setMainView('nutrition')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              mainView === 'nutrition'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${mainView === 'nutrition'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
           >
             Nutrition
           </button>
           <button
             onClick={() => setMainView('meals')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              mainView === 'meals'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${mainView === 'meals'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
           >
             Meals
           </button>
           <button
             onClick={() => setMainView('settings')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              mainView === 'settings'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${mainView === 'settings'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
           >
             Settings
           </button>
@@ -419,19 +499,19 @@ function App() {
             const today = new Date();
             const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
             const todayName = dayNames[today.getDay()];
-            
+
             const currentWeek = multiWeekProgram.weeks[multiWeekProgram.currentWeekIndex];
             const todaysDay = currentWeek.days.find(d => d.dayOfWeek === todayName);
-            
+
             if (!todaysDay) return null;
-            
+
             // Get current block goal
             const currentBlock = multiWeekProgram.blocks?.find(
-              block => 
+              block =>
                 multiWeekProgram.currentWeekIndex >= block.startWeekIndex &&
-                multiWeekProgram.currentWeekIndex <= block.endWeekIndex
+                (block.endWeekIndex === null || multiWeekProgram.currentWeekIndex <= block.endWeekIndex)
             );
-            
+
             return {
               day: todaysDay,
               weekIndex: multiWeekProgram.currentWeekIndex,
@@ -445,7 +525,7 @@ function App() {
           onViewSummary={() => setMainView('history')}
         />
       ) : mainView === 'program' ? (
-        <ProgramWeekView 
+        <ProgramWeekView
           week={multiWeekProgram.weeks[multiWeekProgram.currentWeekIndex]}
           currentWeekIndex={multiWeekProgram.currentWeekIndex}
           totalWeeks={multiWeekProgram.weeks.length}
@@ -477,6 +557,8 @@ function App() {
           onUpdateSettings={handleUpdateSettings}
           onResetProfile={handleResetProfile}
           onClearHistory={handleClearHistory}
+          onRegenerateWeek={handleRegenerateWeek}
+          onReconfigureNutrition={handleReconfigureNutrition}
           program={multiWeekProgram}
           history={history}
           dietTargets={dietTargets}
@@ -494,4 +576,14 @@ function App() {
   );
 }
 
-export default App
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <BrowserRouter>
+        <UserProvider>
+          <AuthenticatedApp />
+        </UserProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
+  );
+}
