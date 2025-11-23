@@ -367,14 +367,13 @@ export class RealNutritionAiService implements NutritionAiService {
         );
       }
 
-      // Generate 7 day plans
-      const days: DayPlan[] = [];
+      // Generate all 7 days in parallel for speed
+      console.log(`🗓️ Generating 7 days in parallel...`);
+
       const startDate = new Date(weekStartDate);
 
-      // Keep breakfast consistent for first 4 days, then vary
-      let breakfastPlan: PlannedMeal | null = null;
-
-      for (let i = 0; i < 7; i++) {
+      // Create array of generation promises
+      const dayPromises = Array.from({ length: 7 }).map(async (_, i) => {
         const currentDate = new Date(startDate);
         currentDate.setDate(startDate.getDate() + i);
         const dateStr = currentDate.toISOString().split('T')[0];
@@ -423,23 +422,30 @@ export class RealNutritionAiService implements NutritionAiService {
           });
         }
 
-        // Use consistent breakfast for days 0-3 (unless breakfast is locked)
-        const hasLockedBreakfast = lockedMeals.some(m => m.type === 'breakfast');
-        if (!hasLockedBreakfast) {
-          if (i === 0) {
-            breakfastPlan = dayPlan.meals.find(m => m.type === 'breakfast') || null;
-          } else if (i < 4 && breakfastPlan) {
-            // Replace generated breakfast with consistent one
-            dayPlan.meals = dayPlan.meals.map(m =>
+        return dayPlan;
+      });
+
+      // Wait for all days to complete in parallel
+      const days = await Promise.all(dayPromises);
+      console.log(`✅ All 7 days generated in parallel`);
+
+      // Apply breakfast consistency AFTER all days are generated
+      // Use consistent breakfast for days 0-3 (unless breakfast is locked)
+      const breakfastPlan = days[0].meals.find(m => m.type === 'breakfast');
+      if (breakfastPlan) {
+        for (let i = 1; i < 4; i++) {
+          const previousDayPlan = previousWeek?.days[i];
+          const hasLockedBreakfast = previousDayPlan?.meals.some(m => m.locked && m.type === 'breakfast');
+
+          if (!hasLockedBreakfast) {
+            const dateStr = days[i].date;
+            days[i].meals = days[i].meals.map(m =>
               m.type === 'breakfast'
-                ? { ...breakfastPlan!, id: `breakfast-${dateStr}` }
+                ? { ...breakfastPlan, id: `breakfast-${dateStr}` }
                 : m
             );
           }
         }
-        // Days 4-6 get varied breakfasts (already generated)
-
-        days.push(dayPlan);
       }
 
       return {
@@ -630,49 +636,15 @@ Return ONLY a JSON object (no additional text):
 
       const messages: ChatCompletionMessageParam[] = [systemMessage, userMessage];
 
-      // Call LLM with function calling
-      let response = await openai.chat.completions.create({
+      console.log(`🤖 Calling ${getModel()} for daily meal plan (no tools)...`);
+
+      // Call LLM without tools for direct JSON output
+      const response = await openai.chat.completions.create({
         model: getModel(),
         messages,
-        tools: NUTRITION_TOOLS,
-        tool_choice: 'auto',
         temperature: 0.4, // Slightly higher for variety
         max_tokens: 4000,
       });
-
-      // Handle tool calls
-      const maxIterations = 20; // Allow more iterations for meal planning
-      let iterations = 0;
-
-      while (response.choices[0].finish_reason === 'tool_calls' && iterations < maxIterations) {
-        const toolCalls = response.choices[0].message.tool_calls || [];
-
-        messages.push(response.choices[0].message as ChatCompletionMessageParam);
-
-        for (const toolCall of toolCalls) {
-          const toolName = toolCall.function.name;
-          const toolArgs = JSON.parse(toolCall.function.arguments);
-
-          const toolResult = await executeToolCall(toolName, toolArgs);
-
-          messages.push({
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            content: toolResult,
-          });
-        }
-
-        response = await openai.chat.completions.create({
-          model: getModel(),
-          messages,
-          tools: NUTRITION_TOOLS,
-          tool_choice: 'auto',
-          temperature: 0.4,
-          max_tokens: 4000,
-        });
-
-        iterations++;
-      }
 
       // Parse final response
       const finalContent = response.choices[0].message.content;

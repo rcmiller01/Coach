@@ -107,12 +107,16 @@ export async function getNutritionPlan(req: Request, res: Response) {
 }
 
 export async function generateWeeklyPlan(req: Request, res: Response) {
+  console.log('🎯 generateWeeklyPlan called - request received');
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { weekStartDate, targets, userContext } = req.body as any;
+    
+    console.log('📦 Request body:', JSON.stringify({ weekStartDate, targets, userContext }, null, 2));
 
     // Validate inputs
     if (!weekStartDate || !targets) {
+      console.log('❌ Validation failed: missing weekStartDate or targets');
       return res.status(400).json({ error: 'weekStartDate and targets required' });
     }
 
@@ -127,10 +131,21 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
     // Store plan
     weeklyPlansStore.set(weekStartDate, plan);
 
+    console.log('✅ Weekly plan generated, sending response');
     res.json({ data: plan });
-  } catch (error) {
-    console.error('generateWeeklyPlan error:', error);
-    res.status(500).json({ error: 'Failed to generate weekly plan' });
+  } catch (error: any) {
+    console.error('❌ generateWeeklyPlan error:', error);
+    console.error('Error type:', typeof error);
+    console.error('Error message:', error?.message);
+    console.error('Error stack:', error?.stack?.split('\n').slice(0, 3).join('\n'));
+    
+    // Always return valid JSON
+    res.status(500).json({ 
+      error: {
+        message: error?.message || 'Failed to generate weekly plan',
+        code: error?.code || 'UNKNOWN_ERROR'
+      }
+    });
   }
 }
 

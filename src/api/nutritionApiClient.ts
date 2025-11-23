@@ -70,13 +70,33 @@ export async function generateMealPlanForWeek(
     body: JSON.stringify({ weekStartDate, targets, userContext }),
   });
 
+  // Get response text first to handle empty responses
+  const text = await response.text();
+  
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || error.message || 'Failed to generate weekly plan');
+    if (!text) {
+      throw new Error(`Server error: ${response.status} (empty response)`);
+    }
+    
+    try {
+      const error = JSON.parse(text);
+      throw new Error(error.error?.message || error.message || 'Failed to generate weekly plan');
+    } catch (parseError) {
+      throw new Error(`Server error: ${response.status} - ${text.substring(0, 100)}`);
+    }
   }
 
-  const result = await response.json();
-  return result.data;
+  if (!text) {
+    throw new Error('Empty response from server');
+  }
+
+  try {
+    const result = JSON.parse(text);
+    return result.data;
+  } catch (parseError) {
+    console.error('Failed to parse JSON response:', text.substring(0, 200));
+    throw new Error('Invalid JSON returned from server');
+  }
 }
 
 /**
