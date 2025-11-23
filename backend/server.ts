@@ -107,6 +107,9 @@ app.post('/api/logs/weight', routes.logWeight);
 app.get('/api/progress/week-summary', routes.getWeekSummary);
 app.get('/api/progress/trends', routes.getTrends);
 
+// Mount user routes
+app.post('/api/users', routes.createUser);
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

@@ -201,7 +201,7 @@ async function executeToolCall(
         );
         return JSON.stringify(results);
       }
-      
+
       case 'search_branded_item': {
         const results = await nutritionTools.searchBrandedItem(
           args.query,
@@ -211,12 +211,12 @@ async function executeToolCall(
         );
         return JSON.stringify(results);
       }
-      
+
       case 'calculate_recipe_macros': {
         const result = await nutritionTools.calculateRecipeMacros(args.ingredients);
         return JSON.stringify(result);
       }
-      
+
       default:
         throw new Error(`Unknown tool: ${toolName}`);
     }
@@ -246,7 +246,7 @@ function validateMealPlanFeasibility(
   planProfile: PlanProfile = 'standard'
 ): void {
   const { caloriesPerDay, proteinGrams, carbsGrams, fatGrams } = targets;
-  
+
   // Basic sanity checks
   if (caloriesPerDay < 800 || caloriesPerDay > 10000) {
     throw new NutritionApiError(
@@ -255,7 +255,7 @@ function validateMealPlanFeasibility(
       false
     );
   }
-  
+
   if (proteinGrams < 0 || carbsGrams < 0 || fatGrams < 0) {
     throw new NutritionApiError(
       'AI_PLAN_INFEASIBLE',
@@ -263,17 +263,17 @@ function validateMealPlanFeasibility(
       false
     );
   }
-  
+
   // Calculate minimum calories needed for macros
   // Protein: 4 kcal/g, Carbs: 4 kcal/g, Fats: 9 kcal/g
   const minCaloriesFromProtein = proteinGrams * 4;
   const minCaloriesFromCarbs = carbsGrams * 4;
   const minCaloriesFromFats = fatGrams * 9;
   const minTotalCalories = minCaloriesFromProtein + minCaloriesFromCarbs + minCaloriesFromFats;
-  
+
   // Allow 10% buffer for rounding and fiber
   const caloriesWithBuffer = caloriesPerDay * 1.10;
-  
+
   if (minTotalCalories > caloriesWithBuffer) {
     throw new NutritionApiError(
       'AI_PLAN_INFEASIBLE',
@@ -281,14 +281,14 @@ function validateMealPlanFeasibility(
       false
     );
   }
-  
+
   // GLP-1 specific checks: protein should be reasonable for low-calorie targets
   if (planProfile === 'glp1') {
     // For GLP-1, expect lower calories (1200-1800) with moderate-high protein
     // Flag if protein is impossible to achieve in small meals
     const proteinCalories = proteinGrams * 4;
     const proteinPercent = proteinCalories / caloriesPerDay;
-    
+
     if (proteinPercent > 0.50) {
       throw new NutritionApiError(
         'AI_PLAN_INFEASIBLE',
@@ -296,7 +296,7 @@ function validateMealPlanFeasibility(
         false
       );
     }
-    
+
     // Warn if meals will be too small to be practical
     if (caloriesPerDay < 1200) {
       throw new NutritionApiError(
@@ -306,12 +306,12 @@ function validateMealPlanFeasibility(
       );
     }
   }
-  
+
   // Standard profile: protein should not exceed 40% of calories (keeps it realistic)
   if (planProfile === 'standard') {
     const proteinCalories = proteinGrams * 4;
     const proteinPercent = proteinCalories / caloriesPerDay;
-    
+
     if (proteinPercent > 0.45) {
       throw new NutritionApiError(
         'AI_PLAN_INFEASIBLE',
@@ -333,7 +333,7 @@ export class RealNutritionAiService implements NutritionAiService {
   ): Promise<UserAiQuota> {
     // Use real database-backed quota service
     const status = await quotaService.getQuotaStatus(userId);
-    
+
     return {
       userId,
       dailyPlanGenerationsRemaining: 10, // TODO: Implement plan generation quota
@@ -352,11 +352,11 @@ export class RealNutritionAiService implements NutritionAiService {
     previousWeek?: WeeklyPlan; // Reuse locked meals from previous week
   }): Promise<WeeklyPlan> {
     const { weekStartDate, targets, userContext, userId, planProfile = 'standard', preferences, previousWeek } = args;
-    
+
     try {
       // Validate targets before doing any work
       validateMealPlanFeasibility(targets, planProfile);
-      
+
       // Check quota for plan generation
       const quotaStatus = await quotaService.getQuotaStatus(userId);
       if (quotaStatus.dailyRemaining <= 0) {
@@ -366,29 +366,29 @@ export class RealNutritionAiService implements NutritionAiService {
           false
         );
       }
-      
+
       // Generate 7 day plans
       const days: DayPlan[] = [];
       const startDate = new Date(weekStartDate);
-      
+
       // Keep breakfast consistent for first 4 days, then vary
       let breakfastPlan: PlannedMeal | null = null;
-      
+
       for (let i = 0; i < 7; i++) {
         const currentDate = new Date(startDate);
         currentDate.setDate(startDate.getDate() + i);
         const dateStr = currentDate.toISOString().split('T')[0];
-        
+
         // Check if we should reuse locked meals from previous week
         const previousDayPlan = previousWeek?.days[i];
         const lockedMeals = previousDayPlan?.meals.filter(m => m.locked) || [];
-        
+
         let dayPlan: DayPlan;
-        
+
         if (lockedMeals.length > 0 && lockedMeals.length < 4) {
           // Generate only unlocked meals, reuse locked ones
           console.log(`📌 Reusing ${lockedMeals.length} locked meal(s) for ${dateStr}`);
-          
+
           dayPlan = await this.generateMealPlanForDay({
             date: dateStr,
             targets,
@@ -397,7 +397,7 @@ export class RealNutritionAiService implements NutritionAiService {
             planProfile,
             preferences,
           });
-          
+
           // Replace generated meals with locked meals
           dayPlan.meals = dayPlan.meals.map(generatedMeal => {
             const lockedMeal = lockedMeals.find(m => m.type === generatedMeal.type);
@@ -422,7 +422,7 @@ export class RealNutritionAiService implements NutritionAiService {
             preferences,
           });
         }
-        
+
         // Use consistent breakfast for days 0-3 (unless breakfast is locked)
         const hasLockedBreakfast = lockedMeals.some(m => m.type === 'breakfast');
         if (!hasLockedBreakfast) {
@@ -438,10 +438,10 @@ export class RealNutritionAiService implements NutritionAiService {
           }
         }
         // Days 4-6 get varied breakfasts (already generated)
-        
+
         days.push(dayPlan);
       }
-      
+
       return {
         weekStartDate,
         days,
@@ -450,7 +450,7 @@ export class RealNutritionAiService implements NutritionAiService {
       if (error instanceof NutritionApiError) {
         throw error;
       }
-      
+
       console.error('generateMealPlanForWeek error:', error);
       throw new NutritionApiError(
         'AI_PLAN_FAILED',
@@ -470,11 +470,11 @@ export class RealNutritionAiService implements NutritionAiService {
   }): Promise<DayPlan> {
     const { date, targets, userContext, userId, planProfile = 'standard', preferences } = args;
     const startTime = Date.now();
-    
+
     try {
       // Validate targets BEFORE doing any LLM/tool work
       validateMealPlanFeasibility(targets, planProfile);
-      
+
       // Check quota
       const quotaStatus = await quotaService.getQuotaStatus(userId);
       if (quotaStatus.dailyRemaining <= 0) {
@@ -484,13 +484,13 @@ export class RealNutritionAiService implements NutritionAiService {
           false
         );
       }
-      
+
       const openai = getOpenAI();
-      
+
       // Meal calorie distribution - adjusted for plan profile
       let breakfastCals, lunchCals, dinnerCals, snackCals;
       let breakfastProtein, lunchProtein, dinnerProtein, snackProtein;
-      
+
       if (planProfile === 'glp1') {
         // GLP-1: Smaller, more frequent meals (20/25/25/30 split with 4 meals)
         // Lower per-meal caps to accommodate reduced appetite
@@ -498,7 +498,7 @@ export class RealNutritionAiService implements NutritionAiService {
         lunchCals = Math.round(targets.caloriesPerDay * 0.25);
         dinnerCals = Math.round(targets.caloriesPerDay * 0.25);
         snackCals = Math.round(targets.caloriesPerDay * 0.30); // Larger snack portion
-        
+
         // Protein distributed more evenly
         breakfastProtein = Math.round(targets.proteinGrams * 0.20);
         lunchProtein = Math.round(targets.proteinGrams * 0.30);
@@ -510,13 +510,13 @@ export class RealNutritionAiService implements NutritionAiService {
         lunchCals = Math.round(targets.caloriesPerDay * 0.30);
         dinnerCals = Math.round(targets.caloriesPerDay * 0.30);
         snackCals = Math.round(targets.caloriesPerDay * 0.15);
-        
+
         breakfastProtein = Math.round(targets.proteinGrams * 0.23);
         lunchProtein = Math.round(targets.proteinGrams * 0.32);
         dinnerProtein = Math.round(targets.proteinGrams * 0.32);
         snackProtein = Math.round(targets.proteinGrams * 0.13);
       }
-      
+
       // Build system prompt with profile-specific guidance
       const glp1Guidance = planProfile === 'glp1' ? `
 
@@ -527,7 +527,7 @@ GLP-1 MEDICATION CONSIDERATIONS:
 - Avoid very high-fat or high-fiber meals that may cause discomfort
 - Spread protein across 4 meals instead of loading into 2-3 large meals
 - Snacks should be substantial (not just 100-150 kcal, aim for ~300+ kcal with protein)` : '';
-      
+
       // Build dietary preferences guidance
       let preferencesGuidance = '';
       if (preferences) {
@@ -545,16 +545,16 @@ GLP-1 MEDICATION CONSIDERATIONS:
           };
           preferencesGuidance += `\n\nDIET TYPE: ${dietLabels[preferences.dietType] || preferences.dietType}`;
         }
-        
+
         if (preferences.avoidIngredients && preferences.avoidIngredients.length > 0) {
           preferencesGuidance += `\n\nAVOID INGREDIENTS: ${preferences.avoidIngredients.join(', ')}`;
         }
-        
+
         if (preferences.dislikedFoods && preferences.dislikedFoods.length > 0) {
           preferencesGuidance += `\n\nDISLIKED FOODS (avoid if possible): ${preferences.dislikedFoods.join(', ')}`;
         }
       }
-      
+
       const systemMessage: ChatCompletionMessageParam = {
         role: 'system',
         content: `You are a meal planning assistant that creates realistic, achievable meal plans using ONLY foods from the database.
@@ -579,7 +579,7 @@ ${userContext.city ? `- User location: ${userContext.city}` : ''}
 ${userContext.locale ? `- Locale: ${userContext.locale}` : ''}
 ${planProfile === 'glp1' ? '- Plan Profile: GLP-1 medication (smaller portions, protein priority)' : ''}`,
       };
-      
+
       const userMessage: ChatCompletionMessageParam = {
         role: 'user',
         content: `Create a meal plan for ${date} with these targets:
@@ -627,9 +627,9 @@ Return ONLY a JSON object (no additional text):
   "explanation": "2-3 sentence summary of the plan and how it meets targets"
 }`,
       };
-      
+
       const messages: ChatCompletionMessageParam[] = [systemMessage, userMessage];
-      
+
       // Call LLM with function calling
       let response = await openai.chat.completions.create({
         model: getModel(),
@@ -639,29 +639,29 @@ Return ONLY a JSON object (no additional text):
         temperature: 0.4, // Slightly higher for variety
         max_tokens: 4000,
       });
-      
+
       // Handle tool calls
       const maxIterations = 20; // Allow more iterations for meal planning
       let iterations = 0;
-      
+
       while (response.choices[0].finish_reason === 'tool_calls' && iterations < maxIterations) {
         const toolCalls = response.choices[0].message.tool_calls || [];
-        
+
         messages.push(response.choices[0].message as ChatCompletionMessageParam);
-        
+
         for (const toolCall of toolCalls) {
           const toolName = toolCall.function.name;
           const toolArgs = JSON.parse(toolCall.function.arguments);
-          
+
           const toolResult = await executeToolCall(toolName, toolArgs);
-          
+
           messages.push({
             role: 'tool',
             tool_call_id: toolCall.id,
             content: toolResult,
           });
         }
-        
+
         response = await openai.chat.completions.create({
           model: getModel(),
           messages,
@@ -670,10 +670,10 @@ Return ONLY a JSON object (no additional text):
           temperature: 0.4,
           max_tokens: 4000,
         });
-        
+
         iterations++;
       }
-      
+
       // Parse final response
       const finalContent = response.choices[0].message.content;
       if (!finalContent) {
@@ -683,7 +683,7 @@ Return ONLY a JSON object (no additional text):
           true
         );
       }
-      
+
       // Extract JSON
       let jsonStr = finalContent.trim();
       if (jsonStr.startsWith('```json')) {
@@ -691,14 +691,14 @@ Return ONLY a JSON object (no additional text):
       } else if (jsonStr.startsWith('```')) {
         jsonStr = jsonStr.replace(/```\n?/g, '');
       }
-      
+
       const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         jsonStr = jsonMatch[0];
       }
-      
+
       const parsed = JSON.parse(jsonStr);
-      
+
       // Validate response structure
       if (!parsed.meals || !Array.isArray(parsed.meals)) {
         throw new NutritionApiError(
@@ -707,17 +707,17 @@ Return ONLY a JSON object (no additional text):
           true
         );
       }
-      
+
       // Sanity check totals
       const totalCals = parsed.totalCalories || 0;
       const caloriesDiff = Math.abs(totalCals - targets.caloriesPerDay);
       const caloriesPercentDiff = caloriesDiff / targets.caloriesPerDay;
-      
+
       if (caloriesPercentDiff > 0.2) { // More than 20% off
         console.warn(`Meal plan calories off by ${Math.round(caloriesPercentDiff * 100)}%: ${totalCals} vs ${targets.caloriesPerDay}`);
         // Allow it but log warning - we can iterate in future versions
       }
-      
+
       // Build DayPlan
       const meals: PlannedMeal[] = parsed.meals.map((meal: any, idx: number) => ({
         id: `${meal.type}-${date}-${idx}`,
@@ -734,7 +734,7 @@ Return ONLY a JSON object (no additional text):
           fatsGrams: Math.round(item.fatsGrams * 10) / 10,
         })),
       }));
-      
+
       const dayPlan: DayPlan = {
         date,
         meals,
@@ -743,21 +743,21 @@ Return ONLY a JSON object (no additional text):
           details: `${parsed.explanation}${planProfile === 'glp1' ? ' This plan uses smaller portion sizes and distributes protein more evenly to accommodate GLP-1 medication effects (reduced appetite, early satiety).' : ''}`,
         },
       };
-      
+
       // Log successful plan generation
       const duration = Date.now() - startTime;
       console.log(`✅ Generated meal plan for ${date} in ${duration}ms`);
-      
+
       return dayPlan;
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error(`❌ Meal plan generation failed for ${date} after ${duration}ms:`, error);
-      
+
       if (error instanceof NutritionApiError) {
         throw error;
       }
-      
+
       if (error instanceof Error) {
         if (error.message.includes('timeout') || error.message.includes('timed out')) {
           throw new NutritionApiError(
@@ -766,7 +766,7 @@ Return ONLY a JSON object (no additional text):
             true
           );
         }
-        
+
         if (error.message.includes('JSON') || error.message.includes('parse')) {
           throw new NutritionApiError(
             'AI_PLAN_FAILED',
@@ -775,7 +775,7 @@ Return ONLY a JSON object (no additional text):
           );
         }
       }
-      
+
       throw new NutritionApiError(
         'AI_PLAN_FAILED',
         'An unexpected error occurred during meal planning. Please try again.',
@@ -792,7 +792,7 @@ Return ONLY a JSON object (no additional text):
     const { text, userContext, userId } = args;
     const startTime = Date.now();
     let errorCode: string | undefined = undefined;
-    
+
     try {
       // PHASE 3: Timeout simulation for testing
       if (text.includes('[timeout-test]')) {
@@ -804,7 +804,7 @@ Return ONLY a JSON object (no additional text):
           true
         );
       }
-      
+
       // Basic validation
       if (!text || text.trim().length === 0) {
         errorCode = 'AI_PARSE_FAILED';
@@ -814,7 +814,7 @@ Return ONLY a JSON object (no additional text):
           false
         );
       }
-      
+
       if (text.length > 2000) {
         errorCode = 'AI_PARSE_FAILED';
         throw new NutritionApiError(
@@ -823,7 +823,7 @@ Return ONLY a JSON object (no additional text):
           false
         );
       }
-      
+
       // PHASE 4: Real quota checking with database
       try {
         const quotaStatus = await quotaService.checkAndIncrementQuota(userId);
@@ -837,7 +837,7 @@ Return ONLY a JSON object (no additional text):
             false
           );
         }
-        
+
         if (error.message === 'AI_RATE_LIMITED') {
           errorCode = 'AI_RATE_LIMITED';
           throw new NutritionApiError(
@@ -846,7 +846,7 @@ Return ONLY a JSON object (no additional text):
             true
           );
         }
-        
+
         if (error.message.startsWith('AI_QUOTA_EXCEEDED:')) {
           const resetsAt = error.message.split(':')[1];
           errorCode = 'AI_QUOTA_EXCEEDED';
@@ -856,12 +856,12 @@ Return ONLY a JSON object (no additional text):
             false
           );
         }
-        
+
         throw error;
       }
-      
+
       const openai = getOpenAI();
-      
+
       // Build system message with context
       const systemMessage: ChatCompletionMessageParam = {
         role: 'system',
@@ -903,7 +903,7 @@ Context:
 ${userContext.city ? `- User location: ${userContext.city}${userContext.zipCode ? ` ${userContext.zipCode}` : ''}` : ''}
 ${userContext.locale ? `- Locale: ${userContext.locale}` : ''}`,
       };
-      
+
       const userMessage: ChatCompletionMessageParam = {
         role: 'user',
         content: `Parse this food description: "${text}"
@@ -932,9 +932,9 @@ Return this exact JSON structure:
 
 Remember: You MUST use tools. Return ONLY the JSON object, with no additional text.`,
       };
-      
+
       const messages: ChatCompletionMessageParam[] = [systemMessage, userMessage];
-      
+
       // Call LLM with function calling
       console.log(`🤖 Calling ${getModel()} for food parsing...`);
       let response = await openai.chat.completions.create({
@@ -944,33 +944,33 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
         tool_choice: 'auto',
         temperature: 0.3, // Low temperature for consistency
       });
-      
+
       console.log(`📝 AI Response: finish_reason=${response.choices[0].finish_reason}, tool_calls=${response.choices[0].message.tool_calls?.length || 0}`);
-      
+
       // Handle tool calls (may need multiple rounds)
       const maxIterations = 5;
       let iterations = 0;
-      
+
       while (response.choices[0].finish_reason === 'tool_calls' && iterations < maxIterations) {
         const toolCalls = response.choices[0].message.tool_calls || [];
-        
+
         // Add assistant message with tool calls
         messages.push(response.choices[0].message as ChatCompletionMessageParam);
-        
+
         // Execute each tool call
         for (const toolCall of toolCalls) {
           const toolName = toolCall.function.name;
           const toolArgs = JSON.parse(toolCall.function.arguments);
-          
+
           const toolResult = await executeToolCall(toolName, toolArgs);
-          
+
           messages.push({
             role: 'tool',
             tool_call_id: toolCall.id,
             content: toolResult,
           });
         }
-        
+
         // Get next response
         response = await openai.chat.completions.create({
           model: getModel(),
@@ -979,10 +979,10 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
           tool_choice: 'auto',
           temperature: 0.3,
         });
-        
+
         iterations++;
       }
-      
+
       // Parse final response
       const finalContent = response.choices[0].message.content;
       if (!finalContent) {
@@ -992,7 +992,7 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
           true
         );
       }
-      
+
       // PHASE 3: Check if model didn't use tools (prompt injection defense)
       if (iterations === 0 && !response.choices[0].message.tool_calls) {
         // Model responded without using tools - likely trying to bypass or got confused
@@ -1002,27 +1002,27 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
           false
         );
       }
-      
+
       // Extract JSON from response (handle markdown code blocks and text prefixes)
       let jsonStr = finalContent.trim();
-      
+
       // Remove markdown code blocks
       if (jsonStr.startsWith('```json')) {
         jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?$/g, '');
       } else if (jsonStr.startsWith('```')) {
         jsonStr = jsonStr.replace(/```\n?/g, '');
       }
-      
+
       // Try to extract JSON object if there's text before it
       const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         jsonStr = jsonMatch[0];
       }
-      
+
       jsonStr = jsonStr.trim();
-      
+
       const parsed = JSON.parse(jsonStr);
-      
+
       // PHASE 3: Check for error responses (multi-item, not-food, etc.)
       if (parsed.error) {
         const errorMessages: Record<string, string> = {
@@ -1030,22 +1030,22 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
           'NOT_FOOD': 'I couldn\'t interpret that as a food. Try describing one specific item, like \"grilled chicken breast\" or \"medium apple\".',
           'CANNOT_INTERPRET': 'I couldn\'t understand that food description. Try being more specific, like \"6oz chicken breast\" or \"1 cup rice\".',
         };
-        
+
         const message = errorMessages[parsed.error] || 'Could not parse that food description. Please try again with a clear description of one food item.';
-        
+
         throw new NutritionApiError(
           'AI_PARSE_FAILED',
           message,
           false
         );
       }
-      
+
       // PHASE 3: Sanity check nutrition values
       const cals = parsed.calories;
       const protein = parsed.proteinGrams;
       const carbs = parsed.carbsGrams;
       const fats = parsed.fatsGrams;
-      
+
       // Check for negative or impossibly high values
       if (cals < 0 || protein < 0 || carbs < 0 || fats < 0) {
         throw new NutritionApiError(
@@ -1054,7 +1054,7 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
           true
         );
       }
-      
+
       if (cals > 10000 || protein > 500 || carbs > 1000 || fats > 500) {
         throw new NutritionApiError(
           'AI_PARSE_FAILED',
@@ -1062,12 +1062,12 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
           false
         );
       }
-      
+
       // Check macro consistency (rough calorie check: 4*P + 4*C + 9*F should be ~= calories)
       const estimatedCals = (protein * 4) + (carbs * 4) + (fats * 9);
       const calorieDiff = Math.abs(estimatedCals - cals);
       const percentDiff = calorieDiff / Math.max(cals, 1);
-      
+
       if (percentDiff > 0.5) { // More than 50% off
         throw new NutritionApiError(
           'AI_PARSE_FAILED',
@@ -1075,7 +1075,7 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
           true
         );
       }
-      
+
       // Build LoggedFoodItem
       const item: LoggedFoodItem = {
         id: `parsed-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -1095,7 +1095,7 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
           confidence: parsed.confidence,
         },
       };
-      
+
       // PHASE 4: Log successful parse
       const duration = Date.now() - startTime;
       await quotaService.logParseFoodEvent({
@@ -1110,9 +1110,9 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
         durationMs: duration,
         tokensUsed: undefined, // TODO: Extract from OpenAI response
       });
-      
+
       return item;
-      
+
     } catch (error) {
       // PHASE 4: Log failed parse
       const duration = Date.now() - startTime;
@@ -1122,16 +1122,16 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
         errorCode: errorCode || 'UNKNOWN_ERROR',
         durationMs: duration,
       });
-      
+
       // Handle specific error types
       if (error instanceof NutritionApiError) {
         throw error;
       }
-      
+
       // OpenAI timeout/rate limit
       if (error instanceof Error) {
         console.error('OpenAI Error:', error.message);
-        
+
         if (error.message.includes('timeout') || error.message.includes('timed out')) {
           throw new NutritionApiError(
             'AI_TIMEOUT',
@@ -1139,7 +1139,7 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
             true
           );
         }
-        
+
         if (error.message.includes('rate_limit') || error.message.includes('quota')) {
           console.error('Detected rate limit/quota error');
           throw new NutritionApiError(
@@ -1148,7 +1148,7 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
             true
           );
         }
-        
+
         // JSON parsing errors = parse failed
         if (error.message.includes('JSON') || error.message.includes('parse')) {
           throw new NutritionApiError(
@@ -1158,11 +1158,11 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
           );
         }
       }
-      
+
       // Unknown error
       throw new NutritionApiError(
         'UNKNOWN_ERROR',
-        'An unexpected error occurred while parsing your food. Please try again.',
+        `An unexpected error occurred: ${error instanceof Error ? error.message : String(error)}`,
         false,
         { originalError: String(error) }
       );

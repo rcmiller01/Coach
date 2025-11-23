@@ -306,9 +306,17 @@ export async function parseFood(req: Request, res: Response) {
     });
 
     res.json({ data: foodItem });
-  } catch (error) {
+  } catch (error: any) {
     console.error('parseFood error:', error);
-    res.status(500).json({ error: 'Failed to parse food' });
+    const responseBody: any = {
+      error: 'Failed to parse food',
+      details: error.message,
+      stack: error.stack
+    };
+    if ((error as any).originalError) {
+      responseBody.originalError = (error as any).originalError;
+    }
+    res.status(500).json(responseBody);
   }
 }
 
