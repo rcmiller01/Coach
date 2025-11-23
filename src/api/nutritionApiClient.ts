@@ -55,15 +55,18 @@ export async function fetchWeeklyPlan(weekStartDate: string): Promise<WeeklyPlan
 
 /**
  * Generate a new meal plan for the entire week using AI.
+ * Returns a sessionId for tracking generation progress.
+ * 
  * @param weekStartDate - Monday of the week (YYYY-MM-DD)
  * @param targets - Daily nutrition targets
  * @param userContext - Optional location/locale for restaurant personalization
+ * @returns Object with sessionId, weekStartDate, and optional weeklyPlan
  */
 export async function generateMealPlanForWeek(
   weekStartDate: string,
   targets: NutritionTargets,
   userContext?: UserContext
-): Promise<WeeklyPlan> {
+): Promise<{ sessionId: string; weekStartDate: string; weeklyPlan?: WeeklyPlan; qualitySummary?: string }> {
   const response = await fetch(`${API_BASE}/nutrition/plan/week`, {
     method: 'POST',
     headers: getHeaders(),

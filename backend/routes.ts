@@ -42,6 +42,10 @@ import { NutritionistProfile } from '../src/features/nutritionist/types';
 import { UserRepository } from './db/repositories/UserRepository';
 import { SettingsRepository } from './db/repositories/SettingsRepository';
 import { LoggingService } from './services/LoggingService';
+import { nutritionGenerationSessionStore } from './services/nutritionGenerationSessionStore';
+import { WeeklyGenerationTracker } from './services/weeklyGenerationProgress';
+import { DEFAULT_NUTRITION_CONFIG, getNutritionConfig } from './services/nutritionPlanConfig';
+import { nutritionMetrics } from './services/nutritionMetricsService';
 
 // In-memory storage for development (replace with real database)
 const weeklyPlansStore: Map<string, WeeklyPlan> = new Map();
@@ -110,9 +114,9 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
   console.log('🎯 generateWeeklyPlan called - request received');
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { weekStartDate, targets, userContext } = req.body as any;
+    const { weekStartDate, targets, userContext, configProfile } = req.body as any;
     
-    console.log('📦 Request body:', JSON.stringify({ weekStartDate, targets, userContext }, null, 2));
+    console.log('📦 Request body:', JSON.stringify({ weekStartDate, targets, userContext, configProfile }, null, 2));
 
     // Validate inputs
     if (!weekStartDate || !targets) {
@@ -120,19 +124,36 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
       return res.status(400).json({ error: 'weekStartDate and targets required' });
     }
 
+    // Get nutrition config profile
+    const config = configProfile ? getNutritionConfig(configProfile) : DEFAULT_NUTRITION_CONFIG;
+
+    // Create tracker for progress monitoring
+    const tracker = new WeeklyGenerationTracker();
+    const sessionId = nutritionGenerationSessionStore.createSession(tracker, STUB_USER_ID, weekStartDate);
+
+    console.log(`🆔 Created generation session: ${sessionId}`);
+
     // Generate plan using real AI service
     const plan = await nutritionAiService.generateMealPlanForWeek({
       weekStartDate,
       targets,
       userContext: userContext || {},
       userId: STUB_USER_ID,
+      config,
     });
 
     // Store plan
     weeklyPlansStore.set(weekStartDate, plan);
 
+    // Get quality summary from tracker
+    const qualitySummary = tracker.getQualitySummary();
+
     console.log('✅ Weekly plan generated, sending response');
-    res.json({ data: plan });
+    res.json({ 
+      data: plan,
+      sessionId,
+      qualitySummary,
+    });
   } catch (error: any) {
     console.error('❌ generateWeeklyPlan error:', error);
     console.error('Error type:', typeof error);
@@ -702,4 +723,104 @@ function getWeekStart(date: Date): string {
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   d.setDate(diff);
   return d.toISOString().split('T')[0];
+}
+
+// ============================================================================
+// NUTRITION METRICS & STATUS ENDPOINTS
+// ============================================================================
+
+/**
+ * GET /api/v1/nutrition/metrics
+ * Returns global nutrition generation metrics
+ */
+export async function getNutritionMetrics(req: Request, res: Response) {
+  try {
+    const metrics = nutritionMetrics.getMetrics();
+    const firstPassQualityRate = nutritionMetrics.getFirstPassQualityRate();
+    const autoFixSuccessRate = nutritionMetrics.getAutoFixSuccessRate();
+    const regenerationSuccessRate = nutritionMetrics.getRegenerationSuccessRate();
+
+    res.json({
+      data: {
+        weeksGenerated: metrics.totalWeeksGenerated,
+        daysGenerated: metrics.totalDaysGenerated,
+        firstPassQuality: {
+          withinTolerance: metrics.daysWithinToleranceFirstPass,
+          outOfRange: metrics.daysOutOfRangeFirstPass,
+          rate: firstPassQualityRate,
+        },
+        autoFix: {
+          scaled: metrics.daysFixedByScaling,
+          regenerated: metrics.daysFixedByRegeneration,
+          stillOutOfRange: metrics.daysStillOutOfRangeAfterAutoFix,
+          successRate: autoFixSuccessRate,
+        },
+        regeneration: {
+          totalAttempts: metrics.totalRegenerationAttempts,
+          successes: metrics.regenerationSuccesses,
+          failures: metrics.regenerationFailures,
+          successRate: regenerationSuccessRate,
+        },
+        performance: {
+          avgGenerationMs: metrics.averageGenerationTimeMs,
+          avgAutoFixMs: metrics.averageAutoFixTimeMs,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('getNutritionMetrics error:', error);
+    res.status(500).json({ error: 'Failed to get nutrition metrics' });
+  }
+}
+
+/**
+ * GET /api/v1/nutrition/generation/:sessionId/status
+ * Returns real-time status of a meal plan generation session
+ */
+export async function getGenerationStatus(req: Request, res: Response) {
+  try {
+    const { sessionId } = req.params;
+
+    const session = nutritionGenerationSessionStore.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const status = session.tracker.getStatus();
+
+    res.json({
+      data: {
+        sessionId: session.sessionId,
+        userId: session.userId,
+        weekStartDate: session.weekStartDate,
+        createdAt: session.createdAt,
+        status,
+      },
+    });
+  } catch (error) {
+    console.error('getGenerationStatus error:', error);
+    res.status(500).json({ error: 'Failed to get generation status' });
+  }
+}
+
+/**
+ * DELETE /api/v1/nutrition/generation/:sessionId
+ * Remove a completed or expired session (cleanup)
+ */
+export async function deleteGenerationSession(req: Request, res: Response) {
+  try {
+    const { sessionId } = req.params;
+
+    const session = nutritionGenerationSessionStore.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    nutritionGenerationSessionStore.removeSession(sessionId);
+
+    res.json({ message: 'Session removed successfully' });
+  } catch (error) {
+    console.error('deleteGenerationSession error:', error);
+    res.status(500).json({ error: 'Failed to delete session' });
+  }
 }

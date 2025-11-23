@@ -32,6 +32,9 @@ import { NutritionApiError } from '../src/features/nutrition/nutritionTypes';
 import type { NutritionAiService, UserAiQuota } from './NutritionAiService';
 import * as nutritionTools from './nutritionTools';
 import * as quotaService from './quotaService.js';
+import { NutritionPlanConfig, DEFAULT_NUTRITION_CONFIG, getNutritionConfig } from './services/nutritionPlanConfig';
+import { WeeklyGenerationTracker } from './services/weeklyGenerationProgress';
+import { nutritionMetrics } from './services/nutritionMetricsService';
 
 // ============================================================================
 // CONFIGURATION
@@ -350,8 +353,9 @@ export class RealNutritionAiService implements NutritionAiService {
     planProfile?: PlanProfile;
     preferences?: DietaryPreferences;
     previousWeek?: WeeklyPlan; // Reuse locked meals from previous week
+    config?: NutritionPlanConfig; // Optional config override
   }): Promise<WeeklyPlan> {
-    const { weekStartDate, targets, userContext, userId, planProfile = 'standard', preferences, previousWeek } = args;
+    const { weekStartDate, targets, userContext, userId, planProfile = 'standard', preferences, previousWeek, config } = args;
 
     try {
       // Validate targets before doing any work
@@ -369,6 +373,7 @@ export class RealNutritionAiService implements NutritionAiService {
 
       // Generate all 7 days in parallel for speed
       console.log(`🗓️ Generating 7 days in parallel...`);
+      const startTime = Date.now();
 
       const startDate = new Date(weekStartDate);
 
@@ -426,10 +431,26 @@ export class RealNutritionAiService implements NutritionAiService {
       });
 
       // Wait for all days to complete in parallel
-      const days = await Promise.all(dayPromises);
+      let days = await Promise.all(dayPromises);
       console.log(`✅ All 7 days generated in parallel`);
 
-      // Apply breakfast consistency AFTER all days are generated
+      const generationTimeMs = Date.now() - startTime;
+      nutritionMetrics.recordWeekGenerated();
+      nutritionMetrics.recordGenerationTime(generationTimeMs);
+
+      // Auto-fix days with out-of-range macros (scale or regenerate)
+      const nutritionConfig = config || DEFAULT_NUTRITION_CONFIG;
+      const tracker = new WeeklyGenerationTracker();
+      tracker.startGeneratingDays();
+      
+      days = await this.autoFixWeeklyMacros(days, targets, userContext, userId, nutritionConfig, tracker, planProfile, preferences);
+
+      // Perform macro sanity checks for observability (after auto-fix)
+      tracker.startValidating();
+      this.validateWeeklyMacros(days, targets, nutritionConfig);
+      tracker.complete();
+
+      // Apply breakfast consistency AFTER all days are generated and fixed
       // Use consistent breakfast for days 0-3 (unless breakfast is locked)
       const breakfastPlan = days[0].meals.find(m => m.type === 'breakfast');
       if (breakfastPlan) {
@@ -464,6 +485,320 @@ export class RealNutritionAiService implements NutritionAiService {
         true
       );
     }
+  }
+
+  /**
+   * Compute macro totals and deviation for a single day.
+   * Returns structured data about whether day is within tolerance.
+   */
+  private computeDayMacroDeviation(
+    day: DayPlan,
+    targets: NutritionTargets,
+    config: NutritionPlanConfig = DEFAULT_NUTRITION_CONFIG
+  ): {
+    withinTolerance: boolean;
+    deviationByMacro: Record<string, { target: number; actual: number; percentDiff: number }>;
+    totals: { calories: number; protein: number; carbs: number; fat: number };
+  } {
+    const tolerance = config.macroTolerancePercent / 100; // convert % to decimal
+
+    // Defensive: skip malformed days
+    if (!day.meals || !Array.isArray(day.meals)) {
+      return {
+        withinTolerance: false,
+        deviationByMacro: {},
+        totals: { calories: 0, protein: 0, carbs: 0, fat: 0 }
+      };
+    }
+
+    const totals = {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0
+    };
+
+    // Sum up all meals for this day
+    for (const meal of day.meals) {
+      for (const item of meal.items) {
+        totals.calories += item.calories || 0;
+        totals.protein += item.proteinGrams || 0;
+        totals.carbs += item.carbsGrams || 0;
+        totals.fat += item.fatsGrams || 0;
+      }
+    }
+
+    // Check each macro against targets
+    const deviationByMacro: Record<string, { target: number; actual: number; percentDiff: number }> = {};
+
+    const macros = [
+      { name: 'calories', target: targets.caloriesPerDay, actual: totals.calories },
+      { name: 'protein', target: targets.proteinGrams, actual: totals.protein },
+      { name: 'carbs', target: targets.carbsGrams, actual: totals.carbs },
+      { name: 'fat', target: targets.fatGrams, actual: totals.fat }
+    ];
+
+    let allWithinTolerance = true;
+    for (const { name, target, actual } of macros) {
+      const percentDiff = ((actual - target) / target) * 100;
+      if (Math.abs(percentDiff) > tolerance * 100) {
+        deviationByMacro[name] = { target, actual, percentDiff };
+        allWithinTolerance = false;
+      }
+    }
+
+    return {
+      withinTolerance: allWithinTolerance,
+      deviationByMacro,
+      totals
+    };
+  }
+
+  /**
+   * Validate that each day's macros are within tolerance.
+   * Logs structured warnings for observability, does not throw.
+   */
+  private validateWeeklyMacros(
+    days: DayPlan[],
+    targets: NutritionTargets,
+    config: NutritionPlanConfig = DEFAULT_NUTRITION_CONFIG
+  ): void {
+    for (const day of days) {
+      const { withinTolerance, deviationByMacro, totals } = this.computeDayMacroDeviation(day, targets, config);
+
+      // Log deviations if any
+      if (!withinTolerance && Object.keys(deviationByMacro).length > 0) {
+        console.warn(`⚠️ Macro deviations for ${day.date}:`, {
+          date: day.date,
+          deviations: deviationByMacro,
+          targets: {
+            calories: targets.caloriesPerDay,
+            protein: targets.proteinGrams,
+            carbs: targets.carbsGrams,
+            fat: targets.fatGrams
+          },
+          actuals: totals
+        });
+      }
+    }
+  }
+
+  /**
+   * Auto-fix weekly macro deviations by scaling or regenerating out-of-range days.
+   * This is the "assistant coach" layer that actively improves macro quality.
+   */
+  private async autoFixWeeklyMacros(
+    days: DayPlan[],
+    targets: NutritionTargets,
+    userContext: UserContext,
+    userId: string,
+    config: NutritionPlanConfig = DEFAULT_NUTRITION_CONFIG,
+    tracker?: WeeklyGenerationTracker,
+    planProfile?: PlanProfile,
+    preferences?: DietaryPreferences
+  ): Promise<DayPlan[]> {
+    if (!config.enableAutoFix) {
+      return days;
+    }
+
+    const startTime = Date.now();
+    tracker?.startAutoFixing();
+
+    console.log(`🔧 Auto-fixing macro deviations for weekly plan...`);
+
+    const fixedDays = await Promise.all(
+      days.map(day =>
+        this.autoFixDayMacros(
+          day,
+          targets,
+          userContext,
+          userId,
+          config,
+          tracker,
+          planProfile,
+          preferences
+        )
+      )
+    );
+
+    const autoFixTimeMs = Date.now() - startTime;
+    nutritionMetrics.recordAutoFixTime(autoFixTimeMs);
+
+    return fixedDays;
+  }
+
+  /**
+   * Auto-fix a single day's macros: scale → regenerate → give up.
+   * Returns the best available version of the day.
+   */
+  private async autoFixDayMacros(
+    originalDay: DayPlan,
+    targets: NutritionTargets,
+    userContext: UserContext,
+    userId: string,
+    config: NutritionPlanConfig,
+    tracker?: WeeklyGenerationTracker,
+    planProfile?: PlanProfile,
+    preferences?: DietaryPreferences
+  ): Promise<DayPlan> {
+    // 1. Check if day is malformed
+    if (!originalDay.meals || !Array.isArray(originalDay.meals)) {
+      console.warn(`⚠️ Skipping auto-fix for malformed day: ${originalDay.date}`);
+      return originalDay;
+    }
+
+    // 2. Compute initial deviation
+    const originalDeviation = this.computeDayMacroDeviation(originalDay, targets, config);
+
+    // 3. If within tolerance, return as-is
+    if (originalDeviation.withinTolerance) {
+      tracker?.recordDayWithinTolerance(originalDay.date);
+      nutritionMetrics.recordDayWithinTolerance();
+      return originalDay;
+    }
+
+    tracker?.recordAutoFixAttempt(originalDay.date, true);
+    nutritionMetrics.recordDayOutOfRange();
+
+    console.log(`🔧 Day ${originalDay.date} out of range, attempting auto-fix...`, {
+      originalTotals: originalDeviation.totals,
+      deviations: originalDeviation.deviationByMacro
+    });
+
+    // 4. Try scaling first
+    const scaledDay = this.scaleDay(originalDay, targets, originalDeviation.totals, config);
+    if (scaledDay) {
+      const scaledDeviation = this.computeDayMacroDeviation(scaledDay, targets, config);
+      
+      // If scaling improved AND now within tolerance, use it
+      if (scaledDeviation.withinTolerance) {
+        console.log(`✅ Auto-fixed ${originalDay.date} via scaling`, {
+          originalTotals: originalDeviation.totals,
+          scaledTotals: scaledDeviation.totals,
+          via: 'scaling'
+        });
+        tracker?.recordAutoFixResult(originalDay.date, 'scaling', true);
+        nutritionMetrics.recordAutoFixByScaling(true);
+        return scaledDay;
+      }
+
+      // If scaling improved but still out of range, keep it as fallback
+      console.log(`📊 Scaling improved ${originalDay.date} but still out of range, trying regeneration...`);
+    }
+
+    // 5. Try regeneration
+    let bestDay = scaledDay || originalDay;
+    let bestDeviation = scaledDay ? this.computeDayMacroDeviation(scaledDay, targets, config) : originalDeviation;
+    let attemptCount = 0;
+
+    for (let attempt = 1; attempt <= config.maxRegenerationsPerDay; attempt++) {
+      attemptCount++;
+      console.log(`🔄 Regenerating ${originalDay.date} (attempt ${attempt}/${config.maxRegenerationsPerDay})...`);
+
+      try {
+        const regeneratedDay = await this.generateMealPlanForDay({
+          date: originalDay.date,
+          targets,
+          userContext,
+          userId,
+          planProfile,
+          preferences
+        });
+
+        const regeneratedDeviation = this.computeDayMacroDeviation(regeneratedDay, targets, config);
+
+        // If within tolerance, success!
+        if (regeneratedDeviation.withinTolerance) {
+          console.log(`✅ Auto-fixed ${originalDay.date} via regeneration (attempt ${attempt})`, {
+            originalTotals: originalDeviation.totals,
+            regeneratedTotals: regeneratedDeviation.totals,
+            via: 'regeneration'
+          });
+          tracker?.recordAutoFixResult(originalDay.date, 'regeneration', true, attemptCount);
+          nutritionMetrics.recordAutoFixByRegeneration(true, attemptCount);
+          return regeneratedDay;
+        }
+
+        // Keep track of best result so far
+        const regeneratedError = this.computeTotalError(regeneratedDeviation.deviationByMacro);
+        const bestError = this.computeTotalError(bestDeviation.deviationByMacro);
+
+        if (regeneratedError < bestError) {
+          bestDay = regeneratedDay;
+          bestDeviation = regeneratedDeviation;
+        }
+
+      } catch (error) {
+        console.error(`❌ Regeneration failed for ${originalDay.date} (attempt ${attempt}):`, error);
+      }
+    }
+
+    // 6. Fallback: return best available
+    console.warn(`⚠️ Auto-fix failed for ${originalDay.date} after ${config.maxRegenerationsPerDay} regenerations, using best available`, {
+      bestTotals: bestDeviation.totals,
+      remainingDeviations: bestDeviation.deviationByMacro
+    });
+
+    tracker?.recordAutoFixResult(originalDay.date, 'failed', false, attemptCount);
+    
+    if (scaledDay && bestDay === scaledDay) {
+      nutritionMetrics.recordAutoFixByScaling(false);
+    } else if (attemptCount > 0) {
+      nutritionMetrics.recordAutoFixByRegeneration(false, attemptCount);
+    }
+
+    return bestDay;
+  }
+
+  /**
+   * Attempt to scale a day's portions to bring macros closer to target.
+   * Returns scaled day if successful, null if scaling not possible.
+   */
+  private scaleDay(
+    day: DayPlan,
+    targets: NutritionTargets,
+    currentTotals: { calories: number; protein: number; carbs: number; fat: number },
+    config: NutritionPlanConfig
+  ): DayPlan | null {
+    // Calculate scale factor based on calories (primary driver)
+    if (currentTotals.calories === 0) {
+      return null; // Can't scale empty day
+    }
+
+    const scaleFactor = targets.caloriesPerDay / currentTotals.calories;
+
+    // Clamp to configured range to avoid absurd changes
+    const clampedScale = Math.max(config.maxScaleFactorDown, Math.min(config.maxScaleFactorUp, scaleFactor));
+
+    // If scale factor is too close to 1.0, scaling won't help
+    if (Math.abs(clampedScale - 1.0) < config.minScaleThreshold) {
+      return null;
+    }
+
+    // Apply scaling to all items
+    const scaledMeals = day.meals.map(meal => ({
+      ...meal,
+      items: meal.items.map(item => ({
+        ...item,
+        quantity: item.quantity * clampedScale,
+        calories: item.calories * clampedScale,
+        proteinGrams: item.proteinGrams * clampedScale,
+        carbsGrams: item.carbsGrams * clampedScale,
+        fatsGrams: item.fatsGrams * clampedScale
+      }))
+    }));
+
+    return {
+      ...day,
+      meals: scaledMeals
+    };
+  }
+
+  /**
+   * Compute total error across all macro deviations (for comparing which day is "better").
+   */
+  private computeTotalError(deviationByMacro: Record<string, { target: number; actual: number; percentDiff: number }>): number {
+    return Object.values(deviationByMacro).reduce((sum, dev) => sum + Math.abs(dev.percentDiff), 0);
   }
 
   async generateMealPlanForDay(args: {
@@ -669,7 +1004,17 @@ Return ONLY a JSON object (no additional text):
         jsonStr = jsonMatch[0];
       }
 
-      const parsed = JSON.parse(jsonStr);
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonStr);
+      } catch (parseError) {
+        console.error(`MealPlanParseError for ${date}:`, {
+          error: parseError instanceof Error ? parseError.message : 'Unknown error',
+          contentPreview: finalContent.substring(0, 200),
+          extractedJson: jsonStr.substring(0, 200)
+        });
+        throw new Error(`MealPlanParseError: Failed to parse JSON for ${date}. Invalid JSON returned from OpenAI.`);
+      }
 
       // Validate response structure
       if (!parsed.meals || !Array.isArray(parsed.meals)) {

@@ -13,6 +13,9 @@ import { NutritionApiError } from './nutritionTypes';
 import { fetchWeeklyPlan, generateMealPlanForWeek, generateMealPlanForDay } from '../../api/nutritionApiClient';
 import WeeklyPlanView from './WeeklyPlanView';
 import MealPlanEditor from './MealPlanEditor';
+import { useGenerationStatus } from './useGenerationStatus';
+import { GenerationProgress } from './GenerationProgress';
+import { CoachAccuracy } from './CoachAccuracy';
 
 interface NutritionPageProps {
   targets: NutritionTargets;
@@ -32,6 +35,27 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
     dietType: 'none',
     avoidIngredients: [],
     dislikedFoods: [],
+  });
+  
+  // Session tracking for weekly generation
+  const [generationSessionId, setGenerationSessionId] = useState<string | null>(null);
+  
+  // Poll generation status
+  const { status: generationStatus, isPolling, error: generationError } = useGenerationStatus({
+    sessionId: generationSessionId,
+    onComplete: (status) => {
+      console.log('Generation complete:', status);
+      // Reload the weekly plan
+      loadWeeklyPlan();
+      // Clear session after a delay to show completion message
+      setTimeout(() => setGenerationSessionId(null), 3000);
+    },
+    onError: (err) => {
+      console.error('Generation error:', err);
+      setError({ message: err.message, retryable: true });
+      setLoading(false);
+      setGenerationSessionId(null);
+    },
   });
 
   // Get Monday of the current week
@@ -67,6 +91,7 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
   const handleGenerateWeek = async () => {
     setLoading(true);
     setError(null);
+    setGenerationSessionId(null); // Clear any previous session
     try {
       const contextWithPreferences: UserContext = {
         ...userContext,
@@ -75,8 +100,18 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
           planProfile, // Include planProfile in preferences
         },
       };
-      const plan = await generateMealPlanForWeek(currentWeekStart, targets, contextWithPreferences);
-      setWeeklyPlan(plan);
+      const response = await generateMealPlanForWeek(currentWeekStart, targets, contextWithPreferences);
+      
+      // Response now includes sessionId for tracking
+      if (response.sessionId) {
+        setGenerationSessionId(response.sessionId);
+        // Keep loading state active while polling
+        // Loading will be cleared by onComplete or onError
+      } else if (response.weeklyPlan) {
+        // Fallback: if plan returned immediately without session
+        setWeeklyPlan(response.weeklyPlan);
+        setLoading(false);
+      }
     } catch (err) {
       console.error('Generate week error:', err);
       if (err instanceof NutritionApiError) {
@@ -84,7 +119,6 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
       } else {
         setError({ message: 'Failed to generate meal plan. Please try again.' });
       }
-    } finally {
       setLoading(false);
     }
   };
@@ -404,6 +438,14 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
           </div>
         )}
 
+        {/* Generation Progress - Show when actively generating */}
+        {generationSessionId && (isPolling || generationStatus) && (
+          <GenerationProgress 
+            status={generationStatus} 
+            isPolling={isPolling}
+          />
+        )}
+
         {/* Weekly Plan Overview */}
         <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
           <div className="flex items-center justify-between mb-3">
@@ -498,6 +540,9 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
             />
           </div>
         )}
+
+        {/* Coach Accuracy Panel (Admin/Dev) */}
+        <CoachAccuracy />
 
       </div>
     </div>

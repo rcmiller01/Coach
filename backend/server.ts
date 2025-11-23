@@ -100,6 +100,11 @@ app.put('/api/meals/log/:date', routes.saveDayLog);
 app.post('/api/nutrition/parse-food', routes.parseFood);
 app.post('/api/program/week/generate', routes.generateWorkoutProgram);
 
+// Nutrition metrics and status endpoints
+app.get('/api/v1/nutrition/metrics', routes.getNutritionMetrics);
+app.get('/api/v1/nutrition/generation/:sessionId/status', routes.getGenerationStatus);
+app.delete('/api/v1/nutrition/generation/:sessionId', routes.deleteGenerationSession);
+
 // Mount progress tracking routes
 app.post('/api/logs/workout-session', routes.logWorkoutSession);
 app.post('/api/logs/nutrition-day', routes.logNutritionDay);
