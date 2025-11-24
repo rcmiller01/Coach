@@ -133,27 +133,35 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
 
     console.log(`🆔 Created generation session: ${sessionId}`);
 
-    // Generate plan using real AI service
-    const plan = await nutritionAiService.generateMealPlanForWeek({
-      weekStartDate,
-      targets,
-      userContext: userContext || {},
-      userId: STUB_USER_ID,
-      config,
-    });
-
-    // Store plan
-    weeklyPlansStore.set(weekStartDate, plan);
-
-    // Get quality summary from tracker
-    const qualitySummary = tracker.getQualitySummary();
-
-    console.log('✅ Weekly plan generated, sending response');
+    // Return sessionId immediately, generate plan asynchronously
     res.json({ 
-      data: plan,
-      sessionId,
-      qualitySummary,
+      data: {
+        sessionId,
+        weekStartDate,
+      }
     });
+
+    // Generate plan asynchronously (don't await here)
+    (async () => {
+      try {
+        const plan = await nutritionAiService.generateMealPlanForWeek({
+          weekStartDate,
+          targets,
+          userContext: userContext || {},
+          userId: STUB_USER_ID,
+          config,
+          tracker, // Pass the tracker so it gets updated during generation
+        });
+
+        // Store plan
+        weeklyPlansStore.set(weekStartDate, plan);
+
+        console.log(`✅ Weekly plan generated for session ${sessionId}`);
+      } catch (error) {
+        console.error(`❌ Generation failed for session ${sessionId}:`, error);
+        tracker.markError(error instanceof Error ? error.message : 'Unknown error');
+      }
+    })();
   } catch (error: any) {
     console.error('❌ generateWeeklyPlan error:', error);
     console.error('Error type:', typeof error);

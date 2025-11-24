@@ -41,16 +41,24 @@ function getHeaders() {
  * @param weekStartDate - Monday of the week (YYYY-MM-DD)
  */
 export async function fetchWeeklyPlan(weekStartDate: string): Promise<WeeklyPlan> {
-  // TODO: Replace with real fetch call
-  // const response = await fetch(`${API_BASE}/nutrition/plan?weekStart=${weekStartDate}`);
-  // if (!response.ok) throw new Error('Failed to fetch weekly plan');
-  // return response.json();
-
-  // Stub: Return empty plan for now
-  return {
-    weekStartDate,
-    days: [],
-  };
+  const response = await fetch(`${API_BASE}/nutrition/plan?weekStart=${weekStartDate}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  
+  if (!response.ok) {
+    // If no plan exists (404), return empty plan
+    if (response.status === 404) {
+      return {
+        weekStartDate,
+        days: [],
+      };
+    }
+    throw new Error('Failed to fetch weekly plan');
+  }
+  
+  const result = await response.json();
+  return result.data || { weekStartDate, days: [] };
 }
 
 /**

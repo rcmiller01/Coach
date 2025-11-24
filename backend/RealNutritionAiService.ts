@@ -354,8 +354,9 @@ export class RealNutritionAiService implements NutritionAiService {
     preferences?: DietaryPreferences;
     previousWeek?: WeeklyPlan; // Reuse locked meals from previous week
     config?: NutritionPlanConfig; // Optional config override
+    tracker?: WeeklyGenerationTracker; // Optional progress tracker
   }): Promise<WeeklyPlan> {
-    const { weekStartDate, targets, userContext, userId, planProfile = 'standard', preferences, previousWeek, config } = args;
+    const { weekStartDate, targets, userContext, userId, planProfile = 'standard', preferences, previousWeek, config, tracker } = args;
 
     try {
       // Validate targets before doing any work
@@ -374,6 +375,10 @@ export class RealNutritionAiService implements NutritionAiService {
       // Generate all 7 days in parallel for speed
       console.log(`🗓️ Generating 7 days in parallel...`);
       const startTime = Date.now();
+
+      // Use provided tracker or create a new one
+      const generationTracker = tracker || new WeeklyGenerationTracker();
+      generationTracker.startGeneratingDays();
 
       const startDate = new Date(weekStartDate);
 
@@ -427,6 +432,9 @@ export class RealNutritionAiService implements NutritionAiService {
           });
         }
 
+        // Increment tracker for this completed day
+        generationTracker.incrementDaysGenerated();
+
         return dayPlan;
       });
 
@@ -440,15 +448,13 @@ export class RealNutritionAiService implements NutritionAiService {
 
       // Auto-fix days with out-of-range macros (scale or regenerate)
       const nutritionConfig = config || DEFAULT_NUTRITION_CONFIG;
-      const tracker = new WeeklyGenerationTracker();
-      tracker.startGeneratingDays();
       
-      days = await this.autoFixWeeklyMacros(days, targets, userContext, userId, nutritionConfig, tracker, planProfile, preferences);
+      days = await this.autoFixWeeklyMacros(days, targets, userContext, userId, nutritionConfig, generationTracker, planProfile, preferences);
 
       // Perform macro sanity checks for observability (after auto-fix)
-      tracker.startValidating();
+      generationTracker.startValidating();
       this.validateWeeklyMacros(days, targets, nutritionConfig);
-      tracker.complete();
+      generationTracker.complete();
 
       // Apply breakfast consistency AFTER all days are generated and fixed
       // Use consistent breakfast for days 0-3 (unless breakfast is locked)
