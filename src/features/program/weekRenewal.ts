@@ -52,12 +52,12 @@ function determineNextPhase(
   // Check for increasing volume trend
   // If volume increased or stayed high over 3 weeks, prescribe deload
   const [week1Vol, week2Vol, week3Vol] = weekVolumes;
-  
+
   // Simple heuristic: if the most recent 2 weeks both show >= 95% of their predecessor's volume
   // (indicating sustained high volume), trigger deload
-  const highVolumeTrend = 
-    week1Vol > 0 && 
-    week2Vol >= week1Vol * 0.95 && 
+  const highVolumeTrend =
+    week1Vol > 0 &&
+    week2Vol >= week1Vol * 0.95 &&
     week3Vol >= week2Vol * 0.95;
 
   return highVolumeTrend ? 'deload' : 'build';
@@ -97,11 +97,11 @@ export function ensureBlocksExist(program: ProgramMultiWeek): ProgramMultiWeek {
  */
 function shouldEndCurrentBlock(
   program: ProgramMultiWeek,
-  nextPhase: 'build' | 'deload'
+  _nextPhase: 'build' | 'deload'
 ): { shouldEndBlock: boolean; activeBlock: TrainingBlock | null } {
   // Find active block
   const activeBlock = program.blocks.find((block) => block.endWeekIndex === null);
-  
+
   if (!activeBlock) {
     return { shouldEndBlock: false, activeBlock: null };
   }
@@ -137,7 +137,7 @@ export function generateNextWeekAndBlock(
 ): ProgramMultiWeek {
   // Ensure blocks exist (for legacy data)
   const programWithBlocks = ensureBlocksExist(program);
-  
+
   const prevWeek = programWithBlocks.weeks[programWithBlocks.currentWeekIndex];
   const allWeeks = programWithBlocks.weeks;
 
@@ -163,7 +163,7 @@ export function generateNextWeekAndBlock(
 
   // Update blocks
   let updatedBlocks = [...programWithBlocks.blocks];
-  
+
   if (shouldEndBlock && activeBlock) {
     // Close the active block
     updatedBlocks = updatedBlocks.map((block) =>

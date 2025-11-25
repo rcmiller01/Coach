@@ -35,13 +35,20 @@ export interface ApiErrorResponse {
 }
 
 export class NutritionApiError extends Error {
+  code: ErrorCode;
+  retryable: boolean;
+  details?: Record<string, unknown>;
+
   constructor(
-    public code: ErrorCode,
+    code: ErrorCode,
     message: string,
-    public retryable: boolean,
-    public details?: Record<string, unknown>
+    retryable: boolean,
+    details?: Record<string, unknown>
   ) {
     super(message);
+    this.code = code;
+    this.retryable = retryable;
+    this.details = details;
     this.name = 'NutritionApiError';
   }
 }
@@ -130,7 +137,7 @@ export interface AiFoodExplanation {
 export interface LoggedFoodItem extends PlannedFoodItem {
   sourceType: FoodSourceType;
   aiExplanation?: AiFoodExplanation;
-  
+
   // User correction tracking
   originalCalories?: number;
   originalProteinGrams?: number;
@@ -163,7 +170,7 @@ export interface DayLog {
 // USER CONTEXT (for AI personalization)
 // ============================================================================
 
-export type DietType = 
+export type DietType =
   | 'none'
   | 'vegetarian'
   | 'vegan'

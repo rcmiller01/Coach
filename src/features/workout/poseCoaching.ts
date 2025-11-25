@@ -13,7 +13,7 @@ export interface CoachingCueResult {
 export function getPoseCoachingCue(
   exerciseId: string,
   romResult: RomEvaluationResult | null,
-  angles: DerivedAngle[]
+  _angles: DerivedAngle[]
 ): CoachingCueResult {
   // No ROM result available
   if (!romResult) {

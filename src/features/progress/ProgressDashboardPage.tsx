@@ -188,7 +188,7 @@ export default function ProgressDashboardPage() {
 
                                 {/* Simple weight chart */}
                                 <div className="space-y-2">
-                                    {trends.weights.map((entry, idx) => (
+                                    {trends.weights.map((entry, _idx) => (
                                         <div key={entry.date} className="flex items-center gap-3">
                                             <div className="text-sm text-slate-400 w-24">{entry.date}</div>
                                             <div className="flex-1 bg-slate-800 rounded-full h-8 relative overflow-hidden">

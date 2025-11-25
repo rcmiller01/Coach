@@ -28,7 +28,7 @@ interface WorkoutSessionViewProps {
   weekNumber?: number; // Current week number (1-indexed)
   trainingPhase?: 'build' | 'deload'; // Current training phase
   blockGoal?: BlockGoal; // Current block goal
-  previousWeekLoads?: ActualExerciseLoad[]; // Last week's actual loads for comparison
+  _previousWeekLoads?: ActualExerciseLoad[]; // Last week's actual loads for comparison
 }
 
 const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
@@ -42,7 +42,7 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
   weekNumber,
   trainingPhase,
   blockGoal,
-  previousWeekLoads,
+  _previousWeekLoads,
 }) => {
   // Initialize session state once on mount using lazy initializer
   const [session, setSession] = useState<WorkoutSessionState>(() => {
