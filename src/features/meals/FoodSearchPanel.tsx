@@ -24,9 +24,9 @@ export default function FoodSearchPanel({
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<LoggedFoodItem | null>(null);
-  const [error, setError] = useState<{ 
+  const [error, setError] = useState<{
     code: string;
-    message: string; 
+    message: string;
     retryable: boolean;
   } | null>(null);
 
@@ -88,15 +88,15 @@ export default function FoodSearchPanel({
     }
   };
 
-  const shouldDisableAISearch = error && (
-    error.code === 'AI_QUOTA_EXCEEDED' || 
+  const shouldDisableAISearch = !!(error && (
+    error.code === 'AI_QUOTA_EXCEEDED' ||
     error.code === 'AI_DISABLED_FOR_USER'
-  );
+  ));
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-700">
-        
+
         {/* Header */}
         <div className="sticky top-0 bg-slate-900 border-b border-slate-800 p-4 z-10">
           <div className="flex items-center justify-between mb-1">
@@ -146,7 +146,7 @@ export default function FoodSearchPanel({
               {!['AI_QUOTA_EXCEEDED', 'AI_RATE_LIMITED', 'AI_TIMEOUT', 'AI_DISABLED_FOR_USER', 'AI_PARSE_FAILED'].includes(error.code) && '❌ Error'}
             </div>
             <p>{error.message}</p>
-            
+
             {error.code === 'AI_QUOTA_EXCEEDED' && (
               <div className="pt-2 border-t border-amber-800/50">
                 <p className="text-xs text-amber-400/80">
@@ -154,7 +154,7 @@ export default function FoodSearchPanel({
                 </p>
               </div>
             )}
-            
+
             {error.code === 'AI_DISABLED_FOR_USER' && (
               <div className="pt-2 border-t border-amber-800/50">
                 <p className="text-xs text-amber-400/80">
@@ -162,7 +162,7 @@ export default function FoodSearchPanel({
                 </p>
               </div>
             )}
-            
+
             {error.retryable && !shouldDisableAISearch && (
               <button
                 onClick={handleSearch}
@@ -178,25 +178,24 @@ export default function FoodSearchPanel({
         {result && (
           <div className="p-4 border-t border-slate-800">
             <div className="bg-slate-800/50 rounded-lg p-4 space-y-3">
-              
+
               {/* Food Name */}
               <div>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h4 className="text-base font-medium text-slate-200">
                     {result.name}
                   </h4>
-                  
+
                   {/* Badge: Official/Estimate + Edited */}
                   {(result.dataSource || result.userAdjusted) && (
-                    <span className={`px-2 py-0.5 text-xs rounded border ${
-                      result.dataSource === 'official' 
+                    <span className={`px-2 py-0.5 text-xs rounded border ${result.dataSource === 'official'
                         ? 'bg-green-900/30 border-green-800 text-green-400'
                         : result.dataSource === 'estimated'
-                        ? 'bg-amber-900/30 border-amber-800 text-amber-400'
-                        : result.userAdjusted
-                        ? 'bg-purple-900/30 border-purple-800 text-purple-400'
-                        : ''
-                    }`}>
+                          ? 'bg-amber-900/30 border-amber-800 text-amber-400'
+                          : result.userAdjusted
+                            ? 'bg-purple-900/30 border-purple-800 text-purple-400'
+                            : ''
+                      }`}>
                       {result.dataSource === 'official' && !result.userAdjusted && 'Official'}
                       {result.dataSource === 'estimated' && !result.userAdjusted && 'Estimate'}
                       {result.dataSource === 'official' && result.userAdjusted && 'Official · Edited'}
@@ -204,7 +203,7 @@ export default function FoodSearchPanel({
                       {!result.dataSource && result.userAdjusted && 'Edited'}
                     </span>
                   )}
-                  
+
                   {/* Confidence Badge */}
                   {result.aiExplanation && (
                     <span
@@ -261,7 +260,7 @@ export default function FoodSearchPanel({
                       </span>
                     </div>
                   )}
-                  
+
                   <div className="text-xs font-medium text-slate-400 mb-1">
                     How this was calculated
                   </div>

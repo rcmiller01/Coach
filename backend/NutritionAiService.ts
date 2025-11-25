@@ -62,12 +62,50 @@ export interface NutritionAiService {
     userContext: UserContext;
     userId: string;
   }): Promise<LoggedFoodItem>;
+
+  verifyFoodItem(item: {
+    name: string;
+    quantity: number;
+    unit: string;
+    foodId?: string;
+  }): Promise<{
+    calories: number;
+    proteinGrams: number;
+    carbsGrams: number;
+    fatsGrams: number;
+  }>;
+
+  runExperiment(
+    weekStartDate: string,
+    targets: NutritionTargets,
+    userContext: UserContext,
+    modes: string[],
+    userId: string
+  ): Promise<any[]>;
 }
 
 /**
  * Stub implementation using dummy data.
  */
 export class StubNutritionAiService implements NutritionAiService {
+  // ... existing methods ...
+
+  async runExperiment(
+    weekStartDate: string,
+    targets: NutritionTargets,
+    userContext: UserContext,
+    modes: string[],
+    userId: string
+  ): Promise<any[]> {
+    return modes.map(mode => ({
+      mode,
+      totalTimeMs: 1000,
+      macroDeviation: { calories: 50, protein: 5, carbs: 10, fat: 2 },
+      qualityScore: 0.95,
+      note: 'Stub experiment result'
+    }));
+  }
+
   async checkUserAiQuota(
     userId: string,
     action: 'generatePlan' | 'parseFood'
@@ -241,6 +279,8 @@ export class StubNutritionAiService implements NutritionAiService {
         ],
         confidence: 'medium',
       },
+      userAdjusted: false,
+      dataSource: 'estimated',
     };
   }
 
@@ -253,7 +293,7 @@ export class StubNutritionAiService implements NutritionAiService {
           id: `food-regen-${Date.now()}`,
           name: 'Regenerated Meal Option',
           quantity: 1,
-          unit: 'serving',
+          unit: 'serving' as any,
           calories: 500,
           proteinGrams: 30,
           carbsGrams: 50,
@@ -269,7 +309,25 @@ export class StubNutritionAiService implements NutritionAiService {
 
     return {
       updatedDayPlan,
-      regeneratedMeal: newMeal,
+    };
+  }
+
+  async verifyFoodItem(item: {
+    name: string;
+    quantity: number;
+    unit: string;
+    foodId?: string;
+  }): Promise<{
+    calories: number;
+    proteinGrams: number;
+    carbsGrams: number;
+    fatsGrams: number;
+  }> {
+    return {
+      calories: 100,
+      proteinGrams: 10,
+      carbsGrams: 10,
+      fatsGrams: 2,
     };
   }
 }

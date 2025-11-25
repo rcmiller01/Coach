@@ -27,14 +27,17 @@ import type {
   DietaryPreferences,
   RegenerateMealRequest,
   RegenerateMealResponse,
+  PlannedMeal,
 } from '../src/features/nutrition/nutritionTypes';
 import { NutritionApiError } from '../src/features/nutrition/nutritionTypes';
 import type { NutritionAiService, UserAiQuota } from './NutritionAiService';
 import * as nutritionTools from './nutritionTools';
+import { GenericFood, BrandItem } from './nutritionTools';
 import * as quotaService from './quotaService.js';
-import { NutritionPlanConfig, DEFAULT_NUTRITION_CONFIG, getNutritionConfig } from './services/nutritionPlanConfig';
+import { NutritionPlanConfig, DEFAULT_NUTRITION_CONFIG, STRICT_NUTRITION_CONFIG, RELAXED_NUTRITION_CONFIG, PRECISION_NUTRITION_CONFIG, getNutritionConfig } from './services/nutritionPlanConfig';
 import { WeeklyGenerationTracker } from './services/weeklyGenerationProgress';
 import { nutritionMetrics } from './services/nutritionMetricsService';
+import { nutritionFoodLookup } from './services/nutritionFoodLookupService';
 
 // ============================================================================
 // CONFIGURATION
@@ -418,7 +421,7 @@ export class RealNutritionAiService implements NutritionAiService {
           dayPlan = {
             date: dateStr,
             meals: lockedMeals.map(m => ({ ...m, id: `${m.type}-${dateStr}` })),
-            aiExplanation: previousDayPlan.aiExplanation,
+            aiExplanation: previousDayPlan?.aiExplanation,
           };
         } else {
           // No locked meals - generate fresh
@@ -448,13 +451,30 @@ export class RealNutritionAiService implements NutritionAiService {
 
       // Auto-fix days with out-of-range macros (scale or regenerate)
       const nutritionConfig = config || DEFAULT_NUTRITION_CONFIG;
-      
+
       days = await this.autoFixWeeklyMacros(days, targets, userContext, userId, nutritionConfig, generationTracker, planProfile, preferences);
+
+      // PRECISION MODE: Apply DB-backed corrections if enabled
+      if (nutritionConfig.profileName === 'PRECISION') {
+        days = await this.applyPrecisionCorrections(days, targets, nutritionConfig);
+      }
 
       // Perform macro sanity checks for observability (after auto-fix)
       generationTracker.startValidating();
       this.validateWeeklyMacros(days, targets, nutritionConfig);
       generationTracker.complete();
+
+      // Check for quality violations against config thresholds
+      const qualityViolations = nutritionMetrics.getQualityViolations(nutritionConfig);
+      if (qualityViolations.length > 0) {
+        console.warn('⚠️ Quality Threshold Violations:', {
+          violations: qualityViolations,
+          config: {
+            minFirstPassQuality: nutritionConfig.minFirstPassQualityRate,
+            minAutoFixSuccess: nutritionConfig.minAutoFixSuccessRate
+          }
+        });
+      }
 
       // Apply breakfast consistency AFTER all days are generated and fixed
       // Use consistent breakfast for days 0-3 (unless breakfast is locked)
@@ -675,7 +695,7 @@ export class RealNutritionAiService implements NutritionAiService {
     const scaledDay = this.scaleDay(originalDay, targets, originalDeviation.totals, config);
     if (scaledDay) {
       const scaledDeviation = this.computeDayMacroDeviation(scaledDay, targets, config);
-      
+
       // If scaling improved AND now within tolerance, use it
       if (scaledDeviation.withinTolerance) {
         console.log(`✅ Auto-fixed ${originalDay.date} via scaling`, {
@@ -739,6 +759,52 @@ export class RealNutritionAiService implements NutritionAiService {
       }
     }
 
+    // 6. Try Verified Regeneration (Hybrid Mode Fallback)
+    // If fast regeneration failed to produce a valid plan, try once with tools enabled
+    if (bestDeviation && !bestDeviation.withinTolerance) {
+      console.log(`🛡️ Fast regeneration failed for ${originalDay.date}. Attempting Verified Regeneration (Hybrid Mode)...`);
+
+      try {
+        const verifiedDay = await this.generateMealPlanForDay({
+          date: originalDay.date,
+          targets,
+          userContext,
+          userId,
+          planProfile,
+          preferences,
+          useTools: true // Enable tools for accuracy
+        });
+
+        const verifiedDeviation = this.computeDayMacroDeviation(verifiedDay, targets, config);
+
+        if (verifiedDeviation.withinTolerance) {
+          console.log(`✅ Verified Regeneration fixed ${originalDay.date}!`, {
+            originalTotals: originalDeviation.totals,
+            verifiedTotals: verifiedDeviation.totals,
+            via: 'verified_regeneration'
+          });
+          tracker?.recordAutoFixResult(originalDay.date, 'regeneration', true, attemptCount + 1);
+          nutritionMetrics.recordAutoFixByRegeneration(true, attemptCount + 1);
+          return verifiedDay;
+        } else {
+          console.warn(`⚠️ Verified Regeneration also failed for ${originalDay.date}`, {
+            totals: verifiedDeviation.totals
+          });
+
+          // Check if it's better than what we had
+          const verifiedError = this.computeTotalError(verifiedDeviation.deviationByMacro);
+          const bestError = this.computeTotalError(bestDeviation.deviationByMacro);
+
+          if (verifiedError < bestError) {
+            bestDay = verifiedDay;
+            bestDeviation = verifiedDeviation;
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Verified Regeneration failed for ${originalDay.date}:`, error);
+      }
+    }
+
     // 6. Fallback: return best available
     console.warn(`⚠️ Auto-fix failed for ${originalDay.date} after ${config.maxRegenerationsPerDay} regenerations, using best available`, {
       bestTotals: bestDeviation.totals,
@@ -746,7 +812,7 @@ export class RealNutritionAiService implements NutritionAiService {
     });
 
     tracker?.recordAutoFixResult(originalDay.date, 'failed', false, attemptCount);
-    
+
     if (scaledDay && bestDay === scaledDay) {
       nutritionMetrics.recordAutoFixByScaling(false);
     } else if (attemptCount > 0) {
@@ -754,6 +820,163 @@ export class RealNutritionAiService implements NutritionAiService {
     }
 
     return bestDay;
+  }
+
+  /**
+   * Precision Mode: Validate and correct meal macros using DB lookup.
+   * Replaces AI-estimated macros with "real" values from the mock DB.
+   */
+  private async applyPrecisionCorrections(
+    days: DayPlan[],
+    targets: NutritionTargets,
+    config: NutritionPlanConfig
+  ): Promise<DayPlan[]> {
+    console.log('🔬 Precision Mode: Applying DB-backed corrections...');
+    const correctedDays = [...days];
+
+    // 1. Collect all unique food names
+    const foodNames = new Set<string>();
+    for (const day of days) {
+      for (const meal of day.meals) {
+        for (const item of meal.items) {
+          foodNames.add(item.name);
+        }
+      }
+    }
+
+    // 2. Batch lookup
+    const dbFoods = await nutritionFoodLookup.findBatch(Array.from(foodNames));
+
+    // 3. Apply corrections
+    for (let i = 0; i < correctedDays.length; i++) {
+      let dayUpdated = false;
+      const day = correctedDays[i];
+
+      const newMeals = day.meals.map(meal => {
+        const newItems = meal.items.map(item => {
+          const dbMatch = dbFoods[item.name];
+          if (dbMatch) {
+            // Calculate scale factor based on quantity/serving size
+            // Note: This is a simplification. Real app needs unit conversion.
+            let scale = item.quantity;
+            if (item.unit === 'g') {
+              scale = item.quantity / dbMatch.servingSize;
+            }
+
+            const newCalories = Math.round(dbMatch.calories * scale);
+            const newProtein = Math.round(dbMatch.protein * scale);
+            const newCarbs = Math.round(dbMatch.carbs * scale);
+            const newFat = Math.round(dbMatch.fat * scale);
+
+            // Only update if significantly different (>5%)
+            console.log(`   Checking ${item.name}: Old Cal=${item.calories}, New Cal=${newCalories}, Diff=${Math.abs(newCalories - item.calories)}, Threshold=${item.calories * 0.05}`);
+            if (Math.abs(newCalories - item.calories) > item.calories * 0.05) {
+              dayUpdated = true;
+              return {
+                ...item,
+                calories: newCalories,
+                proteinGrams: newProtein,
+                carbsGrams: newCarbs,
+                fatsGrams: newFat,
+              };
+            }
+          }
+          return item;
+        });
+        return { ...meal, items: newItems };
+      });
+
+      if (dayUpdated) {
+        correctedDays[i] = { ...day, meals: newMeals };
+        console.log(`   ✅ Corrected macros for ${day.date} using DB values`);
+      }
+    }
+
+    return correctedDays;
+  }
+
+  /**
+   * Run an experiment to compare different generation modes.
+   */
+  async runExperiment(
+    weekStartDate: string,
+    targets: NutritionTargets,
+    userContext: UserContext,
+    modes: string[],
+    userId: string
+  ): Promise<any[]> {
+    console.log(`🧪 Starting experiment with modes: ${modes.join(', ')}`);
+    const results = [];
+
+    for (const mode of modes) {
+      console.log(`   ▶️ Testing mode: ${mode}`);
+      const startTime = Date.now();
+
+      // Configure based on mode string
+      let config = DEFAULT_NUTRITION_CONFIG;
+      if (mode === 'strict') config = STRICT_NUTRITION_CONFIG;
+      else if (mode === 'relaxed') config = RELAXED_NUTRITION_CONFIG;
+      else if (mode === 'precision') config = PRECISION_NUTRITION_CONFIG;
+
+      try {
+        // Generate plan
+        const tracker = new WeeklyGenerationTracker();
+        const plan = await this.generateMealPlanForWeek({
+          weekStartDate,
+          targets,
+          userContext,
+          userId,
+          config,
+          tracker
+        });
+
+        const endTime = Date.now();
+        const totalTimeMs = endTime - startTime;
+
+        // Calculate metrics
+        let totalCaloriesDiff = 0;
+        let totalProteinDiff = 0;
+        let totalCarbsDiff = 0;
+        let totalFatDiff = 0;
+        let dayCount = 0;
+
+        for (const day of plan.days) {
+          const dayCalories = day.meals.reduce((sum, m) => sum + m.items.reduce((s, i) => s + i.calories, 0), 0);
+          const dayProtein = day.meals.reduce((sum, m) => sum + m.items.reduce((s, i) => s + i.proteinGrams, 0), 0);
+          const dayCarbs = day.meals.reduce((sum, m) => sum + m.items.reduce((s, i) => s + i.carbsGrams, 0), 0);
+          const dayFat = day.meals.reduce((sum, m) => sum + m.items.reduce((s, i) => s + i.fatsGrams, 0), 0);
+
+          totalCaloriesDiff += Math.abs(dayCalories - targets.caloriesPerDay);
+          totalProteinDiff += Math.abs(dayProtein - targets.proteinGrams);
+          totalCarbsDiff += Math.abs(dayCarbs - targets.carbsGrams);
+          totalFatDiff += Math.abs(dayFat - targets.fatGrams);
+          dayCount++;
+        }
+
+        results.push({
+          mode,
+          totalTimeMs,
+          macroDeviation: {
+            calories: Math.round(totalCaloriesDiff / dayCount),
+            protein: Math.round(totalProteinDiff / dayCount),
+            carbs: Math.round(totalCarbsDiff / dayCount),
+            fat: Math.round(totalFatDiff / dayCount),
+          },
+          qualityScore: 1.0, // Placeholder
+          success: true
+        });
+
+      } catch (error) {
+        console.error(`   ❌ Mode ${mode} failed:`, error);
+        results.push({
+          mode,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          success: false
+        });
+      }
+    }
+
+    return results;
   }
 
   /**
@@ -814,8 +1037,9 @@ export class RealNutritionAiService implements NutritionAiService {
     userId: string;
     planProfile?: PlanProfile;
     preferences?: DietaryPreferences;
+    useTools?: boolean;
   }): Promise<DayPlan> {
-    const { date, targets, userContext, userId, planProfile = 'standard', preferences } = args;
+    const { date, targets, userContext, userId, planProfile = 'standard', preferences, useTools = false } = args;
     const startTime = Date.now();
 
     try {
@@ -904,7 +1128,29 @@ GLP-1 MEDICATION CONSIDERATIONS:
 
       const systemMessage: ChatCompletionMessageParam = {
         role: 'system',
-        content: `You are a meal planning assistant that creates realistic, achievable meal plans using ONLY foods from the database.
+        content: useTools
+          ? `You are a meal planning assistant that creates realistic, achievable meal plans using ONLY foods from the database.
+
+CRITICAL RULES:
+- You MUST use the provided tools to search for foods
+- You MUST use foods that exist in the database
+- You MUST calculate macros using the tools (getNutritionById or calculateRecipeMacros)
+- You MUST NEVER invent or guess macro values
+- Keep meals simple and practical (1-3 food items per meal)
+- Use standard portion sizes (e.g., 4oz chicken breast, 1 cup rice, 1 medium apple)
+- Prefer whole foods and common items over exotic choices${glp1Guidance}${preferencesGuidance}
+
+Food selection strategy:
+- Breakfast: Protein + carbs (eggs, oatmeal, Greek yogurt, fruit)
+- Lunch: Balanced meal (protein + carbs + veg)
+- Dinner: Balanced meal (protein + carbs + veg)
+- Snack: Simple protein or fruit (protein shake, nuts, apple${planProfile === 'glp1' ? ' - make this more substantial ~300 kcal' : ''})
+
+Context:
+${userContext.city ? `- User location: ${userContext.city}` : ''}
+${userContext.locale ? `- Locale: ${userContext.locale}` : ''}
+${planProfile === 'glp1' ? '- Plan Profile: GLP-1 medication (smaller portions, protein priority)' : ''}`
+          : `You are a meal planning assistant that creates realistic, achievable meal plans using ONLY foods from the database.
 
 CRITICAL RULES:
 - You MUST use the provided tools to search for foods
@@ -977,15 +1223,64 @@ Return ONLY a JSON object (no additional text):
 
       const messages: ChatCompletionMessageParam[] = [systemMessage, userMessage];
 
-      console.log(`🤖 Calling ${getModel()} for daily meal plan (no tools)...`);
+      console.log(`🤖 Calling ${getModel()} for daily meal plan (${useTools ? 'WITH TOOLS' : 'no tools'})...`);
 
-      // Call LLM without tools for direct JSON output
-      const response = await openai.chat.completions.create({
-        model: getModel(),
-        messages,
-        temperature: 0.4, // Slightly higher for variety
-        max_tokens: 4000,
-      });
+      let response;
+
+      if (useTools) {
+        // Call LLM with tools enabled
+        response = await openai.chat.completions.create({
+          model: getModel(),
+          messages,
+          tools: NUTRITION_TOOLS,
+          tool_choice: 'auto',
+          temperature: 0.4,
+          max_tokens: 4000,
+        });
+
+        // Handle tool calls loop
+        const maxIterations = 15; // Allow enough steps for 4 meals
+        let iterations = 0;
+
+        while (response.choices[0].finish_reason === 'tool_calls' && iterations < maxIterations) {
+          const toolCalls = response.choices[0].message.tool_calls || [];
+          messages.push(response.choices[0].message as ChatCompletionMessageParam);
+
+          // Execute tool calls in parallel
+          const toolResults = await Promise.all(toolCalls.map(async (toolCall) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const toolName = (toolCall as any).function.name;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const toolArgs = JSON.parse((toolCall as any).function.arguments);
+            const result = await executeToolCall(toolName, toolArgs);
+            return {
+              role: 'tool' as const,
+              tool_call_id: toolCall.id,
+              content: result,
+            };
+          }));
+
+          messages.push(...toolResults);
+
+          response = await openai.chat.completions.create({
+            model: getModel(),
+            messages,
+            tools: NUTRITION_TOOLS,
+            tool_choice: 'auto',
+            temperature: 0.4,
+          });
+
+          iterations++;
+        }
+      } else {
+        // Call LLM without tools for direct JSON output (Fast Path)
+        response = await openai.chat.completions.create({
+          model: getModel(),
+          messages,
+          temperature: 0.4,
+          max_tokens: 4000,
+        });
+      }
 
       // Parse final response
       const finalContent = response.choices[0].message.content;
@@ -1282,8 +1577,10 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
 
         // Execute each tool call
         for (const toolCall of toolCalls) {
-          const toolName = toolCall.function.name;
-          const toolArgs = JSON.parse(toolCall.function.arguments);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const toolName = (toolCall as any).function.name;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const toolArgs = JSON.parse((toolCall as any).function.arguments);
 
           const toolResult = await executeToolCall(toolName, toolArgs);
 
@@ -1551,7 +1848,7 @@ Remember: You MUST use tools. Return ONLY the JSON object, with no additional te
     let systemPrompt = `You are a nutrition planning assistant. Generate a single meal that meets the specified targets.
 
 IMPORTANT RULES:
-1. ALL food items MUST come from the nutrition database tools - use search_generic_food, search_restaurant, or search_branded_food
+1. ALL food items MUST come from the nutrition database tools - use search_generic_food, search_restaurant, or search_branded_item
 2. Generate REAL, specific foods with accurate portions (e.g., "chicken breast, grilled" not "protein source")
 3. Target approximately ${remainingCalories} kcal and ${remainingProtein}g protein
 4. Return a JSON object with this structure:
@@ -1633,8 +1930,10 @@ Use the nutrition database tools to find real foods and their accurate nutrition
 
         // Execute all tool calls
         for (const toolCall of assistantMessage.tool_calls || []) {
-          const toolName = toolCall.function.name;
-          const toolArgs = JSON.parse(toolCall.function.arguments);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const toolName = (toolCall as any).function.name;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const toolArgs = JSON.parse((toolCall as any).function.arguments);
 
           console.log(`   🔧 Calling ${toolName}:`, toolArgs);
 
@@ -1643,13 +1942,24 @@ Use the nutrition database tools to find real foods and their accurate nutrition
             if (toolName === 'search_generic_food') {
               toolResult = await nutritionTools.searchGenericFood(toolArgs.query, toolArgs.locale);
             } else if (toolName === 'search_restaurant') {
-              toolResult = await nutritionTools.searchRestaurant(toolArgs.query, toolArgs.restaurant, toolArgs.city);
-            } else if (toolName === 'search_branded_food') {
-              toolResult = await nutritionTools.searchBrandedFood(toolArgs.query, toolArgs.brand, toolArgs.locale);
-            } else if (toolName === 'get_food_details') {
-              toolResult = await nutritionTools.getFoodDetails(toolArgs.foodId);
+              // searchRestaurant is not exported, use searchBrandedItem
+              toolResult = await nutritionTools.searchBrandedItem(toolArgs.query, toolArgs.restaurant, toolArgs.locale);
+            } else if (toolName === 'search_branded_item') {
+              toolResult = await nutritionTools.searchBrandedItem(toolArgs.query, toolArgs.brand, toolArgs.locale);
+            } else if (toolName === 'get_nutrition_by_id') {
+              toolResult = await nutritionTools.getNutritionById(toolArgs.foodId);
             } else if (toolName === 'calculate_nutrition') {
-              toolResult = nutritionTools.calculateNutrition(toolArgs.baseFoodId, toolArgs.desiredQuantity, toolArgs.desiredUnit);
+              // Manual calculation logic since calculateNutrition isn't exported
+              const food = await nutritionTools.getNutritionById(toolArgs.baseFoodId);
+              if (!food) {
+                toolResult = { error: 'Food not found' };
+              } else {
+                if ('brandId' in food) {
+                  toolResult = nutritionTools.convertMacrosPerUnitToQuantity(food as BrandItem, toolArgs.desiredQuantity);
+                } else {
+                  toolResult = nutritionTools.convertMacrosPer100gToUnit(food as GenericFood, toolArgs.desiredQuantity);
+                }
+              }
             } else {
               toolResult = { error: `Unknown tool: ${toolName}` };
             }
@@ -1700,21 +2010,21 @@ Use the nutrition database tools to find real foods and their accurate nutrition
         mealData.items.map(async (item, idx) => {
           // Search for the food
           const searchResults = await nutritionTools.searchGenericFood(item.name, 'en-US');
-          if (searchResults.results.length === 0) {
+          if (searchResults.length === 0) {
             throw new Error(`Could not find nutrition data for "${item.name}"`);
           }
 
-          const bestMatch = searchResults.results[0];
-          const nutritionData = nutritionTools.calculateNutrition(
-            bestMatch.foodId,
-            item.quantity,
-            item.unit
+          const bestMatch = searchResults[0];
+          // Use convertMacrosPer100gToUnit for generic foods
+          const nutritionData = nutritionTools.convertMacrosPer100gToUnit(
+            bestMatch,
+            item.quantity
           );
 
           return {
             id: `food-${mealToRegenerate.type}-${idx}-${Date.now()}`,
             name: item.name,
-            foodId: bestMatch.foodId,
+            foodId: String(bestMatch.id),
             quantity: item.quantity,
             unit: item.unit as any,
             calories: nutritionData.calories,
@@ -1784,4 +2094,97 @@ Use the nutrition database tools to find real foods and their accurate nutrition
       );
     }
   }
+
+  /**
+   * Verify and update a food item's macros based on its quantity/unit.
+   * Used when a user manually edits a food item in the plan.
+   */
+  async verifyFoodItem(item: {
+    name: string;
+    quantity: number;
+    unit: string;
+    foodId?: string;
+  }): Promise<{
+    calories: number;
+    proteinGrams: number;
+    carbsGrams: number;
+    fatsGrams: number;
+  }> {
+    console.log(`🔍 Verifying food item: ${item.quantity} ${item.unit} ${item.name} (ID: ${item.foodId})`);
+
+    // 1. Try to use foodId if available
+    if (item.foodId) {
+      try {
+        const foodData = await nutritionTools.getNutritionById(item.foodId);
+        if (foodData) {
+          // Check if it's a brand item or generic
+          if ('brandId' in foodData) {
+            // Brand item
+            return nutritionTools.convertMacrosPerUnitToQuantity(foodData as BrandItem, item.quantity);
+          } else {
+            // Generic food (per 100g)
+            // We need to know grams per unit for the *requested* unit.
+            // The DB stores default_unit and grams_per_unit.
+            // If requested unit matches default unit, easy.
+            // If not, we might need unit conversion logic.
+            // For MVP, we'll assume the unit matches or is 'g'/'oz' which we can handle.
+
+            const generic = foodData as GenericFood;
+            let quantityInGrams = 0;
+
+            if (item.unit.toLowerCase() === 'g' || item.unit.toLowerCase() === 'grams') {
+              quantityInGrams = item.quantity;
+            } else if (item.unit.toLowerCase() === 'oz' || item.unit.toLowerCase() === 'ounces') {
+              quantityInGrams = item.quantity * 28.35;
+            } else if (item.unit.toLowerCase() === generic.defaultUnit.toLowerCase()) {
+              quantityInGrams = item.quantity * generic.gramsPerUnit;
+            } else {
+              // Fallback: if we can't convert, we might need to re-search or guess.
+              // For now, let's just default to "serving" logic if units mismatch
+              console.warn(`Unit mismatch for ${item.name}: requested ${item.unit}, db has ${generic.defaultUnit}. Assuming 1:1 for now.`);
+              quantityInGrams = item.quantity * generic.gramsPerUnit;
+            }
+
+            const factor = quantityInGrams / 100;
+            return {
+              calories: Math.round(generic.caloriesPer100g * factor),
+              proteinGrams: Math.round(generic.proteinPer100g * factor * 10) / 10,
+              carbsGrams: Math.round(generic.carbsPer100g * factor * 10) / 10,
+              fatsGrams: Math.round(generic.fatsPer100g * factor * 10) / 10,
+            };
+          }
+        }
+      } catch (err) {
+        console.warn(`Failed to lookup food by ID ${item.foodId}, falling back to search`, err);
+      }
+    }
+
+    // 2. Fallback: Search by name if ID failed or missing
+    // We'll use the first result from searchGenericFood
+    const searchResults = await nutritionTools.searchGenericFood(item.name);
+    if (searchResults.length > 0) {
+      const food = searchResults[0];
+      // Similar logic as above
+      let quantityInGrams = 0;
+      if (item.unit.toLowerCase() === 'g' || item.unit.toLowerCase() === 'grams') {
+        quantityInGrams = item.quantity;
+      } else if (item.unit.toLowerCase() === 'oz' || item.unit.toLowerCase() === 'ounces') {
+        quantityInGrams = item.quantity * 28.35;
+      } else {
+        // Default to the food's default unit weight
+        quantityInGrams = item.quantity * food.gramsPerUnit;
+      }
+
+      const factor = quantityInGrams / 100;
+      return {
+        calories: Math.round(food.caloriesPer100g * factor),
+        proteinGrams: Math.round(food.proteinPer100g * factor * 10) / 10,
+        carbsGrams: Math.round(food.carbsPer100g * factor * 10) / 10,
+        fatsGrams: Math.round(food.fatsPer100g * factor * 10) / 10,
+      };
+    }
+
+    throw new Error(`Could not verify food item: ${item.name}`);
+  }
 }
+

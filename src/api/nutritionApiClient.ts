@@ -15,6 +15,7 @@ import type {
   LoggedFoodItem,
   NutritionTargets,
   UserContext,
+  PlanProfile,
 } from '../features/nutrition/nutritionTypes';
 
 // Backend base URL - in production this would come from environment config
@@ -45,7 +46,7 @@ export async function fetchWeeklyPlan(weekStartDate: string): Promise<WeeklyPlan
     method: 'GET',
     headers: getHeaders(),
   });
-  
+
   if (!response.ok) {
     // If no plan exists (404), return empty plan
     if (response.status === 404) {
@@ -56,7 +57,7 @@ export async function fetchWeeklyPlan(weekStartDate: string): Promise<WeeklyPlan
     }
     throw new Error('Failed to fetch weekly plan');
   }
-  
+
   const result = await response.json();
   return result.data || { weekStartDate, days: [] };
 }
@@ -83,12 +84,12 @@ export async function generateMealPlanForWeek(
 
   // Get response text first to handle empty responses
   const text = await response.text();
-  
+
   if (!response.ok) {
     if (!text) {
       throw new Error(`Server error: ${response.status} (empty response)`);
     }
-    
+
     try {
       const error = JSON.parse(text);
       throw new Error(error.error?.message || error.message || 'Failed to generate weekly plan');
@@ -118,10 +119,8 @@ export async function generateMealPlanForWeek(
  */
 export async function generateMealPlanForDay(
   date: string,
-  // @ts-expect-error - Stub function, will use targets in real implementation
-  targets: NutritionTargets,
-  // @ts-expect-error - Stub function, will use userContext in real implementation
-  userContext?: UserContext
+  _targets: NutritionTargets,
+  _userContext?: UserContext
 ): Promise<DayPlan> {
   // TODO: Replace with real fetch call
   // const response = await fetch(`${API_BASE}/nutrition/plan/day`, {
@@ -219,12 +218,13 @@ export async function regenerateMeal(
   mealIndex: number,
   targets: NutritionTargets,
   currentPlan: DayPlan,
-  userContext?: UserContext
+  userContext?: UserContext,
+  planProfile?: PlanProfile
 ): Promise<DayPlan> {
   const response = await fetch(`${API_BASE}/nutrition/plan/day/regenerate-meal`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ date, mealIndex, targets, currentPlan, userContext }),
+    body: JSON.stringify({ date, mealIndex, targets, currentPlan, userContext, planProfile }),
   });
   if (!response.ok) {
     const error = await response.json();
@@ -240,8 +240,7 @@ export async function regenerateMeal(
  * @param toDate - Destination date (YYYY-MM-DD)
  */
 export async function copyDayPlan(
-  // @ts-expect-error - Stub function, will use fromDate in real implementation
-  fromDate: string,
+  _fromDate: string,
   toDate: string
 ): Promise<DayPlan> {
   // TODO: Replace with real fetch call
@@ -323,6 +322,36 @@ export async function parseFood(
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error?.message || error.message || 'Failed to parse food');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Verify and update a food item's macros based on its quantity/unit.
+ * @param item - The food item to verify
+ */
+export async function verifyFoodItem(item: {
+  name: string;
+  quantity: number;
+  unit: string;
+  foodId?: string;
+}): Promise<{
+  calories: number;
+  proteinGrams: number;
+  carbsGrams: number;
+  fatsGrams: number;
+}> {
+  const response = await fetch(`${API_BASE}/nutrition/verify-food`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(item),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || error.message || 'Failed to verify food item');
   }
 
   const result = await response.json();

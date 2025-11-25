@@ -44,6 +44,24 @@ export interface NutritionPlanConfig {
    * Default: true
    */
   enableAutoFix: boolean;
+
+  /**
+   * Minimum acceptable first-pass quality rate (0.0 - 1.0).
+   * If actual rate falls below this, a warning is logged.
+   */
+  minFirstPassQualityRate?: number;
+
+  /**
+   * Minimum acceptable auto-fix success rate (0.0 - 1.0).
+   * If actual rate falls below this, a warning is logged.
+   */
+  minAutoFixSuccessRate?: number;
+
+  /**
+   * Optional name for the configuration profile.
+   * Used to trigger specific logic like Precision Mode.
+   */
+  profileName?: string;
 }
 
 /**
@@ -59,6 +77,9 @@ export const DEFAULT_NUTRITION_CONFIG: NutritionPlanConfig = {
   minScaleThreshold: 0.05,
   maxRegenerationsPerDay: 1,
   enableAutoFix: true,
+  minFirstPassQualityRate: 0.8, // Expect 80% of days to be good initially
+  minAutoFixSuccessRate: 0.9,   // Expect 90% of bad days to be fixed
+  profileName: 'DEFAULT',
 };
 
 /**
@@ -74,6 +95,9 @@ export const STRICT_NUTRITION_CONFIG: NutritionPlanConfig = {
   minScaleThreshold: 0.05,
   maxRegenerationsPerDay: 2,
   enableAutoFix: true,
+  minFirstPassQualityRate: 0.7, // Harder targets, so lower initial expectation
+  minAutoFixSuccessRate: 0.8,
+  profileName: 'STRICT',
 };
 
 /**
@@ -89,18 +113,31 @@ export const RELAXED_NUTRITION_CONFIG: NutritionPlanConfig = {
   minScaleThreshold: 0.05,
   maxRegenerationsPerDay: 0,
   enableAutoFix: true,
+  // No specific quality thresholds for relaxed mode
+  profileName: 'RELAXED',
+};
+
+/**
+ * Precision configuration - uses DB-backed food lookup.
+ * - Same as DEFAULT but enables precision mode logic in service.
+ */
+export const PRECISION_NUTRITION_CONFIG: NutritionPlanConfig = {
+  ...DEFAULT_NUTRITION_CONFIG,
+  profileName: 'PRECISION',
 };
 
 /**
  * Get nutrition config by profile name.
  * Later: fetch from database per user preferences.
  */
-export function getNutritionConfig(profile: 'default' | 'strict' | 'relaxed' = 'default'): NutritionPlanConfig {
+export function getNutritionConfig(profile: 'default' | 'strict' | 'relaxed' | 'precision' = 'default'): NutritionPlanConfig {
   switch (profile) {
     case 'strict':
       return STRICT_NUTRITION_CONFIG;
     case 'relaxed':
       return RELAXED_NUTRITION_CONFIG;
+    case 'precision':
+      return PRECISION_NUTRITION_CONFIG;
     default:
       return DEFAULT_NUTRITION_CONFIG;
   }

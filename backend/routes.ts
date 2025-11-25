@@ -115,7 +115,7 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { weekStartDate, targets, userContext, configProfile } = req.body as any;
-    
+
     console.log('📦 Request body:', JSON.stringify({ weekStartDate, targets, userContext, configProfile }, null, 2));
 
     // Validate inputs
@@ -134,7 +134,7 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
     console.log(`🆔 Created generation session: ${sessionId}`);
 
     // Return sessionId immediately, generate plan asynchronously
-    res.json({ 
+    res.json({
       data: {
         sessionId,
         weekStartDate,
@@ -159,7 +159,7 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
         console.log(`✅ Weekly plan generated for session ${sessionId}`);
       } catch (error) {
         console.error(`❌ Generation failed for session ${sessionId}:`, error);
-        tracker.markError(error instanceof Error ? error.message : 'Unknown error');
+        tracker.error(error instanceof Error ? error.message : 'Unknown error');
       }
     })();
   } catch (error: any) {
@@ -167,9 +167,9 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
     console.error('Error type:', typeof error);
     console.error('Error message:', error?.message);
     console.error('Error stack:', error?.stack?.split('\n').slice(0, 3).join('\n'));
-    
+
     // Always return valid JSON
-    res.status(500).json({ 
+    res.status(500).json({
       error: {
         message: error?.message || 'Failed to generate weekly plan',
         code: error?.code || 'UNKNOWN_ERROR'
@@ -294,6 +294,22 @@ export async function regenerateMeal(req: Request, res: Response) {
   } catch (error) {
     console.error('regenerateMeal error:', error);
     res.status(500).json({ error: 'Failed to regenerate meal' });
+  }
+}
+
+export async function verifyFoodItem(req: Request, res: Response) {
+  try {
+    const item = req.body as { name: string; quantity: number; unit: string; foodId?: string };
+
+    if (!item.name || !item.quantity || !item.unit) {
+      return res.status(400).json({ error: 'Invalid item data: name, quantity, and unit are required' });
+    }
+
+    const verified = await nutritionAiService.verifyFoodItem(item);
+    res.json({ data: verified });
+  } catch (error) {
+    console.error('verifyFoodItem error:', error);
+    res.status(500).json({ error: 'Failed to verify food item' });
   }
 }
 
@@ -832,3 +848,33 @@ export async function deleteGenerationSession(req: Request, res: Response) {
     res.status(500).json({ error: 'Failed to delete session' });
   }
 }
+
+/**
+ * POST /api/nutrition/experiments/compare-modes
+ * Run an A/B test comparing different nutrition generation modes.
+ */
+export async function compareNutritionModes(req: Request, res: Response) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { weekStartDate, targets, userContext, modes } = req.body as any;
+
+    if (!weekStartDate || !targets || !modes || !Array.isArray(modes)) {
+      return res.status(400).json({ error: 'weekStartDate, targets, and modes array required' });
+    }
+
+    const results = await nutritionAiService.runExperiment(
+      weekStartDate,
+      targets,
+      userContext || {},
+      modes,
+      STUB_USER_ID
+    );
+
+    res.json({ data: results });
+  } catch (error) {
+    console.error('compareNutritionModes error:', error);
+    res.status(500).json({ error: 'Experiment failed' });
+  }
+}
+
+
