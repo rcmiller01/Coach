@@ -156,8 +156,8 @@ export function GenerationProgress({ status, isPolling }: GenerationProgressProp
         </div>
       </div>
 
-      {/* Quality Summary (when complete) */}
-      {phase === 'complete' && status && (
+      {/* Quality Summary (during auto-fix and when complete) */}
+      {(phase === 'auto_fixing' || phase === 'validating' || phase === 'complete') && status && (
         <div className="pt-2 border-t border-gray-200">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
@@ -166,7 +166,7 @@ export function GenerationProgress({ status, isPolling }: GenerationProgressProp
                 {status.daysWithinToleranceFirstPass} perfect
               </span>
             </div>
-            {status.daysFixedByScaling > 0 && (
+            {(status.daysFixedByScaling > 0 || phase === 'auto_fixing') && (
               <div>
                 <span className="text-gray-600">Scaled: </span>
                 <span className="font-medium text-amber-600">
@@ -174,7 +174,7 @@ export function GenerationProgress({ status, isPolling }: GenerationProgressProp
                 </span>
               </div>
             )}
-            {status.daysFixedByRegeneration > 0 && (
+            {(status.daysFixedByRegeneration > 0 || phase === 'auto_fixing') && (
               <div>
                 <span className="text-gray-600">Regenerated: </span>
                 <span className="font-medium text-blue-600">
@@ -182,7 +182,7 @@ export function GenerationProgress({ status, isPolling }: GenerationProgressProp
                 </span>
               </div>
             )}
-            {status.daysStillOutOfRange > 0 && (
+            {(status.daysStillOutOfRange > 0 || phase === 'auto_fixing') && (
               <div>
                 <span className="text-gray-600">Out of range: </span>
                 <span className="font-medium text-red-600">

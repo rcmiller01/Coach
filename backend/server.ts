@@ -98,6 +98,7 @@ app.post('/api/nutrition/plan/day/regenerate-meal', routes.regenerateMeal);
 app.get('/api/meals/log/:date', routes.getDayLog);
 app.put('/api/meals/log/:date', routes.saveDayLog);
 app.post('/api/nutrition/parse-food', routes.parseFood);
+app.post('/api/nutrition/verify-food', routes.verifyFoodItem);
 app.post('/api/program/week/generate', routes.generateWorkoutProgram);
 
 // Nutrition metrics and status endpoints

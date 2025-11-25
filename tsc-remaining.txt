@@ -1,4 +1,6 @@
-﻿src/features/meals/MealPlanView.tsx(105,19): error TS2322: Type '{ onFoodSelected: (newFood: FoodItem) => void; autoFocus: boolean; }' is not assignable to type 'IntrinsicAttributes & FoodSearchEntryProps'.
+﻿src/App.tsx(423,9): error TS2322: Type '{ programDay: ProgramDay; onExit: () => void; onViewExercise: Dispatch<SetStateAction<string | null>>; onSubstituteExercise: (dayId: string, exerciseId: string, newExerciseName: string) => void; ... 6 more ...; previousWeekLoads: ActualExerciseLoad[]; }' is not assignable to type 'IntrinsicAttributes & WorkoutSessionViewProps'.
+  Property 'previousWeekLoads' does not exist on type 'IntrinsicAttributes & WorkoutSessionViewProps'. Did you mean '_previousWeekLoads'?
+src/features/meals/MealPlanView.tsx(105,19): error TS2322: Type '{ onFoodSelected: (newFood: FoodItem) => void; autoFocus: boolean; }' is not assignable to type 'IntrinsicAttributes & FoodSearchEntryProps'.
   Property 'onFoodSelected' does not exist on type 'IntrinsicAttributes & FoodSearchEntryProps'.
 src/features/nutrition/NutritionPage.tsx(44,55): error TS6133: 'generationError' is declared but its value is never read.
 src/features/nutrition/NutritionPage.tsx(80,16): error TS2345: Argument of type '"Failed to load meal plan"' is not assignable to parameter of type 'SetStateAction<{ message: string; code?: string | undefined; retryable?: boolean | undefined; } | null>'.
@@ -14,11 +16,5 @@ src/features/nutrition/NutritionPage.tsx(321,40): error TS18048: 'prev.dislikedF
 src/features/nutrition/NutritionPage.tsx(339,35): error TS18048: 'preferences.dislikedFoods' is possibly 'undefined'.
 src/features/nutrition/NutritionPage.tsx(381,50): error TS18048: 'preferences.avoidIngredients' is possibly 'undefined'.
 src/features/nutrition/NutritionPage.tsx(398,20): error TS18048: 'preferences.avoidIngredients' is possibly 'undefined'.
-src/features/nutrition/nutritionTypes.ts(39,5): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
-src/features/nutrition/nutritionTypes.ts(41,5): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
-src/features/nutrition/nutritionTypes.ts(42,5): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
 src/features/onboarding/OnboardingWizard.tsx(101,12): error TS2741: Property 'gender' is missing in type '{ age: number | null; heightFeet: number | null; heightInches: number | null; weightLbs: number | null; trainingExperience: TrainingExperience | null; city: string | undefined; zipCode: string | undefined; onChange: (field: string, value: unknown) => void; onNext: () => void; onBack: () => void; }' but required in type 'OnboardingStepBasicProfileProps'.
-src/features/program/weekRenewal.ts(100,3): error TS6133: 'nextPhase' is declared but its value is never read.
-src/features/progress/ProgressDashboardPage.tsx(191,65): error TS6133: 'idx' is declared but its value is never read.
-src/features/workout/poseCoaching.ts(16,3): error TS6133: 'angles' is declared but its value is never read.
-src/features/workout/WorkoutSessionView.tsx(45,3): error TS6133: 'previousWeekLoads' is declared but its value is never read.
+src/features/workout/WorkoutSessionView.tsx(45,3): error TS6133: '_previousWeekLoads' is declared but its value is never read.
