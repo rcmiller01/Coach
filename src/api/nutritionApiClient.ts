@@ -16,6 +16,7 @@ import type {
   NutritionTargets,
   UserContext,
   PlanProfile,
+  DietaryPreferences,
 } from '../features/nutrition/nutritionTypes';
 
 // Backend base URL - in production this would come from environment config
@@ -74,12 +75,13 @@ export async function fetchWeeklyPlan(weekStartDate: string): Promise<WeeklyPlan
 export async function generateMealPlanForWeek(
   weekStartDate: string,
   targets: NutritionTargets,
-  userContext?: UserContext
+  userContext?: UserContext,
+  planProfile?: PlanProfile
 ): Promise<{ sessionId: string; weekStartDate: string; weeklyPlan?: WeeklyPlan; qualitySummary?: string }> {
   const response = await fetch(`${API_BASE}/nutrition/plan/week`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ weekStartDate, targets, userContext }),
+    body: JSON.stringify({ weekStartDate, targets, userContext, configProfile: planProfile }),
   });
 
   // Get response text first to handle empty responses
@@ -119,72 +121,30 @@ export async function generateMealPlanForWeek(
  */
 export async function generateMealPlanForDay(
   date: string,
-  _targets: NutritionTargets,
-  _userContext?: UserContext
+  targets: NutritionTargets,
+  userContext?: UserContext,
+  planProfile?: PlanProfile,
+  preferences?: DietaryPreferences
 ): Promise<DayPlan> {
-  // TODO: Replace with real fetch call
-  // const response = await fetch(`${API_BASE}/nutrition/plan/day`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ date, targets, userContext }),
-  // });
-  // if (!response.ok) throw new Error('Failed to generate day plan');
-  // return response.json();
+  const response = await fetch(`${API_BASE}/nutrition/plan/day`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ date, targets, userContext, planProfile, preferences }),
+  });
 
-  // Stub: Return dummy plan for one day
-  return {
-    date,
-    meals: [
-      {
-        id: `breakfast-${date}`,
-        type: 'breakfast',
-        items: [
-          {
-            id: `food-1-${date}`,
-            name: 'Greek yogurt with granola',
-            quantity: 1,
-            unit: 'serving',
-            calories: 280,
-            proteinGrams: 15,
-            carbsGrams: 35,
-            fatsGrams: 8,
-          },
-        ],
-      },
-      {
-        id: `lunch-${date}`,
-        type: 'lunch',
-        items: [
-          {
-            id: `food-2-${date}`,
-            name: 'Turkey sandwich',
-            quantity: 1,
-            unit: 'serving',
-            calories: 420,
-            proteinGrams: 30,
-            carbsGrams: 45,
-            fatsGrams: 12,
-          },
-        ],
-      },
-      {
-        id: `dinner-${date}`,
-        type: 'dinner',
-        items: [
-          {
-            id: `food-3-${date}`,
-            name: 'Steak with sweet potato',
-            quantity: 1,
-            unit: 'serving',
-            calories: 580,
-            proteinGrams: 48,
-            carbsGrams: 40,
-            fatsGrams: 24,
-          },
-        ],
-      },
-    ],
-  };
+  if (!response.ok) {
+    const text = await response.text();
+    let error: any;
+    try {
+      error = JSON.parse(text);
+    } catch {
+      error = { message: text || 'Failed to generate daily plan' };
+    }
+    throw new Error(error.error?.message || error.message || 'Failed to generate daily plan');
+  }
+
+  const result = await response.json();
+  return result.data;
 }
 
 /**
@@ -240,23 +200,28 @@ export async function regenerateMeal(
  * @param toDate - Destination date (YYYY-MM-DD)
  */
 export async function copyDayPlan(
-  _fromDate: string,
+  fromDate: string,
   toDate: string
 ): Promise<DayPlan> {
-  // TODO: Replace with real fetch call
-  // const response = await fetch(`${API_BASE}/nutrition/plan/copy`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ fromDate, toDate }),
-  // });
-  // if (!response.ok) throw new Error('Failed to copy day plan');
-  // return response.json();
+  const response = await fetch(`${API_BASE}/nutrition/plan/copy`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ fromDate, toDate }),
+  });
 
-  // Stub: Return empty plan for destination date
-  return {
-    date: toDate,
-    meals: [],
-  };
+  if (!response.ok) {
+    const text = await response.text();
+    let error: any;
+    try {
+      error = JSON.parse(text);
+    } catch {
+      error = { message: text || 'Failed to copy day plan' };
+    }
+    throw new Error(error.error?.message || error.message || 'Failed to copy day plan');
+  }
+
+  const result = await response.json();
+  return result.data;
 }
 
 // ============================================================================

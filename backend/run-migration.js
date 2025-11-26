@@ -73,6 +73,16 @@ async function runMigration() {
         await pool.query(migrationSQL4);
         console.log('✅ Migration 004 completed!');
 
+        console.log('📦 Reading migration file 005...');
+        const migrationSQL5 = readFileSync(
+            join(__dirname, 'db', 'migrations', '005_weekly_plans.sql'),
+            'utf8'
+        );
+
+        console.log('🚀 Running migration 005...');
+        await pool.query(migrationSQL5);
+        console.log('✅ Migration 005 completed!');
+
     } catch (error) {
         console.error('❌ Migration failed:', error.message);
         throw error;

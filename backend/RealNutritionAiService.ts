@@ -38,6 +38,8 @@ import { NutritionPlanConfig, DEFAULT_NUTRITION_CONFIG, STRICT_NUTRITION_CONFIG,
 import { WeeklyGenerationTracker } from './services/weeklyGenerationProgress';
 import { nutritionMetrics } from './services/nutritionMetricsService';
 import { nutritionFoodLookup } from './services/nutritionFoodLookupService';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // ============================================================================
 // CONFIGURATION
@@ -500,6 +502,27 @@ export class RealNutritionAiService implements NutritionAiService {
         days,
       };
     } catch (error) {
+      if (process.env.DEMO_MODE === 'true') {
+        console.warn('⚠️ Falling back to demo plan due to error:', error);
+        try {
+          const demoPath = path.join(process.cwd(), 'backend', 'demo', 'demoWeeklyPlan.json');
+          if (fs.existsSync(demoPath)) {
+            const demoPlan = JSON.parse(fs.readFileSync(demoPath, 'utf8'));
+            // Adjust dates to match requested week
+            const start = new Date(weekStartDate);
+            demoPlan.weekStartDate = weekStartDate;
+            demoPlan.days = demoPlan.days.map((d: any, i: number) => {
+              const date = new Date(start);
+              date.setDate(start.getDate() + i);
+              return { ...d, date: date.toISOString().split('T')[0] };
+            });
+            return demoPlan as WeeklyPlan;
+          }
+        } catch (demoError) {
+          console.error('Failed to load demo plan:', demoError);
+        }
+      }
+
       if (error instanceof NutritionApiError) {
         throw error;
       }
@@ -1107,6 +1130,7 @@ GLP-1 MEDICATION CONSIDERATIONS:
             vegetarian: 'Vegetarian (no meat, poultry, or fish)',
             vegan: 'Vegan (no animal products)',
             pescatarian: 'Pescatarian (fish allowed, no meat/poultry)',
+            diabetic: 'Diabetic Friendly (low sugar, complex carbs, balanced protein)',
             keto: 'Ketogenic (very low carb, high fat)',
             paleo: 'Paleo (no grains, legumes, dairy)',
             low_carb: 'Low carb (moderate carb restriction)',
@@ -1865,6 +1889,7 @@ IMPORTANT RULES:
         vegetarian: 'Vegetarian (no meat, poultry, or fish)',
         vegan: 'Vegan (no animal products)',
         pescatarian: 'Pescatarian (fish allowed, no meat/poultry)',
+        diabetic: 'Diabetic Friendly (low sugar, complex carbs, balanced protein)',
         keto: 'Ketogenic (very low carb, high fat)',
         paleo: 'Paleo (no grains, legumes, dairy)',
         low_carb: 'Low carb (moderate carb restriction)',
@@ -1899,200 +1924,224 @@ Remaining fats: ${remainingFats}g
 
 Use the nutrition database tools to find real foods and their accurate nutrition values.`;
 
-    // Step 6: Call LLM with tools
-    try {
-      const messages: ChatCompletionMessageParam[] = [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ];
+    // Step 6: Call LLM with tools (with retry)
+    let attempts = 0;
+    const MAX_RETRIES = 1;
 
-      const response = await getOpenAI().chat.completions.create({
-        model: getModel(),
-        messages,
-        tools: NUTRITION_TOOLS,
-        tool_choice: 'auto',
-        temperature: 0.7,
-        max_tokens: 2000,
-      });
+    while (attempts <= MAX_RETRIES) {
+      attempts++;
+      try {
+        const messages: ChatCompletionMessageParam[] = [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ];
 
-      // Process tool calls
-      let currentMessages = [...messages];
-      let currentResponse = response;
-      let iterationCount = 0;
-      const MAX_ITERATIONS = 10;
-
-      while (currentResponse.choices[0].message.tool_calls && iterationCount < MAX_ITERATIONS) {
-        iterationCount++;
-        console.log(`   Tool iteration ${iterationCount}`);
-
-        const assistantMessage = currentResponse.choices[0].message;
-        currentMessages.push(assistantMessage);
-
-        // Execute all tool calls
-        for (const toolCall of assistantMessage.tool_calls || []) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const toolName = (toolCall as any).function.name;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const toolArgs = JSON.parse((toolCall as any).function.arguments);
-
-          console.log(`   🔧 Calling ${toolName}:`, toolArgs);
-
-          let toolResult: any;
-          try {
-            if (toolName === 'search_generic_food') {
-              toolResult = await nutritionTools.searchGenericFood(toolArgs.query, toolArgs.locale);
-            } else if (toolName === 'search_restaurant') {
-              // searchRestaurant is not exported, use searchBrandedItem
-              toolResult = await nutritionTools.searchBrandedItem(toolArgs.query, toolArgs.restaurant, toolArgs.locale);
-            } else if (toolName === 'search_branded_item') {
-              toolResult = await nutritionTools.searchBrandedItem(toolArgs.query, toolArgs.brand, toolArgs.locale);
-            } else if (toolName === 'get_nutrition_by_id') {
-              toolResult = await nutritionTools.getNutritionById(toolArgs.foodId);
-            } else if (toolName === 'calculate_nutrition') {
-              // Manual calculation logic since calculateNutrition isn't exported
-              const food = await nutritionTools.getNutritionById(toolArgs.baseFoodId);
-              if (!food) {
-                toolResult = { error: 'Food not found' };
-              } else {
-                if ('brandId' in food) {
-                  toolResult = nutritionTools.convertMacrosPerUnitToQuantity(food as BrandItem, toolArgs.desiredQuantity);
-                } else {
-                  toolResult = nutritionTools.convertMacrosPer100gToUnit(food as GenericFood, toolArgs.desiredQuantity);
-                }
-              }
-            } else {
-              toolResult = { error: `Unknown tool: ${toolName}` };
-            }
-          } catch (error) {
-            console.error(`   ❌ Tool ${toolName} failed:`, error);
-            toolResult = { error: String(error) };
-          }
-
-          currentMessages.push({
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            content: JSON.stringify(toolResult),
-          });
-        }
-
-        // Get next response
-        currentResponse = await getOpenAI().chat.completions.create({
+        const response = await getOpenAI().chat.completions.create({
           model: getModel(),
-          messages: currentMessages,
+          messages,
           tools: NUTRITION_TOOLS,
           tool_choice: 'auto',
           temperature: 0.7,
           max_tokens: 2000,
         });
-      }
 
-      // Parse final response
-      const finalMessage = currentResponse.choices[0].message.content;
-      if (!finalMessage) {
-        throw new Error('LLM returned empty response');
-      }
+        // Process tool calls
+        let currentMessages = [...messages];
+        let currentResponse = response;
+        let iterationCount = 0;
+        const MAX_ITERATIONS = 10;
 
-      console.log(`   ✅ LLM final response received`);
+        while (currentResponse.choices[0].message.tool_calls && iterationCount < MAX_ITERATIONS) {
+          iterationCount++;
+          console.log(`   Tool iteration ${iterationCount}`);
 
-      // Extract JSON from response
-      const jsonMatch = finalMessage.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('LLM did not return valid JSON');
-      }
+          const assistantMessage = currentResponse.choices[0].message;
+          currentMessages.push(assistantMessage);
 
-      const mealData = JSON.parse(jsonMatch[0]) as {
-        items: Array<{ name: string; quantity: number; unit: string }>;
-        explanation: string;
-      };
+          // Execute all tool calls
+          for (const toolCall of assistantMessage.tool_calls || []) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const toolName = (toolCall as any).function.name;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const toolArgs = JSON.parse((toolCall as any).function.arguments);
 
-      // Step 7: Fetch full nutrition data for each item
-      const newMealItems = await Promise.all(
-        mealData.items.map(async (item, idx) => {
-          // Search for the food
-          const searchResults = await nutritionTools.searchGenericFood(item.name, 'en-US');
-          if (searchResults.length === 0) {
-            throw new Error(`Could not find nutrition data for "${item.name}"`);
+            console.log(`   🔧 Calling ${toolName}:`, toolArgs);
+
+            let toolResult: any;
+            try {
+              if (toolName === 'search_generic_food') {
+                toolResult = await nutritionTools.searchGenericFood(toolArgs.query, toolArgs.locale);
+              } else if (toolName === 'search_restaurant') {
+                // searchRestaurant is not exported, use searchBrandedItem
+                toolResult = await nutritionTools.searchBrandedItem(toolArgs.query, toolArgs.restaurant, toolArgs.locale);
+              } else if (toolName === 'search_branded_item') {
+                toolResult = await nutritionTools.searchBrandedItem(toolArgs.query, toolArgs.brand, toolArgs.locale);
+              } else if (toolName === 'get_nutrition_by_id') {
+                toolResult = await nutritionTools.getNutritionById(toolArgs.foodId);
+              } else if (toolName === 'calculate_nutrition') {
+                // Manual calculation logic since calculateNutrition isn't exported
+                const food = await nutritionTools.getNutritionById(toolArgs.baseFoodId);
+                if (!food) {
+                  toolResult = { error: 'Food not found' };
+                } else {
+                  if ('brandId' in food) {
+                    toolResult = nutritionTools.convertMacrosPerUnitToQuantity(food as BrandItem, toolArgs.desiredQuantity);
+                  } else {
+                    toolResult = nutritionTools.convertMacrosPer100gToUnit(food as GenericFood, toolArgs.desiredQuantity);
+                  }
+                }
+              } else {
+                toolResult = { error: `Unknown tool: ${toolName}` };
+              }
+            } catch (error) {
+              console.error(`   ❌ Tool ${toolName} failed:`, error);
+              toolResult = { error: String(error) };
+            }
+
+            currentMessages.push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: JSON.stringify(toolResult),
+            });
           }
 
-          const bestMatch = searchResults[0];
-          // Use convertMacrosPer100gToUnit for generic foods
-          const nutritionData = nutritionTools.convertMacrosPer100gToUnit(
-            bestMatch,
-            item.quantity
-          );
+          // Get next response
+          currentResponse = await getOpenAI().chat.completions.create({
+            model: getModel(),
+            messages: currentMessages,
+            tools: NUTRITION_TOOLS,
+            tool_choice: 'auto',
+            temperature: 0.7,
+            max_tokens: 2000,
+          });
+        }
 
-          return {
-            id: `food-${mealToRegenerate.type}-${idx}-${Date.now()}`,
-            name: item.name,
-            foodId: String(bestMatch.id),
-            quantity: item.quantity,
-            unit: item.unit as any,
-            calories: nutritionData.calories,
-            proteinGrams: nutritionData.proteinGrams,
-            carbsGrams: nutritionData.carbsGrams,
-            fatsGrams: nutritionData.fatsGrams,
-          };
-        })
-      );
+        // Parse final response
+        const finalMessage = currentResponse.choices[0].message.content;
+        if (!finalMessage) {
+          throw new Error('LLM returned empty response');
+        }
 
-      // Step 8: Create updated day plan
-      const updatedMeals = [...dayPlan.meals];
-      updatedMeals[mealIndex] = {
-        ...mealToRegenerate,
-        items: newMealItems,
-      };
+        console.log(`   ✅ LLM final response received`);
 
-      const updatedDayPlan: DayPlan = {
-        ...dayPlan,
-        meals: updatedMeals,
-      };
+        // Extract JSON from response
+        const jsonMatch = finalMessage.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error('LLM did not return valid JSON');
+        }
 
-      // Step 9: Calculate new totals and validate
-      let totalCalories = 0;
-      let totalProtein = 0;
+        const mealData = JSON.parse(jsonMatch[0]) as {
+          items: Array<{ name: string; quantity: number; unit: string }>;
+          explanation: string;
+        };
 
-      updatedDayPlan.meals.forEach(meal => {
-        meal.items.forEach(item => {
-          totalCalories += item.calories;
-          totalProtein += item.proteinGrams;
+        // Step 7: Fetch full nutrition data for each item
+        const newMealItems = await Promise.all(
+          mealData.items.map(async (item, idx) => {
+            // Search for the food
+            const searchResults = await nutritionTools.searchGenericFood(item.name, 'en-US');
+            if (searchResults.length === 0) {
+              throw new Error(`Could not find nutrition data for "${item.name}"`);
+            }
+
+            const bestMatch = searchResults[0];
+            // Use convertMacrosPer100gToUnit for generic foods
+            const nutritionData = nutritionTools.convertMacrosPer100gToUnit(
+              bestMatch,
+              item.quantity
+            );
+
+            return {
+              id: `food-${mealToRegenerate.type}-${idx}-${Date.now()}`,
+              name: item.name,
+              foodId: String(bestMatch.id),
+              quantity: item.quantity,
+              unit: item.unit as any,
+              calories: nutritionData.calories,
+              proteinGrams: nutritionData.proteinGrams,
+              carbsGrams: nutritionData.carbsGrams,
+              fatsGrams: nutritionData.fatsGrams,
+            };
+          })
+        );
+
+        // Step 8: Create updated day plan
+        const updatedMeals = [...dayPlan.meals];
+        updatedMeals[mealIndex] = {
+          ...mealToRegenerate,
+          items: newMealItems,
+        };
+
+        const updatedDayPlan: DayPlan = {
+          ...dayPlan,
+          meals: updatedMeals,
+        };
+
+        // Step 9: Calculate new totals and validate
+        let totalCalories = 0;
+        let totalProtein = 0;
+
+        updatedDayPlan.meals.forEach(meal => {
+          meal.items.forEach(item => {
+            totalCalories += item.calories;
+            totalProtein += item.proteinGrams;
+          });
         });
-      });
 
-      console.log(`   Final day totals: ${totalCalories} kcal, ${Math.round(totalProtein)}g protein`);
+        console.log(`   Final day totals: ${totalCalories} kcal, ${Math.round(totalProtein)}g protein`);
 
-      // Update AI explanation
-      if (updatedDayPlan.aiExplanation) {
-        updatedDayPlan.aiExplanation.summary = `~${totalCalories} kcal (target ${targets.caloriesPerDay}) · ${Math.round(totalProtein)}g protein (target ${targets.proteinGrams}) · ${updatedDayPlan.meals.length} meals${planProfile === 'glp1' ? ' · GLP-1 optimized' : ''}`;
-        updatedDayPlan.aiExplanation.details = `${mealToRegenerate.type.charAt(0).toUpperCase() + mealToRegenerate.type.slice(1)} regenerated: ${mealData.explanation}`;
-      }
+        // Validate output
+        if (newMealItems.length === 0 || totalCalories === 0) {
+          throw new Error('Generated meal is empty');
+        }
 
-      return { updatedDayPlan };
+        // Update AI explanation
+        if (updatedDayPlan.aiExplanation) {
+          updatedDayPlan.aiExplanation.summary = `~${totalCalories} kcal (target ${targets.caloriesPerDay}) · ${Math.round(totalProtein)}g protein (target ${targets.proteinGrams}) · ${updatedDayPlan.meals.length} meals${planProfile === 'glp1' ? ' · GLP-1 optimized' : ''}`;
+          updatedDayPlan.aiExplanation.details = `${mealToRegenerate.type.charAt(0).toUpperCase() + mealToRegenerate.type.slice(1)} regenerated: ${mealData.explanation}`;
+        }
 
-    } catch (error) {
-      console.error('❌ Meal regeneration error:', error);
+        return { updatedDayPlan };
 
-      if (error instanceof NutritionApiError) {
-        throw error;
-      }
+      } catch (error) {
+        console.error(`❌ Meal regeneration attempt ${attempts} failed:`, error);
 
-      // Check for common error patterns
-      if (error instanceof Error) {
-        if (error.message.includes('quota') || error.message.includes('rate limit')) {
+        if (attempts > MAX_RETRIES) {
+          if (error instanceof NutritionApiError) {
+            throw error;
+          }
+
+          // Check for common error patterns
+          if (error instanceof Error) {
+            if (error.message.includes('quota') || error.message.includes('rate limit')) {
+              throw new NutritionApiError(
+                'AI_QUOTA_EXCEEDED',
+                'AI service quota exceeded. Please try again later.',
+                true
+              );
+            }
+            if (error.message === 'Generated meal is empty') {
+              throw new NutritionApiError(
+                'MEAL_REGENERATE_EMPTY',
+                'The AI could not generate a meal just now. Please try again.',
+                true
+              );
+            }
+          }
+
           throw new NutritionApiError(
-            'AI_QUOTA_EXCEEDED',
-            'AI service quota exceeded. Please try again later.',
-            true
+            'AI_PLAN_FAILED',
+            'Failed to regenerate meal. Please try again.',
+            true,
+            { originalError: String(error) }
           );
         }
+        // Loop continues for retry
       }
-
-      throw new NutritionApiError(
-        'AI_PLAN_FAILED',
-        'Failed to regenerate meal. Please try again.',
-        true,
-        { originalError: String(error) }
-      );
     }
+
+    // Should not be reached due to throw in loop, but for TS safety:
+    throw new NutritionApiError('AI_PLAN_FAILED', 'Failed to regenerate meal.', true);
   }
 
   /**

@@ -27,12 +27,13 @@ const getWeekStart = (date: Date): string => {
 // Helper: Convert DayPlan to DayLog
 const convertPlanToLog = (plan: DayPlan): DayLog => {
   const items: LoggedFoodItem[] = [];
-  
+
   plan.meals.forEach(meal => {
     meal.items.forEach(item => {
       items.push({
         ...item,
         id: `log-${item.id}-${Date.now()}`,
+        mealType: meal.type, // ← PRESERVE MEAL TYPE
         sourceType: 'plan',
         userAdjusted: false,
         dataSource: 'official', // Assume plan items are from official sources
@@ -90,19 +91,19 @@ export default function MealsPage({ userContext }: MealsPageProps) {
     setLoading(true);
     try {
       let log = await fetchDayLog(selectedDate);
-      
+
       // If log is empty, auto-fill from plan
       if (log.items.length === 0) {
         const weekStart = getWeekStart(new Date(selectedDate));
         const weeklyPlan = await fetchWeeklyPlan(weekStart);
         const dayPlan = weeklyPlan?.days.find(d => d.date === selectedDate);
-        
+
         if (dayPlan) {
           log = convertPlanToLog(dayPlan);
           await saveDayLog(log);
         }
       }
-      
+
       setDayLog(log);
     } catch (err) {
       console.error('Failed to load day log:', err);
@@ -173,7 +174,7 @@ export default function MealsPage({ userContext }: MealsPageProps) {
   return (
     <div className="min-h-screen bg-slate-950">
       <div className="max-w-md mx-auto px-3 pt-3 pb-24 flex flex-col gap-3">
-        
+
         {/* Date Navigation */}
         <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
           <div className="flex items-center justify-between">

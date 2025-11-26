@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import NutritionPage from './NutritionPage';
 
 // Mock API client
@@ -8,6 +8,17 @@ vi.mock('../../api/nutritionApiClient', () => ({
     fetchWeeklyPlan: vi.fn(),
     generateMealPlanForWeek: vi.fn(),
     getNutritionPlan: vi.fn(),
+}));
+
+// Mock useGenerationStatus hook
+vi.mock('./useGenerationStatus', () => ({
+    useGenerationStatus: () => ({
+        status: null,
+        isPolling: false,
+        error: null,
+        startPolling: vi.fn(),
+        stopPolling: vi.fn(),
+    }),
 }));
 
 describe('NutritionPage', () => {
@@ -18,15 +29,21 @@ describe('NutritionPage', () => {
         fatGrams: 65,
     };
 
-    it('renders preference inputs', () => {
+    it('renders preference inputs', async () => {
         render(<NutritionPage targets={mockTargets} />);
 
-        expect(screen.getByText(/Diet Type/i)).toBeDefined();
-        expect(screen.getByPlaceholderText(/e.g., dairy, nuts, shellfish/i)).toBeDefined();
+        await waitFor(() => {
+            expect(screen.getByText(/Diet Type/i)).toBeDefined();
+            expect(screen.getByPlaceholderText(/e.g., dairy, nuts, shellfish/i)).toBeDefined();
+        });
     });
 
-    it('updates preferences state when inputs change', () => {
+    it('updates preferences state when inputs change', async () => {
         render(<NutritionPage targets={mockTargets} />);
+
+        await waitFor(() => {
+            expect(screen.getByRole('combobox', { name: /Diet Type/i })).toBeDefined();
+        });
 
         const dietSelect = screen.getByRole('combobox', { name: /Diet Type/i });
         fireEvent.change(dietSelect, { target: { value: 'vegetarian' } });
@@ -37,9 +54,12 @@ describe('NutritionPage', () => {
         expect((avoidInput as HTMLInputElement).value).toBe('gluten');
     });
 
-    it('shows generate button', () => {
+    it('shows generate button', async () => {
         render(<NutritionPage targets={mockTargets} />);
-        const generateBtn = screen.getByText(/Generate Week/i);
-        expect(generateBtn).toBeDefined();
+
+        await waitFor(() => {
+            const generateBtn = screen.getByText(/Generate Week/i);
+            expect(generateBtn).toBeDefined();
+        });
     });
 });

@@ -106,6 +106,8 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
             trainingExperience={state.trainingExperience}
             city={state.city}
             zipCode={state.zipCode}
+            gender={state.gender}
+            dietType={state.dietType}
             onChange={updateState}
             onNext={handleNext}
             onBack={handleBack}

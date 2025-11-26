@@ -1,0 +1,74 @@
+{
+    "weekStartDate": "2025-01-01",
+    "days": [
+        {
+            "date": "2025-01-01",
+            "meals": [
+                {
+                    "id": "breakfast-1",
+                    "type": "breakfast",
+                    "items": [
+                        {
+                            "name": "Oatmeal",
+                            "quantity": 1,
+                            "unit": "cup",
+                            "calories": 150,
+                            "proteinGrams": 5,
+                            "carbsGrams": 27,
+                            "fatsGrams": 3
+                        }
+                    ]
+                },
+                {
+                    "id": "lunch-1",
+                    "type": "lunch",
+                    "items": [
+                        {
+                            "name": "Grilled Chicken Salad",
+                            "quantity": 1,
+                            "unit": "serving",
+                            "calories": 400,
+                            "proteinGrams": 40,
+                            "carbsGrams": 10,
+                            "fatsGrams": 20
+                        }
+                    ]
+                },
+                {
+                    "id": "dinner-1",
+                    "type": "dinner",
+                    "items": [
+                        {
+                            "name": "Salmon with Asparagus",
+                            "quantity": 1,
+                            "unit": "serving",
+                            "calories": 500,
+                            "proteinGrams": 35,
+                            "carbsGrams": 15,
+                            "fatsGrams": 30
+                        }
+                    ]
+                },
+                {
+                    "id": "snack-1",
+                    "type": "snack",
+                    "items": [
+                        {
+                            "name": "Greek Yogurt",
+                            "quantity": 1,
+                            "unit": "cup",
+                            "calories": 120,
+                            "proteinGrams": 20,
+                            "carbsGrams": 8,
+                            "fatsGrams": 0
+                        }
+                    ]
+                }
+            ],
+            "aiExplanation": {
+                "summary": "Balanced day for demo",
+                "details": "This is a pre-generated plan for demonstration purposes."
+            }
+        }
+    ]
+}

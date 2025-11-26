@@ -95,6 +95,7 @@ app.post('/api/nutrition/plan/day', routes.generateDailyPlan);
 app.put('/api/nutrition/plan/day/:date', routes.updateDayPlan);
 app.post('/api/nutrition/plan/copy', routes.copyDayPlan);
 app.post('/api/nutrition/plan/day/regenerate-meal', routes.regenerateMeal);
+app.delete('/api/nutrition/plan/week', routes.deleteWeeklyPlan);
 app.get('/api/meals/log/:date', routes.getDayLog);
 app.put('/api/meals/log/:date', routes.saveDayLog);
 app.post('/api/nutrition/parse-food', routes.parseFood);

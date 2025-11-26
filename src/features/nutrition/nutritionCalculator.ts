@@ -71,7 +71,7 @@ export function calculateNutritionTargets(profile: NutritionProfile): NutritionT
       targetCalories = maintenanceCalories * 1.1; // 10% surplus
       break;
     case 'improve_endurance':
-      targetCalories = maintenanceCalories * 1.05; // 5% surplus
+      targetCalories = maintenanceCalories; // Maintenance (was 5% surplus)
       break;
     case 'get_stronger':
     case 'stay_fit':

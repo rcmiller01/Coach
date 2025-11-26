@@ -23,7 +23,8 @@ export type ErrorCode =
   | 'NETWORK_ERROR'
   | 'VALIDATION_ERROR'
   | 'NOT_FOUND'
-  | 'UNKNOWN_ERROR';
+  | 'UNKNOWN_ERROR'
+  | 'MEAL_REGENERATE_EMPTY';
 
 export interface ApiErrorResponse {
   error: {
@@ -135,6 +136,7 @@ export interface AiFoodExplanation {
 }
 
 export interface LoggedFoodItem extends PlannedFoodItem {
+  mealType?: MealType; // Which meal this food belongs to (for grouping in UI)
   sourceType: FoodSourceType;
   aiExplanation?: AiFoodExplanation;
 
@@ -180,7 +182,8 @@ export type DietType =
   | 'low_carb'
   | 'mediterranean'
   | 'halal'
-  | 'kosher';
+  | 'kosher'
+  | 'diabetic';
 
 export interface DietaryPreferences {
   dietType?: DietType;

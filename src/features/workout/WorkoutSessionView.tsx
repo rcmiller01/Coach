@@ -42,7 +42,7 @@ const WorkoutSessionView: React.FC<WorkoutSessionViewProps> = ({
   weekNumber,
   trainingPhase,
   blockGoal,
-  previousWeekLoads,
+  previousWeekLoads: _previousWeekLoads,
 }) => {
   // Initialize session state once on mount using lazy initializer
   const [session, setSession] = useState<WorkoutSessionState>(() => {

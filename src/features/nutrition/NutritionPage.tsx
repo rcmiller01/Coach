@@ -8,8 +8,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { NutritionTargets, WeeklyPlan, DayPlan, UserContext, PlanProfile, DietaryPreferences, DietType } from './nutritionTypes';
+import type { NutritionTargets, WeeklyPlan, DayPlan, UserContext, PlanProfile, DietaryPreferences, DietType, ErrorCode } from './nutritionTypes';
 import { NutritionApiError } from './nutritionTypes';
+import { getFriendlyMessage } from './errorMessages';
 import { fetchWeeklyPlan, generateMealPlanForWeek, generateMealPlanForDay } from '../../api/nutritionApiClient';
 import WeeklyPlanView from './WeeklyPlanView';
 import MealPlanEditor from './MealPlanEditor';
@@ -36,12 +37,12 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
     avoidIngredients: [],
     dislikedFoods: [],
   });
-  
+
   // Session tracking for weekly generation
   const [generationSessionId, setGenerationSessionId] = useState<string | null>(null);
-  
+
   // Poll generation status
-  const { status: generationStatus, isPolling, error: generationError } = useGenerationStatus({
+  const { status: generationStatus, isPolling } = useGenerationStatus({
     sessionId: generationSessionId,
     onComplete: (status) => {
       console.log('Generation complete:', status);
@@ -77,7 +78,7 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
       const plan = await fetchWeeklyPlan(currentWeekStart);
       setWeeklyPlan(plan);
     } catch (err) {
-      setError('Failed to load meal plan');
+      setError({ message: 'Failed to load meal plan' });
       console.error(err);
     } finally {
       setLoading(false);
@@ -95,13 +96,10 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
     try {
       const contextWithPreferences: UserContext = {
         ...userContext,
-        preferences: {
-          ...preferences,
-          planProfile, // Include planProfile in preferences
-        },
+        preferences,
       };
-      const response = await generateMealPlanForWeek(currentWeekStart, targets, contextWithPreferences);
-      
+      const response = await generateMealPlanForWeek(currentWeekStart, targets, contextWithPreferences, planProfile);
+
       // Response now includes sessionId for tracking
       if (response.sessionId) {
         setGenerationSessionId(response.sessionId);
@@ -129,12 +127,9 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
     try {
       const contextWithPreferences: UserContext = {
         ...userContext,
-        preferences: {
-          ...preferences,
-          planProfile,
-        },
+        preferences,
       };
-      const dayPlan = await generateMealPlanForDay(date, targets, contextWithPreferences);
+      const dayPlan = await generateMealPlanForDay(date, targets, contextWithPreferences, planProfile, preferences);
       // Update the weekly plan with the new day
       if (weeklyPlan) {
         const updatedDays = weeklyPlan.days.map(d => d.date === date ? dayPlan : d);
@@ -174,7 +169,7 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
   // Calculate totals for selected day
   const calculateDayTotals = (plan: DayPlan | undefined) => {
     if (!plan) return { calories: 0, protein: 0, carbs: 0, fats: 0 };
-    
+
     let calories = 0, protein = 0, carbs = 0, fats = 0;
     plan.meals.forEach(meal => {
       meal.items.forEach(item => {
@@ -184,7 +179,7 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
         fats += item.fatsGrams;
       });
     });
-    
+
     return { calories, protein, carbs, fats };
   };
 
@@ -193,12 +188,12 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
   return (
     <div className="min-h-screen bg-slate-950">
       <div className="max-w-md mx-auto px-3 pt-3 pb-24 flex flex-col gap-3">
-        
+
         {/* Targets Card */}
         <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold text-slate-100">Daily Targets</h2>
-            
+
             {/* Plan Profile Selector */}
             <div className="flex items-center gap-2">
               <label htmlFor="planProfile" className="text-xs text-slate-400">Profile:</label>
@@ -244,7 +239,7 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
               Avoid Ingredients
             </label>
             <div className="flex flex-wrap gap-1.5 mb-2">
-              {preferences.avoidIngredients.map((ingredient, idx) => (
+              {(preferences.avoidIngredients || []).map((ingredient, idx) => (
                 <span
                   key={idx}
                   className="inline-flex items-center gap-1 px-2 py-1 bg-amber-900/30 text-amber-200 text-xs rounded border border-amber-800/50"
@@ -253,7 +248,7 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
                   <button
                     onClick={() => setPreferences(prev => ({
                       ...prev,
-                      avoidIngredients: prev.avoidIngredients.filter((_, i) => i !== idx)
+                      avoidIngredients: (prev.avoidIngredients || []).filter((_, i) => i !== idx)
                     }))}
                     className="hover:text-amber-100"
                   >
@@ -272,10 +267,10 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
                   e.preventDefault();
                   const input = e.currentTarget;
                   const value = input.value.trim().toLowerCase();
-                  if (value && !preferences.avoidIngredients.includes(value)) {
+                  if (value && !(preferences.avoidIngredients || []).includes(value)) {
                     setPreferences(prev => ({
                       ...prev,
-                      avoidIngredients: [...prev.avoidIngredients, value]
+                      avoidIngredients: [...(prev.avoidIngredients || []), value]
                     }));
                     input.value = '';
                   }
@@ -287,10 +282,10 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
                 <button
                   key={suggestion}
                   onClick={() => {
-                    if (!preferences.avoidIngredients.includes(suggestion)) {
+                    if (!(preferences.avoidIngredients || []).includes(suggestion)) {
                       setPreferences(prev => ({
                         ...prev,
-                        avoidIngredients: [...prev.avoidIngredients, suggestion]
+                        avoidIngredients: [...(prev.avoidIngredients || []), suggestion]
                       }));
                     }
                   }}
@@ -309,7 +304,7 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
             </summary>
             <div className="mt-2">
               <div className="flex flex-wrap gap-1.5 mb-2">
-                {preferences.dislikedFoods.map((food, idx) => (
+                {(preferences.dislikedFoods || []).map((food, idx) => (
                   <span
                     key={idx}
                     className="inline-flex items-center gap-1 px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded border border-slate-700"
@@ -318,7 +313,7 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
                     <button
                       onClick={() => setPreferences(prev => ({
                         ...prev,
-                        dislikedFoods: prev.dislikedFoods.filter((_, i) => i !== idx)
+                        dislikedFoods: (prev.dislikedFoods || []).filter((_, i) => i !== idx)
                       }))}
                       className="hover:text-slate-100"
                     >
@@ -336,10 +331,10 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
                     e.preventDefault();
                     const input = e.currentTarget;
                     const value = input.value.trim().toLowerCase();
-                    if (value && !preferences.dislikedFoods.includes(value)) {
+                    if (value && !(preferences.dislikedFoods || []).includes(value)) {
                       setPreferences(prev => ({
                         ...prev,
-                        dislikedFoods: [...prev.dislikedFoods, value]
+                        dislikedFoods: [...(prev.dislikedFoods || []), value]
                       }));
                       input.value = '';
                     }
@@ -348,7 +343,7 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
               />
             </div>
           </details>
-          
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <div className="text-2xl font-bold text-blue-400">{targets.caloriesPerDay}</div>
@@ -376,9 +371,9 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
                 💊 GLP-1 mode: Smaller portions, protein-focused, 4 meals
               </div>
             )}
-            
+
             {/* Active Preferences Display */}
-            {(preferences.dietType !== 'none' || preferences.avoidIngredients.length > 0) && (
+            {(preferences.dietType !== 'none' || (preferences.avoidIngredients || []).length > 0) && (
               <div className="mt-2 space-y-1.5">
                 <div className="text-xs text-slate-500 uppercase tracking-wide">Active Restrictions:</div>
                 <div className="flex flex-wrap gap-1.5">
@@ -395,7 +390,7 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
                       {preferences.dietType === 'kosher' && '✡️ Kosher'}
                     </span>
                   )}
-                  {preferences.avoidIngredients.map((ingredient, idx) => (
+                  {(preferences.avoidIngredients || []).map((ingredient, idx) => (
                     <span
                       key={idx}
                       className="px-2 py-0.5 text-xs bg-amber-900/30 text-amber-300 rounded border border-amber-800/50"
@@ -411,22 +406,18 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
 
         {/* Error Display */}
         {error && (
-          <div className={`rounded-lg p-4 text-sm ${
-            error.code === 'AI_QUOTA_EXCEEDED' 
-              ? 'bg-amber-900/20 border border-amber-700 text-amber-300'
-              : error.code === 'AI_PLAN_INFEASIBLE'
+          <div className={`rounded-lg p-4 text-sm ${error.code === 'AI_QUOTA_EXCEEDED'
+            ? 'bg-amber-900/20 border border-amber-700 text-amber-300'
+            : error.code === 'AI_PLAN_INFEASIBLE'
               ? 'bg-orange-900/20 border border-orange-700 text-orange-300'
               : 'bg-red-900/20 border border-red-800 text-red-300'
-          }`}>
+            }`}>
             <div className="font-medium mb-1">
-              {error.code === 'AI_QUOTA_EXCEEDED' && '⚠️ Daily Limit Reached'}
-              {error.code === 'AI_TIMEOUT' && '⏱️ Request Timed Out'}
-              {error.code === 'AI_PLAN_FAILED' && '❌ Plan Generation Failed'}
-              {error.code === 'AI_RATE_LIMITED' && '⏱️ Please Slow Down'}
-              {error.code === 'AI_PLAN_INFEASIBLE' && '🚫 Impossible Targets'}
-              {!error.code && '❌ Error'}
+              {error.code ? '⚠️ Issue Detected' : '❌ Error'}
             </div>
-            <div className="text-sm opacity-90">{error.message}</div>
+            <div className="text-sm opacity-90">
+              {error.code ? getFriendlyMessage(error.code as ErrorCode) : error.message}
+            </div>
             {error.retryable && (
               <button
                 onClick={() => selectedDate ? handleRegenerateDay(selectedDate) : handleGenerateWeek()}
@@ -440,8 +431,8 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
 
         {/* Generation Progress - Show when actively generating */}
         {generationSessionId && (isPolling || generationStatus) && (
-          <GenerationProgress 
-            status={generationStatus} 
+          <GenerationProgress
+            status={generationStatus}
             isPolling={isPolling}
           />
         )}
@@ -453,14 +444,14 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
             {!weeklyPlan || weeklyPlan.days.length === 0 ? (
               <button
                 onClick={handleGenerateWeek}
-                disabled={loading}
+                disabled={loading || isPolling}
                 className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 text-white text-sm font-medium rounded-lg transition-colors"
               >
-                {loading ? '⏳ Generating...' : '✨ Generate Week'}
+                {loading || isPolling ? '⏳ Generating...' : '✨ Generate Week'}
               </button>
             ) : null}
           </div>
-          
+
           <WeeklyPlanView
             weeklyPlan={weeklyPlan}
             selectedDate={selectedDate}
@@ -475,10 +466,10 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
             <div className="p-4 border-b border-slate-800">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-lg font-semibold text-slate-100">
-                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    month: 'short', 
-                    day: 'numeric' 
+                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric'
                   })}
                 </h2>
                 <button
@@ -489,7 +480,7 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
                   {loading ? '⏳' : selectedDayPlan ? '🔄 Regenerate' : '✨ Generate'}
                 </button>
               </div>
-              
+
               {/* AI Explanation Summary */}
               {selectedDayPlan?.aiExplanation && (
                 <div className="mt-3 pt-3 border-t border-slate-800">
@@ -508,11 +499,11 @@ export default function NutritionPage({ targets, userContext }: NutritionPagePro
                   )}
                 </div>
               )}
-              
+
               {/* Day Totals */}
               <div className="flex gap-3 text-sm">
                 <div>
-                  <span className="text-blue-400 font-semibold">{dayTotals.calories}</span>
+                  <span className="text-blue-400 font-semibold">{Math.round(dayTotals.calories)}</span>
                   <span className="text-slate-500"> / {targets.caloriesPerDay} kcal</span>
                 </div>
                 <div>

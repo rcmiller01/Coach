@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { DailyMealPlan, FoodItem } from './mealTypes';
 import { substituteFoodInMealPlan } from './mealPlanActions';
 import { FoodSearchEntry } from '../nutrition/FoodSearchEntry';
+import type { FoodItem as DatabaseFoodItem } from '../nutrition/foodDatabase';
 
 interface MealPlanViewProps {
   mealPlan: DailyMealPlan | null;
@@ -10,8 +11,8 @@ interface MealPlanViewProps {
   onPlanUpdated?: (plan: DailyMealPlan) => void;
 }
 
-const MealPlanView: React.FC<MealPlanViewProps> = ({ 
-  mealPlan, 
+const MealPlanView: React.FC<MealPlanViewProps> = ({
+  mealPlan,
   onGenerate,
   onCopyFromYesterday,
   onPlanUpdated
@@ -24,11 +25,11 @@ const MealPlanView: React.FC<MealPlanViewProps> = ({
 
   const formatDate = (dateStr: string): string => {
     const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
-      month: 'long', 
+      month: 'long',
       day: 'numeric',
-      year: 'numeric' 
+      year: 'numeric'
     });
   };
 
@@ -36,8 +37,20 @@ const MealPlanView: React.FC<MealPlanViewProps> = ({
     setSwapState({ mealId, foodId, foodName });
   };
 
-  const handleSelectSwap = (newFood: FoodItem) => {
+  const handleSelectSwap = (dbFood: DatabaseFoodItem) => {
     if (!swapState || !mealPlan) return;
+
+    // Convert database food to meal plan food (1 serving)
+    const scaleFactor = dbFood.gramsPerUnit / 100;
+    const newFood: FoodItem = {
+      id: dbFood.id,
+      name: dbFood.name,
+      protein: dbFood.proteinPer100g * scaleFactor,
+      carbs: dbFood.carbsPer100g * scaleFactor,
+      fat: dbFood.fatsPer100g * scaleFactor,
+      calories: dbFood.caloriesPer100g * scaleFactor,
+      quantity: 1
+    };
 
     const updatedPlan = substituteFoodInMealPlan(
       mealPlan.date,
@@ -247,8 +260,8 @@ const MealPlanView: React.FC<MealPlanViewProps> = ({
                 <div className="text-sm text-blue-800">
                   <p className="font-medium mb-1">Simple Meal Template</p>
                   <p className="text-blue-700">
-                    This is a basic meal template generated from your nutrition targets. 
-                    Use it as a starting point and adjust portion sizes or swap foods as needed. 
+                    This is a basic meal template generated from your nutrition targets.
+                    Use it as a starting point and adjust portion sizes or swap foods as needed.
                     All values are approximate.
                   </p>
                 </div>

@@ -1,6 +1,7 @@
 // Enums and types for Phase 1 onboarding
 
 import type { BlockGoal } from '../program/types';
+import type { DietType } from '../nutrition/nutritionTypes';
 
 export type TrainingExperience = 'beginner' | 'intermediate' | 'advanced';
 
@@ -54,6 +55,7 @@ export interface OnboardingState {
   heightInches: number | null;
   weightLbs: number | null;
   gender: 'male' | 'female' | 'other' | null;
+  dietType: DietType | null;
   trainingExperience: TrainingExperience | null;
   primaryGoal: PrimaryGoal | null;
   motivation: {
@@ -79,6 +81,7 @@ export const initialOnboardingState: OnboardingState = {
   heightInches: null,
   weightLbs: null,
   gender: null,
+  dietType: null,
   trainingExperience: null,
   primaryGoal: null,
   motivation: {

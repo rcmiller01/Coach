@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TrainingExperience } from './types';
+import type { DietType } from '../nutrition/nutritionTypes';
 
 interface OnboardingStepBasicProfileProps {
   age: number | null;
@@ -7,6 +8,7 @@ interface OnboardingStepBasicProfileProps {
   heightInches: number | null;
   weightLbs: number | null;
   gender: 'male' | 'female' | 'other' | null;
+  dietType: DietType | null;
   trainingExperience: TrainingExperience | null;
   city?: string;
   zipCode?: string;
@@ -21,6 +23,7 @@ const OnboardingStepBasicProfile: React.FC<OnboardingStepBasicProfileProps> = ({
   heightInches,
   weightLbs,
   gender,
+  dietType,
   trainingExperience,
   city,
   zipCode,
@@ -121,21 +124,53 @@ const OnboardingStepBasicProfile: React.FC<OnboardingStepBasicProfileProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Gender
           </label>
-          <div className="flex gap-4">
+          <div className="space-y-2">
             {['male', 'female', 'other'].map((option) => (
-              <label key={option} className="flex items-center">
+              <label
+                key={option}
+                className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${gender === option
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400'
+                  }`}
+              >
                 <input
                   type="radio"
                   name="gender"
                   value={option}
                   checked={gender === option}
                   onChange={(e) => onChange('gender', e.target.value)}
-                  className="mr-2"
+                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                 />
-                <span className="capitalize">{option}</span>
+                <span className="ml-3 capitalize text-gray-900">{option}</span>
               </label>
             ))}
           </div>
+        </div>
+
+
+
+        {/* Dietary Preferences */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Dietary Preference <span className="text-gray-500 font-normal">(Optional)</span>
+          </label>
+          <select
+            value={dietType || ''}
+            onChange={(e) => onChange('dietType', e.target.value || null)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+          >
+            <option value="">None (No restrictions)</option>
+            <option value="diabetic">Diabetic Friendly</option>
+            <option value="vegetarian">Vegetarian</option>
+            <option value="vegan">Vegan</option>
+            <option value="keto">Keto</option>
+            <option value="paleo">Paleo</option>
+            <option value="low_carb">Low Carb</option>
+            <option value="pescatarian">Pescatarian</option>
+            <option value="mediterranean">Mediterranean</option>
+            <option value="halal">Halal</option>
+            <option value="kosher">Kosher</option>
+          </select>
         </div>
 
         {/* Training Experience */}
@@ -232,7 +267,7 @@ const OnboardingStepBasicProfile: React.FC<OnboardingStepBasicProfileProps> = ({
           Next
         </button>
       </div>
-    </div>
+    </div >
   );
 };
 

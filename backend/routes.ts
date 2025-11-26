@@ -41,6 +41,7 @@ import { generateNutritionistPlan } from './services/NutritionistEngine';
 import { NutritionistProfile } from '../src/features/nutritionist/types';
 import { UserRepository } from './db/repositories/UserRepository';
 import { SettingsRepository } from './db/repositories/SettingsRepository';
+import { WeeklyPlansRepository } from './db/repositories/WeeklyPlansRepository';
 import { LoggingService } from './services/LoggingService';
 import { nutritionGenerationSessionStore } from './services/nutritionGenerationSessionStore';
 import { WeeklyGenerationTracker } from './services/weeklyGenerationProgress';
@@ -48,7 +49,6 @@ import { DEFAULT_NUTRITION_CONFIG, getNutritionConfig } from './services/nutriti
 import { nutritionMetrics } from './services/nutritionMetricsService';
 
 // In-memory storage for development (replace with real database)
-const weeklyPlansStore: Map<string, WeeklyPlan> = new Map();
 const dayLogsStore: Map<string, DayLog> = new Map();
 
 // Service instance - use real or stub based on environment
@@ -59,6 +59,15 @@ const nutritionAiService = USE_REAL_AI
 
 // Placeholder user ID (in real app, extract from auth token)
 const STUB_USER_ID = 'user-123';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+const DEMO_USER_ID = process.env.DEMO_USER_ID || 'demo-user-1';
+
+function getUserId(req: Request): string {
+  const headerId = req.headers['x-user-id'] as string;
+  if (headerId) return headerId;
+  if (DEMO_MODE) return DEMO_USER_ID;
+  return STUB_USER_ID;
+}
 
 // Repository instances (initialized by server)
 let workoutRepo: WorkoutRepository;
@@ -68,6 +77,7 @@ let progressSummaryService: ProgressSummaryService;
 let nutritionistRepo: NutritionistProfileRepository;
 let userRepo: UserRepository;
 let settingsRepo: SettingsRepository;
+let weeklyPlansRepo: WeeklyPlansRepository;
 let loggingService: LoggingService;
 
 /**
@@ -84,6 +94,7 @@ export function initializeRepositories(pool: Pool) {
   nutritionistRepo = new NutritionistProfileRepository(pool);
   userRepo = new UserRepository(pool);
   settingsRepo = new SettingsRepository(pool);
+  weeklyPlansRepo = new WeeklyPlansRepository(pool);
   loggingService = new LoggingService(pool);
 }
 
@@ -98,7 +109,8 @@ export async function getNutritionPlan(req: Request, res: Response) {
       return res.status(400).json({ error: 'weekStart query parameter required' });
     }
 
-    const plan = weeklyPlansStore.get(weekStart) || {
+    const userId = getUserId(req);
+    const plan = await weeklyPlansRepo.getWeeklyPlan(userId, weekStart) || {
       weekStartDate: weekStart,
       days: [],
     };
@@ -128,8 +140,10 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
     const config = configProfile ? getNutritionConfig(configProfile) : DEFAULT_NUTRITION_CONFIG;
 
     // Create tracker for progress monitoring
+    const userId = getUserId(req);
+    console.log(`📅 [WeeklyPlan] Starting generation for user ${userId}, week ${weekStartDate}`);
     const tracker = new WeeklyGenerationTracker();
-    const sessionId = nutritionGenerationSessionStore.createSession(tracker, STUB_USER_ID, weekStartDate);
+    const sessionId = nutritionGenerationSessionStore.createSession(tracker, userId, weekStartDate);
 
     console.log(`🆔 Created generation session: ${sessionId}`);
 
@@ -148,18 +162,18 @@ export async function generateWeeklyPlan(req: Request, res: Response) {
           weekStartDate,
           targets,
           userContext: userContext || {},
-          userId: STUB_USER_ID,
+          userId,
           config,
-          tracker, // Pass the tracker so it gets updated during generation
+          tracker,
         });
 
         // Store plan
-        weeklyPlansStore.set(weekStartDate, plan);
+        await weeklyPlansRepo.upsertWeeklyPlan(userId, weekStartDate, plan);
 
-        console.log(`✅ Weekly plan generated for session ${sessionId}`);
+        console.log(`✅ [WeeklyPlan] Generation complete for session ${sessionId}`);
       } catch (error) {
-        console.error(`❌ Generation failed for session ${sessionId}:`, error);
-        tracker.error(error instanceof Error ? error.message : 'Unknown error');
+        console.error(`❌ [WeeklyPlan] Generation failed for session ${sessionId}:`, error);
+        tracker.error(error instanceof Error ? error.message : String(error));
       }
     })();
   } catch (error: any) {
@@ -187,24 +201,35 @@ export async function generateDailyPlan(req: Request, res: Response) {
       return res.status(400).json({ error: 'date and targets required' });
     }
 
+    const userId = getUserId(req);
+    console.log(`📅 [DailyPlan] Generating for user ${userId}, date ${date}`);
     const dayPlan = await nutritionAiService.generateMealPlanForDay({
       date,
       targets,
       userContext: userContext || {},
-      userId: STUB_USER_ID,
+      userId,
     });
 
     const weekStart = getWeekStart(new Date(date));
-    const weeklyPlan = weeklyPlansStore.get(weekStart);
+    let weeklyPlan = await weeklyPlansRepo.getWeeklyPlan(userId, weekStart);
+
     if (weeklyPlan) {
       const updatedDays = weeklyPlan.days.filter(d => d.date !== date);
       updatedDays.push(dayPlan);
-      weeklyPlansStore.set(weekStart, { ...weeklyPlan, days: updatedDays });
+      weeklyPlan = { ...weeklyPlan, days: updatedDays };
+    } else {
+      weeklyPlan = {
+        weekStartDate: weekStart,
+        days: [dayPlan]
+      };
     }
 
+    await weeklyPlansRepo.upsertWeeklyPlan(userId, weekStart, weeklyPlan);
+
+    console.log(`✅ [DailyPlan] Generated and saved for ${date}`);
     res.json({ data: dayPlan });
   } catch (error) {
-    console.error('generateDailyPlan error:', error);
+    console.error(`❌ [DailyPlan] Failed for ${req.params.date}:`, error);
     res.status(500).json({ error: 'Failed to generate daily plan' });
   }
 }
@@ -214,11 +239,12 @@ export async function updateDayPlan(req: Request, res: Response) {
     const date = req.params.date;
     const dayPlan = req.body as DayPlan;
 
+    const userId = getUserId(req);
     const weekStart = getWeekStart(new Date(date));
-    const weeklyPlan = weeklyPlansStore.get(weekStart);
+    const weeklyPlan = await weeklyPlansRepo.getWeeklyPlan(userId, weekStart);
     if (weeklyPlan) {
       const updatedDays = weeklyPlan.days.map(d => d.date === date ? dayPlan : d);
-      weeklyPlansStore.set(weekStart, { ...weeklyPlan, days: updatedDays });
+      await weeklyPlansRepo.upsertWeeklyPlan(userId, weekStart, { ...weeklyPlan, days: updatedDays });
     }
 
     res.json({ data: dayPlan });
@@ -233,8 +259,9 @@ export async function copyDayPlan(req: Request, res: Response) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { fromDate, toDate } = req.body as any;
 
+    const userId = getUserId(req);
     const fromWeekStart = getWeekStart(new Date(fromDate));
-    const fromWeeklyPlan = weeklyPlansStore.get(fromWeekStart);
+    const fromWeeklyPlan = await weeklyPlansRepo.getWeeklyPlan(userId, fromWeekStart);
     const sourcePlan = fromWeeklyPlan?.days.find(d => d.date === fromDate);
 
     if (!sourcePlan) {
@@ -254,12 +281,20 @@ export async function copyDayPlan(req: Request, res: Response) {
     };
 
     const toWeekStart = getWeekStart(new Date(toDate));
-    const toWeeklyPlan = weeklyPlansStore.get(toWeekStart);
+    let toWeeklyPlan = await weeklyPlansRepo.getWeeklyPlan(userId, toWeekStart);
+
     if (toWeeklyPlan) {
       const updatedDays = toWeeklyPlan.days.filter(d => d.date !== toDate);
       updatedDays.push(copiedPlan);
-      weeklyPlansStore.set(toWeekStart, { ...toWeeklyPlan, days: updatedDays });
+      toWeeklyPlan = { ...toWeeklyPlan, days: updatedDays };
+    } else {
+      toWeeklyPlan = {
+        weekStartDate: toWeekStart,
+        days: [copiedPlan]
+      };
     }
+
+    await weeklyPlansRepo.upsertWeeklyPlan(userId, toWeekStart, toWeeklyPlan);
 
     res.json({ data: copiedPlan });
   } catch (error) {
@@ -276,24 +311,45 @@ export async function regenerateMeal(req: Request, res: Response) {
       return res.status(400).json({ error: 'Invalid request' });
     }
 
+    const userId = getUserId(req);
+    console.log(`🔄 [RegenerateMeal] Starting for user ${userId}, date ${request.date}, meal ${request.mealIndex}`);
     const response: RegenerateMealResponse = await nutritionAiService.regenerateMeal({
       ...request,
-      userId: STUB_USER_ID,
+      userId,
     });
 
     const weekStart = getWeekStart(new Date(request.date));
-    const weeklyPlan = weeklyPlansStore.get(weekStart);
+    const weeklyPlan = await weeklyPlansRepo.getWeeklyPlan(userId, weekStart);
     if (weeklyPlan) {
       const updatedDays = weeklyPlan.days.map(d =>
         d.date === request.date ? response.updatedDayPlan : d
       );
-      weeklyPlansStore.set(weekStart, { ...weeklyPlan, days: updatedDays });
+      await weeklyPlansRepo.upsertWeeklyPlan(userId, weekStart, { ...weeklyPlan, days: updatedDays });
     }
 
     res.json({ data: response.updatedDayPlan });
+    console.log(`✅ [RegenerateMeal] Complete for ${request.date}`);
   } catch (error) {
-    console.error('regenerateMeal error:', error);
+    console.error(`❌ [RegenerateMeal] Failed:`, error);
     res.status(500).json({ error: 'Failed to regenerate meal' });
+  }
+}
+
+export async function deleteWeeklyPlan(req: Request, res: Response) {
+  try {
+    const { weekStartDate } = req.body as any;
+    if (!weekStartDate) {
+      return res.status(400).json({ error: 'weekStartDate required' });
+    }
+
+    const userId = getUserId(req);
+    console.log(`🗑️ [DeleteWeek] Deleting plan for user ${userId}, week ${weekStartDate}`);
+    await weeklyPlansRepo.deleteWeeklyPlan(userId, weekStartDate);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('deleteWeeklyPlan error:', error);
+    res.status(500).json({ error: 'Failed to delete weekly plan' });
   }
 }
 
@@ -743,9 +799,9 @@ export async function reconfigureNutrition(req: Request, res: Response) {
 
 function getWeekStart(date: Date): string {
   const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
+  const day = d.getUTCDay();
+  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+  d.setUTCDate(diff);
   return d.toISOString().split('T')[0];
 }
 
