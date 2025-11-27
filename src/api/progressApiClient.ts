@@ -2,7 +2,7 @@
  * API Client for Progress Tracking
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 export interface WeekSummary {
     userId: string;
@@ -57,7 +57,7 @@ function getHeaders() {
 }
 
 export async function fetchWeekSummary(weekStart: string): Promise<WeekSummary> {
-    const response = await fetch(`${API_BASE_URL}/api/progress/week-summary?weekStart=${weekStart}`, {
+    const response = await fetch(`${API_BASE_URL}/progress/week-summary?weekStart=${weekStart}`, {
         headers: getHeaders(),
     });
 
@@ -71,7 +71,7 @@ export async function fetchWeekSummary(weekStart: string): Promise<WeekSummary> 
 
 export async function fetchTrends(startDate: string, endDate: string): Promise<TrendsData> {
     const response = await fetch(
-        `${API_BASE_URL}/api/progress/trends?startDate=${startDate}&endDate=${endDate}`,
+        `${API_BASE_URL}/progress/trends?startDate=${startDate}&endDate=${endDate}`,
         {
             headers: getHeaders(),
         }

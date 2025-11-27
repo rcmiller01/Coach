@@ -30,10 +30,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
     }, []);
 
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+
     const login = async (username: string) => {
         setIsLoading(true);
         try {
-            const response = await fetch('http://localhost:3001/api/users', {
+            const response = await fetch(`${API_BASE_URL}/users`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username }),

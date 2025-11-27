@@ -22,8 +22,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
         // Log to backend
         const userId = localStorage.getItem('coach_user_id');
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
-        fetch('http://localhost:3001/api/logs/frontend-error', {
+        fetch(`${API_BASE_URL}/logs/frontend-error`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

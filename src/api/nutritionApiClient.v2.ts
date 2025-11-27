@@ -31,7 +31,7 @@ import { NutritionApiError } from '../features/nutrition/nutritionTypes';
 // CONFIGURATION
 // ============================================================================
 
-const API_BASE = '/api/nutrition';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 // ============================================================================
 // ERROR HANDLING
@@ -112,12 +112,12 @@ export async function generateMealPlanForWeek(
   userContext?: UserContext,
   planProfile?: PlanProfile
 ): Promise<WeeklyPlan> {
-  const response = await fetch(`${API_BASE}/plan/week`, {
+  const response = await fetch(`${API_BASE_URL}/nutrition/plan/week`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ weekStartDate, targets, userContext, planProfile }),
   });
-  
+
   const result = await handleResponse<{ data: WeeklyPlan }>(response);
   return result.data;
 }
@@ -136,12 +136,12 @@ export async function generateMealPlanForDay(
   userContext?: UserContext,
   planProfile?: PlanProfile
 ): Promise<DayPlan> {
-  const response = await fetch(`${API_BASE}/plan/day`, {
+  const response = await fetch(`${API_BASE_URL}/nutrition/plan/day`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ date, targets, userContext, planProfile }),
   });
-  
+
   const result = await handleResponse<{ data: DayPlan }>(response);
   return result.data;
 }
@@ -180,7 +180,7 @@ export async function copyDayPlan(fromDate: string, toDate: string): Promise<Day
   // return handleResponse<DayPlan>(response);
 
   console.log('[API Stub] copyDayPlan', { fromDate, toDate });
-  
+
   return {
     date: toDate,
     meals: [],
@@ -193,12 +193,12 @@ export async function copyDayPlan(fromDate: string, toDate: string): Promise<Day
  * @throws NutritionApiError if validation fails or AI request fails
  */
 export async function regenerateMeal(request: RegenerateMealRequest): Promise<DayPlan> {
-  const response = await fetch(`${API_BASE}/plan/day/regenerate-meal`, {
+  const response = await fetch(`${API_BASE_URL}/nutrition/plan/day/regenerate-meal`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   });
-  
+
   const result = await handleResponse<{ data: DayPlan }>(response);
   return result.data;
 }
@@ -270,12 +270,12 @@ export async function parseFood(
   description: string,
   userContext?: UserContext
 ): Promise<LoggedFoodItem> {
-  const response = await fetch(`${API_BASE}/parse-food`, {
+  const response = await fetch(`${API_BASE_URL}/nutrition/parse-food`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text: description, ...userContext }),
   });
-  
+
   const result = await handleResponse<{ data: LoggedFoodItem }>(response);
   return result.data;
 }

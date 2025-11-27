@@ -35,6 +35,8 @@ import type { WorkoutHistoryEntry } from './features/history/types'
 import type { ExerciseLoadSuggestion } from './features/progression/progressionTypes'
 import './App.css'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+
 type MainView = 'today' | 'program' | 'history' | 'settings' | 'nutrition' | 'meals';
 
 function AuthenticatedApp() {
@@ -121,7 +123,7 @@ function AuthenticatedApp() {
     const fetchSettings = async () => {
       try {
         const userId = localStorage.getItem('coach_user_id');
-        const response = await fetch('http://localhost:3001/api/settings', {
+        const response = await fetch(`${API_BASE_URL}/settings`, {
           headers: { 'X-User-Id': userId || '' }
         });
         if (response.ok) {
@@ -219,7 +221,7 @@ function AuthenticatedApp() {
     // Sync to backend
     try {
       const userId = localStorage.getItem('coach_user_id');
-      await fetch('http://localhost:3001/api/settings', {
+      await fetch(`${API_BASE_URL}/settings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -331,7 +333,7 @@ function AuthenticatedApp() {
   async function handleRegenerateWeek() {
     try {
       const userId = localStorage.getItem('coach_user_id');
-      await fetch('http://localhost:3001/api/program/week/regenerate', {
+      await fetch(`${API_BASE_URL}/program/week/regenerate`, {
         method: 'POST',
         headers: { 'X-User-Id': userId || '' }
       });
@@ -346,7 +348,7 @@ function AuthenticatedApp() {
   async function handleReconfigureNutrition() {
     try {
       const userId = localStorage.getItem('coach_user_id');
-      await fetch('http://localhost:3001/api/nutrition/plan/reconfigure', {
+      await fetch(`${API_BASE_URL}/nutrition/plan/reconfigure`, {
         method: 'POST',
         headers: { 'X-User-Id': userId || '' }
       });

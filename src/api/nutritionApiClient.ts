@@ -21,7 +21,7 @@ import type {
 
 // Backend base URL - in production this would come from environment config
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const API_BASE = '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 // Helper to get headers with auth
 function getHeaders() {
@@ -43,7 +43,7 @@ function getHeaders() {
  * @param weekStartDate - Monday of the week (YYYY-MM-DD)
  */
 export async function fetchWeeklyPlan(weekStartDate: string): Promise<WeeklyPlan> {
-  const response = await fetch(`${API_BASE}/nutrition/plan?weekStart=${weekStartDate}`, {
+  const response = await fetch(`${API_BASE_URL}/nutrition/plan?weekStart=${weekStartDate}`, {
     method: 'GET',
     headers: getHeaders(),
   });
@@ -78,7 +78,7 @@ export async function generateMealPlanForWeek(
   userContext?: UserContext,
   planProfile?: PlanProfile
 ): Promise<{ sessionId: string; weekStartDate: string; weeklyPlan?: WeeklyPlan; qualitySummary?: string }> {
-  const response = await fetch(`${API_BASE}/nutrition/plan/week`, {
+  const response = await fetch(`${API_BASE_URL}/nutrition/plan/week`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ weekStartDate, targets, userContext, configProfile: planProfile }),
@@ -126,7 +126,7 @@ export async function generateMealPlanForDay(
   planProfile?: PlanProfile,
   preferences?: DietaryPreferences
 ): Promise<DayPlan> {
-  const response = await fetch(`${API_BASE}/nutrition/plan/day`, {
+  const response = await fetch(`${API_BASE_URL}/nutrition/plan/day`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ date, targets, userContext, planProfile, preferences }),
@@ -181,7 +181,7 @@ export async function regenerateMeal(
   userContext?: UserContext,
   planProfile?: PlanProfile
 ): Promise<DayPlan> {
-  const response = await fetch(`${API_BASE}/nutrition/plan/day/regenerate-meal`, {
+  const response = await fetch(`${API_BASE_URL}/nutrition/plan/day/regenerate-meal`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ date, mealIndex, targets, currentPlan, userContext, planProfile }),
@@ -203,7 +203,7 @@ export async function copyDayPlan(
   fromDate: string,
   toDate: string
 ): Promise<DayPlan> {
-  const response = await fetch(`${API_BASE}/nutrition/plan/copy`, {
+  const response = await fetch(`${API_BASE_URL}/nutrition/plan/copy`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ fromDate, toDate }),
@@ -278,7 +278,7 @@ export async function parseFood(
   text: string,
   userContext?: UserContext
 ): Promise<LoggedFoodItem> {
-  const response = await fetch(`${API_BASE}/nutrition/parse-food`, {
+  const response = await fetch(`${API_BASE_URL}/nutrition/parse-food`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ text, ...userContext }),
@@ -308,7 +308,7 @@ export async function verifyFoodItem(item: {
   carbsGrams: number;
   fatsGrams: number;
 }> {
-  const response = await fetch(`${API_BASE}/nutrition/verify-food`, {
+  const response = await fetch(`${API_BASE_URL}/nutrition/verify-food`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(item),
