@@ -89,33 +89,33 @@ app.use((req, res, next) => {
 routes.initializeRepositories(pool);
 
 // Mount nutrition API routes
-app.get('/api/nutrition/plan', routes.getNutritionPlan);
-app.post('/api/nutrition/plan/week', routes.generateWeeklyPlan);
-app.post('/api/nutrition/plan/day', routes.generateDailyPlan);
-app.put('/api/nutrition/plan/day/:date', routes.updateDayPlan);
-app.post('/api/nutrition/plan/copy', routes.copyDayPlan);
-app.post('/api/nutrition/plan/day/regenerate-meal', routes.regenerateMeal);
-app.delete('/api/nutrition/plan/week', routes.deleteWeeklyPlan);
-app.get('/api/meals/log/:date', routes.getDayLog);
-app.put('/api/meals/log/:date', routes.saveDayLog);
-app.post('/api/nutrition/parse-food', routes.parseFood);
-app.post('/api/nutrition/verify-food', routes.verifyFoodItem);
-app.post('/api/program/week/generate', routes.generateWorkoutProgram);
+app.get('/nutrition/plan', routes.getNutritionPlan);
+app.post('/nutrition/plan/week', routes.generateWeeklyPlan);
+app.post('/nutrition/plan/day', routes.generateDailyPlan);
+app.put('/nutrition/plan/day/:date', routes.updateDayPlan);
+app.post('/nutrition/plan/copy', routes.copyDayPlan);
+app.post('/nutrition/plan/day/regenerate-meal', routes.regenerateMeal);
+app.delete('/nutrition/plan/week', routes.deleteWeeklyPlan);
+app.get('/meals/log/:date', routes.getDayLog);
+app.put('/meals/log/:date', routes.saveDayLog);
+app.post('/nutrition/parse-food', routes.parseFood);
+app.post('/nutrition/verify-food', routes.verifyFoodItem);
+app.post('/program/week/generate', routes.generateWorkoutProgram);
 
 // Nutrition metrics and status endpoints
-app.get('/api/v1/nutrition/metrics', routes.getNutritionMetrics);
-app.get('/api/v1/nutrition/generation/:sessionId/status', routes.getGenerationStatus);
-app.delete('/api/v1/nutrition/generation/:sessionId', routes.deleteGenerationSession);
+app.get('/v1/nutrition/metrics', routes.getNutritionMetrics);
+app.get('/v1/nutrition/generation/:sessionId/status', routes.getGenerationStatus);
+app.delete('/v1/nutrition/generation/:sessionId', routes.deleteGenerationSession);
 
 // Mount progress tracking routes
-app.post('/api/logs/workout-session', routes.logWorkoutSession);
-app.post('/api/logs/nutrition-day', routes.logNutritionDay);
-app.post('/api/logs/weight', routes.logWeight);
-app.get('/api/progress/week-summary', routes.getWeekSummary);
-app.get('/api/progress/trends', routes.getTrends);
+app.post('/logs/workout-session', routes.logWorkoutSession);
+app.post('/logs/nutrition-day', routes.logNutritionDay);
+app.post('/logs/weight', routes.logWeight);
+app.get('/progress/week-summary', routes.getWeekSummary);
+app.get('/progress/trends', routes.getTrends);
 
 // Mount user routes
-app.post('/api/users', routes.createUser);
+app.post('/users', routes.createUser);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -128,8 +128,8 @@ app.get('/', (req, res) => {
     message: 'AI Workout Coach - Nutrition API',
     version: '1.0.0',
     endpoints: {
-      parseFood: 'POST /api/nutrition/parse-food',
-      generateMealPlan: 'POST /api/nutrition/generate-meal-plan',
+      parseFood: 'POST /nutrition/parse-food',
+      generateMealPlan: 'POST /nutrition/generate-meal-plan',
       health: 'GET /health'
     }
   });
@@ -156,7 +156,7 @@ if (process.env.NODE_ENV !== 'test') {
   const server = app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/health`);
-    console.log(`🍎 Parse food: POST http://localhost:${PORT}/api/nutrition/parse-food`);
+    console.log(`🍎 Parse food: POST http://localhost:${PORT}/nutrition/parse-food`);
   });
 
   // Keep-alive to prevent process exit
