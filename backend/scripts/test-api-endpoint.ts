@@ -5,7 +5,8 @@ async function testApi() {
     try {
         console.log('Testing POST /api/nutrition/plan/week...');
 
-        const response = await fetch('http://localhost:3001/api/nutrition/plan/week', {
+        const baseUrl = process.env.API_BASE_URL || 'http://localhost:3001';
+        const response = await fetch(`${baseUrl}/api/nutrition/plan/week`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

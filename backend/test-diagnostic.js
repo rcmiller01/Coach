@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = process.env.API_BASE_URL || 'http://localhost:3001';
 const OUTPUT_FILE = path.join(__dirname, '../test-results.txt');
 
 async function runDiagnostics() {

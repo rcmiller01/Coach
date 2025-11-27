@@ -5,7 +5,7 @@
 
 import fetch from 'node-fetch';
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = process.env.API_BASE_URL || 'http://localhost:3001';
 
 // Test results tracking
 let testsPassed = 0;
@@ -150,7 +150,7 @@ async function runTests() {
 }
 
 // Check if server is running before tests
-console.log('📡 Checking if backend server is running on localhost:3001...\n');
+console.log(`📡 Checking if backend server is running on ${API_BASE}...\n`);
 fetch(`${API_BASE}/health`)
     .then(() => {
         console.log('✅ Backend server is ready!\n');
