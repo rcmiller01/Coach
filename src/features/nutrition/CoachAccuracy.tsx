@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { apiClient } from '../../lib/apiClient';
 
 interface NutritionMetrics {
   totalWeeksGenerated: number;
@@ -58,13 +59,7 @@ export function CoachAccuracy() {
     const fetchMetrics = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/v1/nutrition/metrics');
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch metrics');
-        }
-
-        const { data } = await response.json();
+        const data = await apiClient.get<NutritionMetrics>('/v1/nutrition/metrics');
         setMetrics(data);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
@@ -223,9 +218,8 @@ export function CoachAccuracy() {
           <button
             onClick={() => {
               setLoading(true);
-              fetch('/api/v1/nutrition/metrics')
-                .then(res => res.json())
-                .then(({ data }) => setMetrics(data))
+              apiClient.get<NutritionMetrics>('/v1/nutrition/metrics')
+                .then(data => setMetrics(data))
                 .catch(err => setError(err))
                 .finally(() => setLoading(false));
             }}

@@ -1,11 +1,5 @@
-/**
- * Hook for polling meal plan generation status
- * 
- * Polls /api/v1/nutrition/generation/:sessionId/status every second
- * and stops when generation is complete.
- */
-
 import { useState, useEffect, useRef } from 'react';
+import { apiClient } from '../../lib/apiClient';
 
 export type GenerationPhase =
   | 'initializing'
@@ -38,117 +32,62 @@ export interface GenerationSessionData {
   status: GenerationStatus;
 }
 
-interface UseGenerationStatusOptions {
+interface UseGenerationStatusProps {
   sessionId: string | null;
-  pollInterval?: number; // ms, default 1000
   onComplete?: (status: GenerationStatus) => void;
   onError?: (error: Error) => void;
 }
 
-interface UseGenerationStatusResult {
-  status: GenerationStatus | null;
-  isPolling: boolean;
-  error: Error | null;
-}
-
-export function useGenerationStatus({
-  sessionId,
-  pollInterval = 1000,
-  onComplete,
-  onError,
-}: UseGenerationStatusOptions): UseGenerationStatusResult {
+export function useGenerationStatus({ sessionId, onComplete, onError }: UseGenerationStatusProps) {
   const [status, setStatus] = useState<GenerationStatus | null>(null);
   const [isPolling, setIsPolling] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const hasCompletedRef = useRef(false);
+  const errorCount = useRef(0);
 
   useEffect(() => {
-    // Reset state when sessionId changes
-    if (sessionId) {
+    if (!sessionId) {
       setStatus(null);
-      setError(null);
-      setIsPolling(true);
-      hasCompletedRef.current = false;
-    }
-  }, [sessionId]);
-
-  useEffect(() => {
-    if (!sessionId || !isPolling || hasCompletedRef.current) {
+      setIsPolling(false);
       return;
     }
 
+    setIsPolling(true);
+    errorCount.current = 0;
+
     const pollStatus = async () => {
       try {
-        const response = await fetch(
-          `/api/v1/nutrition/generation/${sessionId}/status`
-        );
+        // The API returns { data: { status: GenerationStatus } }
+        const response = await apiClient.get<{ status: GenerationStatus }>(`/v1/nutrition/generation/${sessionId}/status`);
+        const result = response.status;
 
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error('Generation session not found');
-          }
-          throw new Error('Failed to fetch generation status');
-        }
+        setStatus(result);
 
-        const { data } = await response.json();
-        const newStatus: GenerationStatus = data.status;
-
-        setStatus(newStatus);
-
-        // Check if generation is complete
-        if (newStatus.phase === 'complete' || newStatus.phase === 'error') {
+        if (result.phase === 'complete') {
           setIsPolling(false);
-          hasCompletedRef.current = true;
-
-          if (newStatus.phase === 'complete' && onComplete) {
-            onComplete(newStatus);
-          } else if (newStatus.phase === 'error' && onError) {
-            onError(new Error(newStatus.error || 'Generation failed'));
-          }
-
-          // Stop polling
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
+          onComplete?.(result);
+        } else if (result.phase === 'error') {
+          setIsPolling(false);
+          onError?.(new Error(result.error || 'Generation failed'));
         }
       } catch (err) {
-        const errorObj = err instanceof Error ? err : new Error(String(err));
-        setError(errorObj);
-        setIsPolling(false);
+        console.error('Poll error:', err);
+        errorCount.current++;
 
-        if (onError) {
-          onError(errorObj);
-        }
-
-        // Stop polling on error
-        if (pollIntervalRef.current) {
-          clearInterval(pollIntervalRef.current);
-          pollIntervalRef.current = null;
+        // Stop polling after 5 consecutive errors
+        if (errorCount.current >= 5) {
+          setIsPolling(false);
+          onError?.(new Error('Lost connection to generation server'));
         }
       }
     };
 
-    // Initial poll immediately
+    // Initial poll
     pollStatus();
 
-    // Set up interval for subsequent polls
-    pollIntervalRef.current = setInterval(pollStatus, pollInterval);
+    // Poll every 1 second
+    const interval = setInterval(pollStatus, 1000);
 
-    // Cleanup on unmount or when sessionId changes
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
-    };
-  }, [sessionId, isPolling, pollInterval, onComplete, onError]);
+    return () => clearInterval(interval);
+  }, [sessionId, onComplete, onError]);
 
-  return {
-    status,
-    isPolling,
-    error,
-  };
+  return { status, isPolling };
 }
