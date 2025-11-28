@@ -60,7 +60,7 @@ export function useGenerationStatus({
   const [status, setStatus] = useState<GenerationStatus | null>(null);
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  
+
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasCompletedRef = useRef(false);
 

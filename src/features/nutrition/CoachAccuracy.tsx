@@ -59,7 +59,7 @@ export function CoachAccuracy() {
       try {
         setLoading(true);
         const response = await fetch('/api/v1/nutrition/metrics');
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch metrics');
         }
